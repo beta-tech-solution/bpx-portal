@@ -20,7 +20,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { db } from '@/lib/firebase/config';
-import { collection, query, onSnapshot, doc, getDoc, updateDoc, increment } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, getDoc, updateDoc, increment, writeBatch } from 'firebase/firestore';
 import { format, subDays } from 'date-fns';
 
 type DepositStatus = 'Pending' | 'Approved' | 'Rejected';
@@ -58,21 +58,20 @@ export default function AdminDepositsPage() {
     const unsubscribe = onSnapshot(q, async (querySnapshot) => {
       setLoading(true);
       const depositsData: Deposit[] = [];
-      for (const docSnapshot of querySnapshot.docs) {
+      const userPromises = querySnapshot.docs.map(docSnapshot => {
         const data = docSnapshot.data();
-        let userFullName = 'Unknown User';
-        if (data.userId) {
-          const userDoc = await getDoc(doc(db, 'users', data.userId));
-          if (userDoc.exists()) {
-            userFullName = userDoc.data().fullName;
-          }
+        if (!data.userId) {
+          depositsData.push({ id: docSnapshot.id, userFullName: 'Unknown User', ...data } as Deposit);
+          return null;
         }
-        depositsData.push({
-          id: docSnapshot.id,
-          userFullName,
-          ...data
-        } as Deposit);
-      }
+        return getDoc(doc(db, 'users', data.userId)).then(userDoc => {
+          const userFullName = userDoc.exists() ? userDoc.data().fullName : 'Unknown User';
+          depositsData.push({ id: docSnapshot.id, userFullName, ...data } as Deposit);
+        });
+      });
+      
+      await Promise.all(userPromises);
+      
       setDeposits(depositsData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
       setLoading(false);
     });
@@ -182,15 +181,17 @@ function DepositTable({ data, loading }: { data: Deposit[], loading: boolean }) 
 
   const handleUpdateStatus = async (deposit: Deposit, newStatus: DepositStatus) => {
     try {
+      const batch = writeBatch(db);
+      
       const depositRef = doc(db, 'deposits', deposit.id);
-      await updateDoc(depositRef, { status: newStatus });
+      batch.update(depositRef, { status: newStatus });
 
       if (newStatus === 'Approved') {
           const userRef = doc(db, 'users', deposit.userId);
-          await updateDoc(userRef, {
-              balance: increment(parseFloat(deposit.amount))
-          });
+          batch.update(userRef, { balance: increment(parseFloat(deposit.amount)) });
       }
+
+      await batch.commit();
 
       toast({ title: `Deposit ${newStatus}`, description: `Deposit from ${deposit.userFullName} for PKR ${deposit.amount} has been ${newStatus.toLowerCase()}.` });
     } catch (error) {
@@ -265,5 +266,3 @@ function DepositTable({ data, loading }: { data: Deposit[], loading: boolean }) 
     </Table>
   );
 }
-
-    

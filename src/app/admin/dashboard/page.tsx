@@ -7,7 +7,7 @@ import { Bar, BarChart, CartesianGrid, Legend, Tooltip, XAxis, YAxis, AreaChart,
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
 import { DollarSign, Users, Landmark, Send, Loader2, ArrowDownLeft, ArrowUpRight } from "lucide-react"
 import { db } from "@/lib/firebase/config"
-import { collection, getDocs, query, where, Timestamp, onSnapshot } from "firebase/firestore"
+import { collection, getDocs, query, where, Timestamp, onSnapshot, DocumentData } from "firebase/firestore"
 import { subMonths, format, addMonths } from 'date-fns'
 
 
@@ -44,74 +44,78 @@ export default function AdminDashboardPage() {
     const [transfersData, setTransfersData] = useState<MonthlyData[]>([]);
 
      useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
-            try {
-                const usersSnapshot = await getDocs(collection(db, "users"));
-                 setOverviewData(prev => ({ ...prev, totalUsers: usersSnapshot.size }));
-            } catch (error) {
-                 console.error("Error fetching users count: ", error);
+        setLoading(true);
+
+        const processChartData = (docs: DocumentData[], statuses: string[]): MonthlyData[] => {
+            const monthlyTotals: { [key: string]: { [key: string]: number } } = {};
+            const sixMonthsAgo = subMonths(new Date(), 5);
+            
+            for (let i = 0; i < 6; i++) {
+                const monthDate = addMonths(sixMonthsAgo, i);
+                const month = format(monthDate, 'MMM');
+                monthlyTotals[month] = {};
+                statuses.forEach(status => monthlyTotals[month][status.toLowerCase()] = 0);
             }
 
-            const setupListener = (collectionName: string, statusField: 'pendingDeposits' | 'pendingWithdrawals' | 'pendingTransfers') => {
-                const q = query(collection(db, collectionName), where('status', '==', 'Pending'));
-                return onSnapshot(q, (snapshot) => {
-                    setOverviewData(prev => ({ ...prev, [statusField]: snapshot.size }));
-                }, (error) => console.error(`Error fetching ${collectionName}:`, error));
-            };
-
-            const unsubDeposits = setupListener('deposits', 'pendingDeposits');
-            const unsubWithdrawals = setupListener('withdrawals', 'pendingWithdrawals');
-            const unsubTransfers = setupListener('transfers', 'pendingTransfers');
-
-            const processChartData = (snapshot: any, statuses: string[]): MonthlyData[] => {
-                const monthlyTotals: { [key: string]: { [key: string]: number } } = {};
-                const sixMonthsAgo = subMonths(new Date(), 5);
-                
-                for (let i = 0; i < 6; i++) {
-                    const monthDate = addMonths(sixMonthsAgo, i);
-                    const month = format(monthDate, 'MMM');
-                    monthlyTotals[month] = {};
-                    statuses.forEach(status => monthlyTotals[month][status.toLowerCase()] = 0);
-                }
-
-                snapshot.forEach((doc: any) => {
-                    const data = doc.data();
-                    const date = (data.createdAt as Timestamp)?.toDate() || new Date(data.date);
-                     if (date >= sixMonthsAgo) {
-                        const month = format(date, 'MMM');
-                        const status = data.status.toLowerCase();
-                        if (monthlyTotals[month] && statuses.includes(status)) {
-                             monthlyTotals[month][status] = (monthlyTotals[month][status] || 0) + 1;
-                        }
+            docs.forEach((doc) => {
+                const data = doc.data();
+                const date = (data.createdAt as Timestamp)?.toDate() || new Date(data.date);
+                 if (date >= sixMonthsAgo) {
+                    const month = format(date, 'MMM');
+                    const status = data.status.toLowerCase();
+                    if (monthlyTotals[month] && statuses.map(s => s.toLowerCase()).includes(status)) {
+                         monthlyTotals[month][status] = (monthlyTotals[month][status] || 0) + 1;
                     }
-                });
+                }
+            });
 
-                 return Object.entries(monthlyTotals).map(([month, values]) => ({
-                    month,
-                    ...values
-                }));
-            };
-            
-            const allDepositsSnap = await getDocs(collection(db, "deposits"));
-            const allWithdrawalsSnap = await getDocs(collection(db, "withdrawals"));
-            const allTransfersSnap = await getDocs(collection(db, "transfers"));
-
-            setDepositsData(processChartData(allDepositsSnap.docs, ['pending', 'approved']));
-            setWithdrawalsData(processChartData(allWithdrawalsSnap.docs, ['pending', 'approved']));
-            setTransfersData(processChartData(allTransfersSnap.docs, ['pending', 'transferred']));
-            
-            setLoading(false);
-
-            return () => {
-                unsubDeposits();
-                unsubWithdrawals();
-                unsubTransfers();
-            };
-
+             return Object.entries(monthlyTotals).map(([month, values]) => ({
+                month,
+                ...values
+            }));
         };
 
-        fetchData();
+        const unsubscribes: (() => void)[] = [];
+
+        // Total Users
+        const usersQuery = query(collection(db, "users"));
+        unsubscribes.push(onSnapshot(usersQuery, (snapshot) => {
+            setOverviewData(prev => ({ ...prev, totalUsers: snapshot.size }));
+        }, (error) => console.error("Error fetching users count:", error)));
+
+        // Pending counts
+        const setupPendingListener = (collectionName: string, statusField: 'pendingDeposits' | 'pendingWithdrawals' | 'pendingTransfers') => {
+            const q = query(collection(db, collectionName), where('status', '==', 'Pending'));
+            return onSnapshot(q, (snapshot) => {
+                setOverviewData(prev => ({ ...prev, [statusField]: snapshot.size }));
+            }, (error) => console.error(`Error fetching pending ${collectionName}:`, error));
+        };
+        unsubscribes.push(setupPendingListener('deposits', 'pendingDeposits'));
+        unsubscribes.push(setupPendingListener('withdrawals', 'pendingWithdrawals'));
+        unsubscribes.push(setupPendingListener('transfers', 'pendingTransfers'));
+        
+        // Chart Data Listeners
+        const setupChartListener = (
+            collectionName: string, 
+            setData: React.Dispatch<React.SetStateAction<MonthlyData[]>>,
+            statuses: string[]
+        ) => {
+            const q = query(collection(db, collectionName));
+            return onSnapshot(q, (snapshot) => {
+                setData(processChartData(snapshot.docs, statuses));
+            }, (error) => console.error(`Error fetching chart data for ${collectionName}:`, error));
+        };
+
+        unsubscribes.push(setupChartListener('deposits', setDepositsData, ['Pending', 'Approved']));
+        unsubscribes.push(setupChartListener('withdrawals', setWithdrawalsData, ['Pending', 'Approved']));
+        unsubscribes.push(setupChartListener('transfers', setTransfersData, ['Pending', 'Transferred']));
+
+        setLoading(false);
+
+        return () => {
+            unsubscribes.forEach(unsub => unsub());
+        };
+
     }, []);
 
     if (loading) {
@@ -230,5 +234,3 @@ export default function AdminDashboardPage() {
     </div>
   )
 }
-
-    
