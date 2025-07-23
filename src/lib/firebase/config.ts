@@ -7,7 +7,7 @@ import { getStorage } from 'firebase/storage';
 const firebaseConfig = {
   "projectId": "bpx-portal",
   "appId": "1:196941778357:web:cab72b07a754cf6488ddfc",
-  "storageBucket": "bpx-portal.firebasestorage.app",
+  "storageBucket": "bpx-portal.appspot.com",
   "apiKey": "AIzaSyCwGvOnK1C_SXurmFeyetXfKt9nX7MfN5Q",
   "authDomain": "bpx-portal.firebaseapp.com",
   "messagingSenderId": "196941778357"
