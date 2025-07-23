@@ -15,7 +15,10 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Wallet, Eye, EyeOff } from "lucide-react"
+import { Wallet, Eye, EyeOff, Loader2 } from "lucide-react"
+import { auth } from "@/lib/firebase/config"
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth"
+import { useToast } from "@/hooks/use-toast"
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
@@ -30,14 +33,44 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 
 export default function LoginPage() {
     const router = useRouter()
+    const { toast } = useToast()
     const [showPassword, setShowPassword] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
-        // Here you would add your Firebase logic
-        // On success, navigate to the dashboard
-        router.push('/dashboard')
+        setIsLoading(true)
+        const email = (e.currentTarget.elements.namedItem('email') as HTMLInputElement).value
+        const password = (e.currentTarget.elements.namedItem('password') as HTMLInputElement).value
+
+        try {
+            await signInWithEmailAndPassword(auth, email, password)
+            toast({ title: "Login Successful", description: "Welcome back!" })
+            router.push('/dashboard')
+        } catch (error: any) {
+            console.error("Login error:", error)
+            toast({ title: "Login Failed", description: "Invalid email or password.", variant: "destructive" })
+        } finally {
+            setIsLoading(false)
+        }
     }
+
+    const handleGoogleLogin = async () => {
+        setIsGoogleLoading(true)
+        const provider = new GoogleAuthProvider()
+        try {
+            await signInWithPopup(auth, provider)
+            toast({ title: "Login Successful", description: "Welcome back!" })
+            router.push('/dashboard')
+        } catch (error: any) {
+            console.error("Google login error:", error)
+            toast({ title: "Google Sign-in Failed", description: "Could not sign in with Google. Please try again.", variant: "destructive" })
+        } finally {
+            setIsGoogleLoading(false)
+        }
+    }
+
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background animate-fade-in">
@@ -70,7 +103,8 @@ export default function LoginPage() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
             </div>
-            <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isLoading}>
+                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Sign In
             </Button>
             <div className="relative">
@@ -83,8 +117,8 @@ export default function LoginPage() {
                     </span>
                 </div>
             </div>
-            <Button variant="outline" className="w-full">
-                <GoogleIcon className="mr-2 h-4 w-4" />
+            <Button variant="outline" className="w-full" type="button" onClick={handleGoogleLogin} disabled={isGoogleLoading}>
+                 {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-4 w-4" />}
                 Sign in with Google
             </Button>
             </CardContent>
@@ -107,3 +141,5 @@ export default function LoginPage() {
     </div>
   )
 }
+
+    
