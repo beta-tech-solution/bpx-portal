@@ -12,8 +12,7 @@ import { UploadCloud, Hourglass, TrendingUp, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
-import { auth, db, storage } from '@/lib/firebase/config';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { auth, db } from '@/lib/firebase/config';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 
@@ -33,6 +32,11 @@ const chartData = [
     },
   } satisfies ChartConfig
 
+// TODO: Replace with your Cloudinary credentials
+const CLOUDINARY_CLOUD_NAME = "YOUR_CLOUD_NAME";
+const CLOUDINARY_UPLOAD_PRESET = "YOUR_UPLOAD_PRESET";
+
+
 export default function DepositPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [progress, setProgress] = useState(10);
@@ -46,6 +50,12 @@ export default function DepositPage() {
         toast({ title: "Error", description: "You must be logged in to make a deposit.", variant: "destructive" });
         return;
     }
+    
+    if (CLOUDINARY_CLOUD_NAME === "YOUR_CLOUD_NAME" || CLOUDINARY_UPLOAD_PRESET === "YOUR_UPLOAD_PRESET") {
+        toast({ title: "Configuration Needed", description: "Cloudinary is not configured. Please update the details.", variant: "destructive" });
+        return;
+    }
+
     setIsLoading(true);
 
     const form = event.currentTarget;
@@ -66,15 +76,24 @@ export default function DepositPage() {
     }
 
     try {
-        // 1. Upload file to Firebase Storage
-        const filePath = `deposit-proofs/${user.uid}/${Date.now()}_${file.name}`;
-        const storageRef = ref(storage, filePath);
-        await uploadBytes(storageRef, file);
+        // 1. Upload file to Cloudinary
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
-        // 2. Get download URL
-        const proofUrl = await getDownloadURL(storageRef);
+        const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+            method: 'POST',
+            body: formData,
+        });
 
-        // 3. Add deposit document to Firestore
+        if (!uploadResponse.ok) {
+            throw new Error('Cloudinary upload failed');
+        }
+
+        const cloudinaryData = await uploadResponse.json();
+        const proofUrl = cloudinaryData.secure_url;
+
+        // 2. Add deposit document to Firestore
         await addDoc(collection(db, 'deposits'), {
             userId: user.uid,
             amount,
