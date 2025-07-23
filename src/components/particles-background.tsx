@@ -23,24 +23,24 @@ const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({ className, va
     
     const options = {
       default: {
-        particleColor: "rgba(255, 255, 255, 0.7)",
-        lineColor: "rgba(255, 255, 255, 0.1)",
-        particleAmount: 50,
-        defaultRadius: 2,
-        variantRadius: 2,
-        defaultSpeed: 0.5,
-        variantSpeed: 1,
-        linkRadius: 200,
-      },
-      admin: {
-        particleColor: "rgba(192, 203, 255, 0.5)",
-        lineColor: "rgba(192, 203, 255, 0.05)",
-        particleAmount: 40,
-        defaultRadius: 2.5,
+        particleColor: "hsla(231, 75%, 80%, 0.5)",
+        lineColor: "hsla(231, 75%, 70%, 0.1)",
+        particleAmount: 60,
+        defaultRadius: 1.5,
         variantRadius: 1.5,
         defaultSpeed: 0.3,
         variantSpeed: 0.7,
-        linkRadius: 220,
+        linkRadius: 180,
+      },
+      admin: {
+        particleColor: "hsla(174, 100%, 70%, 0.5)",
+        lineColor: "hsla(174, 100%, 60%, 0.08)",
+        particleAmount: 40,
+        defaultRadius: 2,
+        variantRadius: 2,
+        defaultSpeed: 0.2,
+        variantSpeed: 0.5,
+        linkRadius: 200,
       }
     };
     const config = options[variant];
@@ -82,10 +82,8 @@ const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({ className, va
         this.y += this.vector.y;
 
         if (this.x > canvas.width + 5 || this.x < -5 || this.y > canvas.height + 5 || this.y < -5) {
-          if (this.x > canvas.width + 5) this.x = -5;
-          else if (this.x < -5) this.x = canvas.width + 5;
-          else if (this.y > canvas.height + 5) this.y = -5;
-          else if (this.y < -5) this.y = canvas.height + 5;
+            this.x = Math.random() * canvas.width;
+            this.y = Math.random() * canvas.height;
         }
       }
     }
@@ -104,10 +102,11 @@ const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({ className, va
                 const dy = particles[i].y - particles[j].y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
                 if (distance < config.linkRadius) {
+                    const opacity = 1 - (distance / config.linkRadius);
                     ctx.beginPath();
                     ctx.moveTo(particles[i].x, particles[i].y);
                     ctx.lineTo(particles[j].x, particles[j].y);
-                    ctx.strokeStyle = config.lineColor;
+                    ctx.strokeStyle = config.lineColor.replace(')', `, ${opacity})`);
                     ctx.lineWidth = 0.5;
                     ctx.stroke();
                 }

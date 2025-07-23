@@ -407,7 +407,7 @@ function UserDialog({ open, setOpen, user }: { open: boolean, setOpen: (open: bo
                             />
                         </div>
                         </ScrollArea>
-                        <DialogFooter className="pt-4 pr-4">
+                        <DialogFooter className="pt-4 pr-4 border-t">
                             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
                             <Button type="submit" disabled={isLoading}>
                                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -420,5 +420,3 @@ function UserDialog({ open, setOpen, user }: { open: boolean, setOpen: (open: bo
         </Dialog>
     )
 }
-
-    
