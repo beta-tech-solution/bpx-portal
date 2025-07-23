@@ -15,6 +15,7 @@ import {
   SidebarFooter,
   SidebarTrigger,
   SidebarInset,
+  SidebarMenuBadge
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -28,14 +29,16 @@ import {
   Shield,
   LayoutDashboard
 } from "lucide-react";
+import { db } from "@/lib/firebase/config";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
 
 const navItems = [
-    { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/admin/users", label: "Users", icon: Users },
-    { href: "/admin/deposits", label: "Deposits", icon: DollarSign },
-    { href: "/admin/transfers", label: "Transfers", icon: Send },
-    { href: "/admin/withdrawals", label: "Withdrawals", icon: Landmark },
-    { href: "/admin/settings", label: "Settings", icon: Settings },
+    { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, countKey: null },
+    { href: "/admin/users", label: "Users", icon: Users, countKey: null },
+    { href: "/admin/deposits", label: "Deposits", icon: DollarSign, countKey: 'deposits' },
+    { href: "/admin/transfers", label: "Transfers", icon: Send, countKey: 'transfers' },
+    { href: "/admin/withdrawals", label: "Withdrawals", icon: Landmark, countKey: 'withdrawals' },
+    { href: "/admin/settings", label: "Settings", icon: Settings, countKey: null },
 ]
 
 export default function AdminLayout({
@@ -45,6 +48,28 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [pendingCounts, setPendingCounts] = React.useState({
+      deposits: 0,
+      transfers: 0,
+      withdrawals: 0
+  });
+
+  React.useEffect(() => {
+      const collections = {
+          deposits: collection(db, 'deposits'),
+          transfers: collection(db, 'transfers'),
+          withdrawals: collection(db, 'withdrawals')
+      };
+
+      const unsubscribes = Object.entries(collections).map(([key, coll]) => {
+          const q = query(coll, where('status', '==', 'Pending'));
+          return onSnapshot(q, (snapshot) => {
+              setPendingCounts(prev => ({ ...prev, [key]: snapshot.size }));
+          });
+      });
+      
+      return () => unsubscribes.forEach(unsub => unsub());
+  }, []);
 
   const isActive = (path: string) => pathname.startsWith(path);
 
@@ -71,7 +96,9 @@ export default function AdminLayout({
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            {navItems.map((item) => (
+            {navItems.map((item) => {
+                const count = item.countKey ? pendingCounts[item.countKey as keyof typeof pendingCounts] : 0;
+                return (
                  <SidebarMenuItem key={item.href}>
                  <SidebarMenuButton
                    onClick={() => router.push(item.href)}
@@ -80,9 +107,10 @@ export default function AdminLayout({
                  >
                    <item.icon />
                    <span>{item.label}</span>
+                   {count > 0 && <SidebarMenuBadge>{count}</SidebarMenuBadge>}
                  </SidebarMenuButton>
                </SidebarMenuItem>
-            ))}
+            )})}
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter className="p-4">
@@ -115,15 +143,24 @@ export default function AdminLayout({
         </main>
         <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-10">
             <div className="flex justify-around items-center h-16">
-                {navItems.map((item) => (
-                    <Link href={item.href} key={item.href} className={`flex flex-col items-center justify-center gap-1 w-full h-full ${isActive(item.href) ? 'text-primary' : 'text-muted-foreground'}`}>
+                {navItems.map((item) => {
+                     const count = item.countKey ? pendingCounts[item.countKey as keyof typeof pendingCounts] : 0;
+                     return (
+                    <Link href={item.href} key={item.href} className={`relative flex flex-col items-center justify-center gap-1 w-full h-full ${isActive(item.href) ? 'text-primary' : 'text-muted-foreground'}`}>
                         <item.icon className="w-6 h-6"/>
                         <span className="text-xs text-center">{item.label}</span>
+                        {count > 0 && (
+                            <div className="absolute top-1 right-4 text-xs bg-destructive text-destructive-foreground rounded-full h-4 w-4 flex items-center justify-center">
+                                {count}
+                            </div>
+                        )}
                     </Link>
-                ))}
+                )})}
             </div>
         </nav>
       </SidebarInset>
     </SidebarProvider>
   );
 }
+
+    

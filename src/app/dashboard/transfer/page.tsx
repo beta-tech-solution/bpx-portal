@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Send, TrendingUp, Loader2 } from "lucide-react";
+import { Send, TrendingUp, Loader2, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Bar, BarChart, CartesianGrid, XAxis, Tooltip } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart";
@@ -16,12 +16,20 @@ import { auth, db } from '@/lib/firebase/config';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { collection, addDoc, serverTimestamp, query, where, onSnapshot, doc, updateDoc, increment, orderBy, limit } from 'firebase/firestore';
 import { format } from 'date-fns';
+import {
+  Tooltip as UiTooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 
 interface Transfer {
   id: string;
   date: string;
   amount: string;
   status: 'Pending' | 'Transferred' | 'Issue';
+  instruction?: string;
 }
 
 interface TransferChartData {
@@ -64,13 +72,14 @@ export default function TransferPage() {
         const transfers: Transfer[] = [];
         const monthlyData: { [key: string]: number } = {};
         
-        snapshot.forEach(doc => {
+        snapshot.docs.forEach(doc => {
             const data = doc.data();
             transfers.push({
                 id: doc.id,
                 date: data.date,
                 amount: data.amount,
                 status: data.status,
+                instruction: data.instruction
             });
 
              if (data.status === 'Transferred' || data.status === 'Completed') {
@@ -79,9 +88,24 @@ export default function TransferPage() {
                 monthlyData[month] = (monthlyData[month] || 0) + parseFloat(data.amount);
             }
         });
+
+        // Get all transfers for chart data
+        const allTransfersQuery = query(collection(db, 'transfers'), where('userId', '==', user.uid));
+        onSnapshot(allTransfersQuery, (allDocsSnapshot) => {
+            const allMonthlyData: { [key: string]: number } = {};
+            allDocsSnapshot.forEach(doc => {
+                 const data = doc.data();
+                 if (data.status === 'Transferred' || data.status === 'Completed') {
+                    const date = new Date(data.date);
+                    const month = format(date, 'MMM');
+                    allMonthlyData[month] = (allMonthlyData[month] || 0) + parseFloat(data.amount);
+                }
+            });
+            const formattedChartData = Object.entries(allMonthlyData).map(([month, amount]) => ({ month, amount }));
+            setChartData(formattedChartData);
+        });
+
         setRecentTransfers(transfers);
-        const formattedChartData = Object.entries(monthlyData).map(([month, amount]) => ({ month, amount }));
-        setChartData(formattedChartData);
     });
 
     return () => {
@@ -139,6 +163,12 @@ export default function TransferPage() {
     }
   };
 
+  const statusVariant = {
+      Pending: "default",
+      Transferred: "secondary",
+      Issue: "destructive"
+  } as const;
+
   return (
     <div className="max-w-4xl mx-auto grid gap-8 animate-fade-in">
       <div className="grid lg:grid-cols-5 gap-8">
@@ -175,27 +205,46 @@ export default function TransferPage() {
                 <CardTitle className="font-headline">Recent Transfers</CardTitle>
             </CardHeader>
             <CardContent>
-                <Table>
-                <TableHeader>
-                    <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {recentTransfers.map((transfer) => (
-                    <TableRow key={transfer.id}>
-                        <TableCell>
-                        <div className="font-medium">{transfer.date}</div>
-                        <Badge variant={transfer.status === 'Completed' || transfer.status === 'Transferred' ? 'secondary' : (transfer.status === 'Issue' ? 'destructive' : 'default')} className="font-normal mt-1">
-                            {transfer.status}
-                        </Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-medium font-mono">PKR {transfer.amount}</TableCell>
-                    </TableRow>
-                    ))}
-                </TableBody>
-                </Table>
+                <TooltipProvider>
+                    <Table>
+                    <TableHeader>
+                        <TableRow>
+                        <TableHead>Details</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {recentTransfers.map((transfer) => (
+                        <TableRow key={transfer.id}>
+                            <TableCell>
+                            <div className="font-medium">{transfer.date}</div>
+                             <div className="flex items-center gap-2 mt-1">
+                                <Badge variant={statusVariant[transfer.status]} className="font-normal">
+                                    {transfer.status}
+                                </Badge>
+                                {transfer.status === 'Issue' && transfer.instruction && (
+                                     <UiTooltip>
+                                        <TooltipTrigger>
+                                            <Info className="h-4 w-4 text-destructive" />
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>{transfer.instruction}</p>
+                                        </TooltipContent>
+                                    </UiTooltip>
+                                )}
+                             </div>
+                            </TableCell>
+                            <TableCell className="text-right font-medium font-mono">PKR {transfer.amount}</TableCell>
+                        </TableRow>
+                        ))}
+                         {recentTransfers.length === 0 && (
+                            <TableRow>
+                                <TableCell colSpan={2} className="text-center text-muted-foreground">No recent transfers.</TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                    </Table>
+                </TooltipProvider>
             </CardContent>
             </Card>
         </div>

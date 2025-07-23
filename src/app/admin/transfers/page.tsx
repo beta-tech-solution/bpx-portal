@@ -8,6 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CheckCircle, AlertTriangle, MoreHorizontal, Send, Loader2, MessageSquare } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,6 +34,7 @@ interface Transfer {
   amount: string;
   date: string;
   status: TransferStatus;
+  instruction?: string;
 }
 
 const statusVariant = {
@@ -178,6 +181,9 @@ export default function AdminTransfersPage() {
 
 function TransferTable({ data, loading }: { data: Transfer[], loading: boolean }) {
   const { toast } = useToast();
+  const [selectedTransfer, setSelectedTransfer] = useState<Transfer | null>(null);
+  const [instruction, setInstruction] = useState("");
+  const [isInstructionSaving, setIsInstructionSaving] = useState(false);
 
   const handleUpdateStatus = async (transfer: Transfer, newStatus: TransferStatus) => {
     try {
@@ -189,6 +195,28 @@ function TransferTable({ data, loading }: { data: Transfer[], loading: boolean }
       toast({ title: "Error", description: "Could not update transfer status.", variant: "destructive" });
     }
   };
+
+  const handleOpenInstructionDialog = (transfer: Transfer) => {
+      setSelectedTransfer(transfer);
+      setInstruction(transfer.instruction || "");
+  }
+
+  const handleSaveInstruction = async () => {
+      if (!selectedTransfer) return;
+      setIsInstructionSaving(true);
+      try {
+          const transferRef = doc(db, 'transfers', selectedTransfer.id);
+          await updateDoc(transferRef, { instruction: instruction });
+          toast({ title: "Instruction Saved", description: "The instruction has been saved for the user."});
+          setSelectedTransfer(null);
+          setInstruction("");
+      } catch (error) {
+          console.error("Error saving instruction:", error);
+          toast({ title: "Error", description: "Could not save instruction.", variant: "destructive"});
+      } finally {
+          setIsInstructionSaving(false);
+      }
+  }
 
   if (loading) {
     return (
@@ -203,6 +231,7 @@ function TransferTable({ data, loading }: { data: Transfer[], loading: boolean }
   }
 
   return (
+    <>
     <Table>
       <TableHeader>
         <TableRow>
@@ -242,9 +271,11 @@ function TransferTable({ data, loading }: { data: Transfer[], loading: boolean }
                       </DropdownMenuItem>
                     </>
                   )}
-                  <DropdownMenuItem onClick={() => toast({ title: "Feature coming soon!" })}>
-                    <MessageSquare className="mr-2 h-4 w-4" />Add Instruction
+                  {transfer.status === 'Issue' && (
+                  <DropdownMenuItem onClick={() => handleOpenInstructionDialog(transfer)}>
+                    <MessageSquare className="mr-2 h-4 w-4" />Add/Edit Instruction
                   </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </TableCell>
@@ -252,6 +283,32 @@ function TransferTable({ data, loading }: { data: Transfer[], loading: boolean }
         ))}
       </TableBody>
     </Table>
+    <Dialog open={!!selectedTransfer} onOpenChange={(isOpen) => !isOpen && setSelectedTransfer(null)}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Add Instruction for Transfer</DialogTitle>
+                <DialogDescription>
+                    Provide instructions for the user regarding the issue with their transfer of PKR {selectedTransfer?.amount} for {selectedTransfer?.userFullName}.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+                <Textarea
+                    placeholder="Type your instruction here..."
+                    value={instruction}
+                    onChange={(e) => setInstruction(e.target.value)}
+                    rows={4}
+                />
+            </div>
+            <DialogFooter>
+                <Button variant="ghost" onClick={() => setSelectedTransfer(null)}>Cancel</Button>
+                <Button onClick={handleSaveInstruction} disabled={isInstructionSaving}>
+                    {isInstructionSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Instruction
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+    </>
   );
 }
 

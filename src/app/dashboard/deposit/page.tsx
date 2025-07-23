@@ -8,12 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { LanguageToggle } from '@/components/language-toggle';
-import { UploadCloud, Hourglass, TrendingUp, Loader2 } from 'lucide-react';
+import { UploadCloud, Hourglass, TrendingUp, Loader2, Landmark } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Area, AreaChart, CartesianGrid, XAxis, Tooltip } from "recharts"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
 import { auth, db } from '@/lib/firebase/config';
-import { collection, addDoc, serverTimestamp, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { format } from 'date-fns';
 
@@ -32,6 +33,13 @@ const chartConfig = {
 const CLOUDINARY_CLOUD_NAME = "datq7sbdp";
 const CLOUDINARY_UPLOAD_PRESET = "bpxmaster";
 
+interface Account {
+  id: string
+  bankName: string
+  accountNumber: string
+  accountHolder: string
+}
+
 export default function DepositPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [progress, setProgress] = useState(10);
@@ -39,6 +47,8 @@ export default function DepositPage() {
   const [user] = useAuthState(auth);
   const { toast } = useToast();
   const [chartData, setChartData] = useState<DepositChartData[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [loadingAccounts, setLoadingAccounts] = useState(true);
 
   useEffect(() => {
     if (!user) return;
@@ -61,6 +71,19 @@ export default function DepositPage() {
 
     return () => unsubscribe();
   }, [user]);
+
+  useEffect(() => {
+    const fetchAccounts = async () => {
+        setLoadingAccounts(true);
+        const settingsDocRef = doc(db, "settings", "depositAccounts");
+        const docSnap = await getDoc(settingsDocRef);
+        if (docSnap.exists()) {
+            setAccounts(docSnap.data().accounts || []);
+        }
+        setLoadingAccounts(false);
+    }
+    fetchAccounts();
+  }, []);
 
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -193,11 +216,28 @@ export default function DepositPage() {
                         </div>
                         <div>
                             <h3 className="font-semibold mb-2 font-headline">Deposit Account Details</h3>
-                            <div className="p-4 rounded-lg border bg-muted/50 space-y-2 text-sm">
-                                <p><span className="font-semibold">Bank Name:</span> Global Trust Bank</p>
-                                <p><span className="font-semibold">Account Number:</span> 1234567890</p>
-                                <p><span className="font-semibold">Account Holder:</span> BPX Services</p>
-                            </div>
+                            {loadingAccounts ? <Loader2 className="animate-spin"/> : (
+                                <Accordion type="single" collapsible className="w-full" defaultValue={accounts[0]?.id}>
+                                    {accounts.map(account => (
+                                        <AccordionItem value={account.id} key={account.id}>
+                                            <AccordionTrigger className="font-semibold hover:no-underline">
+                                                <div className="flex items-center gap-2">
+                                                    <Landmark className="h-5 w-5 text-primary"/>
+                                                    {account.bankName}
+                                                </div>
+                                            </AccordionTrigger>
+                                            <AccordionContent>
+                                                <div className="p-4 rounded-lg border bg-muted/50 space-y-2 text-sm">
+                                                    <p><span className="font-semibold">Bank Name:</span> {account.bankName}</p>
+                                                    <p><span className="font-semibold">Account Number:</span> {account.accountNumber}</p>
+                                                    <p><span className="font-semibold">Account Holder:</span> {account.accountHolder}</p>
+                                                </div>
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                    ))}
+                                    {accounts.length === 0 && <p className="text-sm text-muted-foreground">No deposit accounts are configured by the admin yet.</p>}
+                                </Accordion>
+                            )}
                         </div>
                          <div>
                             <Label htmlFor="proof" className="font-semibold font-headline">Upload Payment Proof</Label>
