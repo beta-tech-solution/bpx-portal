@@ -20,6 +20,7 @@ import { auth, db } from "@/lib/firebase/config"
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo } from "firebase/auth"
 import { doc, setDoc, getDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
+import ParticlesBackground from "@/components/particles-background"
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
@@ -94,8 +95,9 @@ export default function LoginPage() {
 
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background animate-fade-in">
-      <Card className="w-full max-w-sm mx-4">
+    <div className="flex items-center justify-center min-h-screen bg-background animate-fade-in overflow-hidden">
+      <ParticlesBackground />
+      <Card className="w-full max-w-sm mx-4 z-10 bg-card/80 backdrop-blur-sm">
         <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
                 <Wallet className="w-10 h-10 text-primary"/>

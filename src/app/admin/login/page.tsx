@@ -2,7 +2,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -18,12 +18,26 @@ import { signInWithEmailAndPassword } from "firebase/auth"
 import { auth, db } from "@/lib/firebase/config"
 import { doc, getDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
+import { useAuthState } from "react-firebase-hooks/auth"
+import ParticlesBackground from "@/components/particles-background"
 
 export default function AdminLoginPage() {
     const router = useRouter()
     const { toast } = useToast()
+    const [user, loading] = useAuthState(auth)
     const [showPassword, setShowPassword] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
+
+    useEffect(() => {
+        if (!loading && user) {
+            const userDocRef = doc(db, 'users', user.uid)
+            getDoc(userDocRef).then(userDoc => {
+                if (userDoc.exists() && userDoc.data().role === 'Admin') {
+                    router.push('/admin/dashboard')
+                }
+            })
+        }
+    }, [user, loading, router])
 
     const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
@@ -54,9 +68,18 @@ export default function AdminLoginPage() {
         }
     }
 
+    if(loading) {
+        return (
+             <div className="flex items-center justify-center min-h-screen bg-background">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        )
+    }
+
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
-      <Card className="w-full max-w-sm mx-4">
+    <div className="flex items-center justify-center min-h-screen bg-background overflow-hidden">
+        <ParticlesBackground variant="admin" />
+      <Card className="w-full max-w-sm mx-4 z-10 bg-card/80 backdrop-blur-sm">
         <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
                 <Shield className="w-10 h-10 text-primary"/>

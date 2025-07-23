@@ -66,6 +66,11 @@ export default function AdminLayout({
   });
 
   React.useEffect(() => {
+    if (pathname === '/admin/login') {
+        setIsAuthorizing(false);
+        return;
+    }
+
     if (loadingUser) return;
     if (error) {
         console.error("Auth error:", error);
@@ -105,9 +110,11 @@ export default function AdminLayout({
     });
 
     return () => unsubscribe();
-  }, [user, loadingUser, router, error, toast]);
+  }, [user, loadingUser, router, error, toast, pathname]);
 
   React.useEffect(() => {
+      if (pathname === '/admin/login') return;
+      
       const collections = {
           deposits: collection(db, 'deposits'),
           transfers: collection(db, 'transfers'),
@@ -122,7 +129,7 @@ export default function AdminLayout({
       });
       
       return () => unsubscribes.forEach(unsub => unsub());
-  }, []);
+  }, [pathname]);
 
   const handleLogout = async () => {
     try {
@@ -153,6 +160,10 @@ export default function AdminLayout({
     if (pathname.includes('/admin/users/')) return "User Details";
     const parts = pathname.split('/').pop()?.replace(/-/g, ' ').split(' ') ?? [];
     return parts.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  }
+  
+  if (pathname === '/admin/login') {
+    return <>{children}</>
   }
 
   if (isAuthorizing || loadingUser) {
