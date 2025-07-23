@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -7,10 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { LanguageToggle } from '@/components/language-toggle';
-import { UploadCloud, Hourglass, TrendingUp } from 'lucide-react';
+import { UploadCloud, Hourglass, TrendingUp, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
+import { auth, db, storage } from '@/lib/firebase/config';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useAuthState } from 'react-firebase-hooks/auth';
 
 const chartData = [
     { month: "January", desktop: 186 },
@@ -31,23 +36,70 @@ const chartData = [
 export default function DepositPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [progress, setProgress] = useState(10);
+  const [isLoading, setIsLoading] = useState(false);
+  const [user] = useAuthState(auth);
   const { toast } = useToast();
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const fileInput = (event.target as HTMLFormElement).elements.namedItem('proof') as HTMLInputElement;
-    if (fileInput && fileInput.files && fileInput.files.length > 0) {
-      setIsSubmitted(true);
-      toast({
-        title: "Deposit Submitted",
-        description: "We have received your proof and will confirm it shortly.",
-      })
-    } else {
+    if (!user) {
+        toast({ title: "Error", description: "You must be logged in to make a deposit.", variant: "destructive" });
+        return;
+    }
+    setIsLoading(true);
+
+    const form = event.currentTarget;
+    const amountInput = form.elements.namedItem('amount') as HTMLInputElement;
+    const fileInput = form.elements.namedItem('proof') as HTMLInputElement;
+    
+    const amount = amountInput.value;
+    const file = fileInput.files?.[0];
+
+    if (!amount || !file) {
       toast({
         title: "Error",
-        description: "Please upload a proof of payment.",
+        description: "Please enter an amount and upload a proof of payment.",
         variant: "destructive",
       })
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+        // 1. Upload file to Firebase Storage
+        const filePath = `deposit-proofs/${user.uid}/${Date.now()}_${file.name}`;
+        const storageRef = ref(storage, filePath);
+        await uploadBytes(storageRef, file);
+
+        // 2. Get download URL
+        const proofUrl = await getDownloadURL(storageRef);
+
+        // 3. Add deposit document to Firestore
+        await addDoc(collection(db, 'deposits'), {
+            userId: user.uid,
+            amount,
+            proofUrl,
+            status: 'Pending',
+            date: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
+            createdAt: serverTimestamp()
+        });
+        
+        setIsSubmitted(true);
+        form.reset();
+        toast({
+            title: "Deposit Submitted",
+            description: "We have received your proof and will confirm it shortly.",
+        });
+
+    } catch (error) {
+        console.error("Deposit error:", error);
+        toast({
+            title: "Submission Failed",
+            description: "There was an error submitting your deposit. Please try again.",
+            variant: "destructive",
+        })
+    } finally {
+        setIsLoading(false);
     }
   };
 
@@ -100,8 +152,8 @@ export default function DepositPage() {
                 <CardContent className="grid md:grid-cols-2 gap-8">
                     <div className="space-y-6">
                         <div>
-                            <h3 className="font-semibold mb-2 font-headline">Required Amount</h3>
-                            <p className="text-3xl font-bold text-accent">$100.00 USD</p>
+                            <Label htmlFor="amount" className="font-semibold font-headline">Amount (USD)</Label>
+                            <Input id="amount" name="amount" type="number" placeholder="100.00" required step="0.01" className="mt-2 text-3xl font-bold h-auto p-2" />
                         </div>
                         <div>
                             <h3 className="font-semibold mb-2 font-headline">Deposit Account Details</h3>
@@ -125,8 +177,8 @@ export default function DepositPage() {
                     </div>
                 </CardContent>
                 <CardFooter>
-                    <Button type="submit" className="bg-accent hover:bg-accent/90 text-accent-foreground">
-                        <UploadCloud className="mr-2 h-4 w-4" />
+                    <Button type="submit" className="bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isLoading}>
+                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
                         Submit Deposit
                     </Button>
                 </CardFooter>
