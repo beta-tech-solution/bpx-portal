@@ -1,5 +1,7 @@
+
 "use client"
 
+import { useState, useEffect } from 'react';
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -7,24 +9,24 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { CartesianGrid, Line, LineChart, XAxis, YAxis, Tooltip } from "recharts"
 import { ChartContainer, ChartTooltipContent, ChartTooltip } from "@/components/ui/chart"
-import { ExternalLink } from "lucide-react"
+import { ExternalLink, Loader2 } from "lucide-react"
+import { db, auth } from '@/lib/firebase/config';
+import { collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy, limit } from 'firebase/firestore';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { format, subDays, eachDayOfInterval } from 'date-fns';
 
-const loginActivity = [
-  { date: "2023-11-01", time: "10:00 AM", ip: "192.168.1.1", status: "Success" },
-  { date: "2023-10-30", time: "02:15 PM", ip: "10.0.0.5", status: "Success" },
-  { date: "2023-10-29", time: "09:30 AM", ip: "172.16.0.10", status: "Failed" },
-  { date: "2023-10-28", time: "05:45 PM", ip: "192.168.1.1", status: "Success" },
-]
+interface LoginActivity {
+    id: string;
+    date: string;
+    time: string;
+    ip: string;
+    status: "Success";
+}
 
-const chartData = [
-  { day: "Mon", logins: 4 },
-  { day: "Tue", logins: 3 },
-  { day: "Wed", logins: 5 },
-  { day: "Thu", logins: 2 },
-  { day: "Fri", logins: 6 },
-  { day: "Sat", logins: 8 },
-  { day: "Sun", logins: 7 },
-]
+interface ChartData {
+    day: string;
+    logins: number;
+}
 
 const chartConfig = {
   logins: {
@@ -34,51 +36,138 @@ const chartConfig = {
 }
 
 export default function BpexchLoginPage() {
+    const [user] = useAuthState(auth);
+    const [loginActivity, setLoginActivity] = useState<LoginActivity[]>([]);
+    const [chartData, setChartData] = useState<ChartData[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [isLogging, setIsLogging] = useState(false);
+
+    useEffect(() => {
+        if (!user) return;
+        setLoading(true);
+        const q = query(
+            collection(db, 'bpexch_logins'), 
+            where('userId', '==', user.uid),
+            orderBy('timestamp', 'desc')
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const activity: LoginActivity[] = [];
+            const loginsPerDay: { [key: string]: number } = {};
+
+            const last7Days = eachDayOfInterval({
+                start: subDays(new Date(), 6),
+                end: new Date()
+            });
+
+            last7Days.forEach(day => {
+                loginsPerDay[format(day, 'yyyy-MM-dd')] = 0;
+            });
+            
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const timestamp = (data.timestamp as any).toDate();
+                
+                activity.push({
+                    id: doc.id,
+                    date: format(timestamp, 'yyyy-MM-dd'),
+                    time: format(timestamp, 'p'),
+                    ip: data.ip,
+                    status: 'Success'
+                });
+
+                const dayKey = format(timestamp, 'yyyy-MM-dd');
+                if(dayKey in loginsPerDay) {
+                    loginsPerDay[dayKey]++;
+                }
+            });
+
+            setLoginActivity(activity.slice(0, 5));
+
+            const formattedChartData = Object.entries(loginsPerDay).map(([date, count]) => ({
+                day: format(new Date(date), 'E'),
+                logins: count
+            }));
+            
+            setChartData(formattedChartData);
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, [user]);
+
+    const handleLoginClick = async () => {
+        if(!user) return;
+        setIsLogging(true);
+
+        try {
+            // Fetch IP Address from a third-party service
+            const ipResponse = await fetch('https://api.ipify.org?format=json');
+            if(!ipResponse.ok) throw new Error('Failed to fetch IP');
+            const ipData = await ipResponse.json();
+            const ip = ipData.ip;
+            
+            await addDoc(collection(db, 'bpexch_logins'), {
+                userId: user.uid,
+                ip: ip,
+                timestamp: serverTimestamp(),
+            });
+
+            window.open('https://bpexch.net/Users/Login', '_blank');
+
+        } catch (error) {
+            console.error("Error logging activity:", error);
+        } finally {
+            setIsLogging(false);
+        }
+    }
+
+
   return (
     <div className="max-w-4xl mx-auto grid gap-8 animate-fade-in">
         <Card>
             <CardHeader>
                 <CardTitle className="font-headline">BPExch Account Access</CardTitle>
-                <CardDescription>Login to your BPExch account and view activity.</CardDescription>
+                <CardDescription>Login to your BPExch account. Your access attempts will be logged for security.</CardDescription>
             </CardHeader>
             <CardContent>
-                <Button asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
-                    <Link href="https://bpexch.net/Users/Login" target="_blank">
-                        <ExternalLink className="mr-2 h-4 w-4"/>
-                        Login to BPExch
-                    </Link>
+                <Button onClick={handleLoginClick} className="bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isLogging}>
+                    {isLogging ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <ExternalLink className="mr-2 h-4 w-4"/>}
+                    Login to BPExch
                 </Button>
             </CardContent>
         </Card>
       <div className="grid lg:grid-cols-2 gap-8">
         <Card>
           <CardHeader>
-            <CardTitle className="font-headline">Login Activity</CardTitle>
+            <CardTitle className="font-headline">Recent Login Activity</CardTitle>
           </CardHeader>
           <CardContent>
+            {loading ? <Loader2 className="animate-spin" /> : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
+                  <TableHead>Date & Time</TableHead>
                   <TableHead>IP Address</TableHead>
-                  <TableHead className="text-right">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {loginActivity.map((activity, index) => (
-                  <TableRow key={index}>
+                {loginActivity.length > 0 ? loginActivity.map((activity) => (
+                  <TableRow key={activity.id}>
                     <TableCell>
                       <div className="font-medium">{activity.date}</div>
                       <div className="text-sm text-muted-foreground">{activity.time}</div>
                     </TableCell>
                     <TableCell>{activity.ip}</TableCell>
-                    <TableCell className="text-right">
-                        <Badge variant={activity.status === 'Success' ? 'secondary' : 'destructive'}>{activity.status}</Badge>
-                    </TableCell>
                   </TableRow>
-                ))}
+                )) : (
+                    <TableRow>
+                        <TableCell colSpan={2} className="text-center text-muted-foreground">No recent activity.</TableCell>
+                    </TableRow>
+                )}
               </TableBody>
             </Table>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -87,15 +176,17 @@ export default function BpexchLoginPage() {
             <CardDescription>Your BPExch account access over the last 7 days.</CardDescription>
           </CardHeader>
           <CardContent>
+            {loading ? <Loader2 className="animate-spin"/> : (
             <ChartContainer config={chartConfig} className="h-[200px] w-full">
               <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 0 }}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis dataKey="day" tickLine={false} axisLine={false} tickMargin={8} />
-                <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+                <YAxis tickLine={false} axisLine={false} tickMargin={8} allowDecimals={false} />
                 <Tooltip cursor={{ strokeDasharray: '3 3' }} content={<ChartTooltipContent />} />
                 <Line type="monotone" dataKey="logins" stroke="var(--color-logins)" strokeWidth={2} dot={true} />
               </LineChart>
             </ChartContainer>
+            )}
           </CardContent>
         </Card>
       </div>

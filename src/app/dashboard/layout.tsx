@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { DollarSign, Send, Landmark, LogOut, Wallet, ExternalLink, LayoutDashboard, Loader2 } from "lucide-react";
+import { DollarSign, Send, Landmark, LogOut, Wallet, ExternalLink, LayoutDashboard, Loader2, Settings } from "lucide-react";
 import { auth, db } from "@/lib/firebase/config";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
@@ -32,6 +32,7 @@ const navItems = [
     { href: "/dashboard/transfer", label: "Transfer", icon: Send },
     { href: "/dashboard/withdraw", label: "Withdrawal", icon: Landmark },
     { href: "/dashboard/bpexch-login", label: "BPExch Login", icon: ExternalLink },
+    { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ]
 
 interface UserData {
@@ -95,6 +96,15 @@ export default function DashboardLayout({
     const parts = pathname.split('/').pop()?.replace(/-/g, ' ').split(' ') ?? [];
     return parts.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   }
+
+  const getInitials = (name: string | undefined | null): string => {
+    if (!name) return 'U';
+    const names = name.split(' ');
+    if (names.length > 1) {
+      return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
   
   if (loading) {
       return (
@@ -143,7 +153,7 @@ export default function DashboardLayout({
             <div className="flex items-center gap-3 bg-sidebar-accent/10 p-2 rounded-lg">
                 <Avatar>
                     <AvatarImage src="https://placehold.co/40x40" data-ai-hint="person avatar" alt={userData?.fullName} />
-                    <AvatarFallback>{userData?.fullName?.[0] ?? 'U'}</AvatarFallback>
+                    <AvatarFallback>{getInitials(userData?.fullName)}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 overflow-hidden">
                     <p className="text-sm font-semibold text-sidebar-foreground truncate">{userData?.fullName ?? 'User'}</p>
@@ -181,5 +191,4 @@ export default function DashboardLayout({
     </SidebarProvider>
   );
 }
-
     

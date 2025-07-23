@@ -6,10 +6,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Save, PlusCircle, Trash2, Loader2 } from "lucide-react"
+import { Save, PlusCircle, Trash2, Loader2, User, Mail } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { db } from "@/lib/firebase/config"
-import { doc, getDoc, setDoc } from "firebase/firestore"
+import { db, auth } from "@/lib/firebase/config"
+import { doc, getDoc, setDoc, getDocs, collection } from "firebase/firestore"
+import { Separator } from "@/components/ui/separator"
+import { useAuthState } from "react-firebase-hooks/auth"
+import { updateProfile, updateEmail } from "firebase/auth"
+
 
 interface Account {
   id: string
@@ -23,9 +27,13 @@ export default function AdminSettingsPage() {
     const [accounts, setAccounts] = useState<Account[]>([])
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
+    const [user] = useAuthState(auth)
+    const [adminProfile, setAdminProfile] = useState({ name: '', email: '' })
+    const [profileSaving, setProfileSaving] = useState(false);
+
 
     useEffect(() => {
-        const fetchAccounts = async () => {
+        const fetchSettings = async () => {
             setLoading(true)
             const settingsDocRef = doc(db, "settings", "depositAccounts")
             const docSnap = await getDoc(settingsDocRef)
@@ -36,8 +44,15 @@ export default function AdminSettingsPage() {
             }
             setLoading(false)
         }
-        fetchAccounts()
-    }, [])
+        fetchSettings()
+
+         if(user) {
+            setAdminProfile({
+                name: user.displayName || 'Admin User',
+                email: user.email || 'admin@bpx.com'
+            })
+        }
+    }, [user])
 
     const handleAddAccount = () => {
         setAccounts([...accounts, { id: crypto.randomUUID(), bankName: '', accountHolder: '', accountNumber: '' }])
@@ -55,23 +70,50 @@ export default function AdminSettingsPage() {
         setAccounts(accounts.map(acc => acc.id === id ? { ...acc, [field]: value } : acc))
     }
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSaveAccounts = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
         setSaving(true)
         try {
             const settingsDocRef = doc(db, "settings", "depositAccounts")
             await setDoc(settingsDocRef, { accounts })
             toast({
-                title: "Settings Saved",
+                title: "Bank Accounts Saved",
                 description: "Account details have been updated successfully.",
             });
         } catch (error) {
             console.error("Error saving settings:", error)
-            toast({ title: "Error", description: "Could not save settings.", variant: "destructive" })
+            toast({ title: "Error", description: "Could not save bank accounts.", variant: "destructive" })
         } finally {
             setSaving(false)
         }
     }
+
+    const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setAdminProfile(prev => ({...prev, [name]: value}));
+    }
+
+    const handleSaveProfile = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if(!user) return;
+        setProfileSaving(true);
+        try {
+            if(adminProfile.name !== user.displayName) {
+                await updateProfile(user, { displayName: adminProfile.name });
+            }
+            if(adminProfile.email !== user.email) {
+                // await updateEmail(user, adminProfile.email); // Re-authentication needed for this
+                toast({title: "Email Update Skipped", description: "Updating email requires re-authentication. This feature is not enabled."});
+            }
+            toast({title: "Profile Updated", description: "Your admin profile has been updated."});
+        } catch (error) {
+            console.error("Error updating admin profile:", error);
+            toast({title: "Error", description: "Could not update your profile.", variant: "destructive"});
+        } finally {
+            setProfileSaving(false);
+        }
+    }
+
 
     if (loading) {
         return (
@@ -82,8 +124,33 @@ export default function AdminSettingsPage() {
     }
 
   return (
-    <div className="max-w-2xl mx-auto animate-fade-in">
-        <form onSubmit={handleSubmit}>
+    <div className="max-w-2xl mx-auto animate-fade-in grid gap-8">
+        <form onSubmit={handleSaveProfile}>
+             <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline">Admin Profile</CardTitle>
+                    <CardDescription>Manage your administrator profile details.</CardDescription>
+                </CardHeader>
+                 <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="name">Display Name</Label>
+                        <Input id="name" name="name" value={adminProfile.name} onChange={handleProfileChange} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="email">Email Address</Label>
+                        <Input id="email" name="email" type="email" value={adminProfile.email} onChange={handleProfileChange} />
+                    </div>
+                </CardContent>
+                <CardFooter>
+                     <Button type="submit" disabled={profileSaving}>
+                        {profileSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <User className="mr-2 h-4 w-4" />}
+                        Save Profile
+                    </Button>
+                </CardFooter>
+            </Card>
+        </form>
+
+        <form onSubmit={handleSaveAccounts}>
             <Card>
                 <CardHeader>
                     <CardTitle className="font-headline">Account Details Management</CardTitle>
@@ -117,7 +184,7 @@ export default function AdminSettingsPage() {
                 <CardFooter>
                     <Button type="submit" disabled={saving}>
                         {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                        Save Changes
+                        Save Bank Accounts
                     </Button>
                 </CardFooter>
             </Card>
@@ -125,5 +192,4 @@ export default function AdminSettingsPage() {
     </div>
   )
 }
-
     

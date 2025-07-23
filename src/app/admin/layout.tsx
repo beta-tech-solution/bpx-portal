@@ -27,7 +27,8 @@ import {
   Users,
   Settings,
   Shield,
-  LayoutDashboard
+  LayoutDashboard,
+  ExternalLink
 } from "lucide-react";
 import { db } from "@/lib/firebase/config";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
@@ -38,6 +39,7 @@ const navItems = [
     { href: "/admin/deposits", label: "Deposits", icon: DollarSign, countKey: 'deposits' },
     { href: "/admin/transfers", label: "Transfers", icon: Send, countKey: 'transfers' },
     { href: "/admin/withdrawals", label: "Withdrawals", icon: Landmark, countKey: 'withdrawals' },
+    { href: "/admin/bpexch-activity", label: "BPExch Activity", icon: ExternalLink, countKey: null },
     { href: "/admin/settings", label: "Settings", icon: Settings, countKey: null },
 ]
 
@@ -162,5 +164,4 @@ export default function AdminLayout({
     </SidebarProvider>
   );
 }
-
     
