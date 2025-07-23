@@ -19,39 +19,38 @@ const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({ className, va
     if (!ctx) return;
 
     let animationFrameId: number;
-    let particles: Particle[] = [];
     
     const options = {
       default: {
-        particleColor: "hsla(231, 75%, 80%, 0.8)",
-        lineColor: "hsla(231, 75%, 70%, 0.4)",
-        particleAmount: 70,
-        defaultRadius: 2.5,
-        variantRadius: 2,
-        defaultSpeed: 0.1,
-        variantSpeed: 0.2,
-        linkRadius: 220,
-        type: 'lines',
+        particleColor: "hsla(231, 75%, 80%, 0.5)",
+        lineColor: "hsla(231, 75%, 70%, 0.3)",
+        particleAmount: 40,
+        defaultRadius: 1.5,
+        variantRadius: 1,
+        defaultSpeed: 0.2,
+        variantSpeed: 0.4,
+        linkRadius: 200,
+        type: 'growth',
       },
       signup: {
         particleColor: "hsla(174, 90%, 75%, 0.7)",
-        lineColor: "hsla(174, 90%, 65%, 0.3)",
-        particleAmount: 80,
-        defaultRadius: 2,
+        lineColor: "hsla(174, 90%, 65%, 0.4)",
+        particleAmount: 50,
+        defaultRadius: 1.5,
         variantRadius: 1.5,
-        defaultSpeed: 0.15,
-        variantSpeed: 0.25,
-        linkRadius: 200,
-        type: 'lines',
+        defaultSpeed: 0.3,
+        variantSpeed: 0.5,
+        linkRadius: 220,
+        type: 'growth',
       },
       admin: {
         particleColor: "hsla(174, 100%, 70%, 0.6)",
         lineColor: "hsla(174, 100%, 60%, 0.15)",
         particleAmount: 60,
         defaultRadius: 1.5,
-        variantRadius: 1.5,
-        defaultSpeed: 0.2,
-        variantSpeed: 0.5,
+        variantRadius: 1,
+        defaultSpeed: 0.1,
+        variantSpeed: 0.2,
         linkRadius: 180,
         type: 'network',
       }
@@ -61,18 +60,30 @@ const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({ className, va
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    class Particle {
-      x: number;
-      y: number;
-      radius: number;
+    let particles: (Particle | GrowthParticle)[] = [];
+
+    abstract class BaseParticle {
+        x: number;
+        y: number;
+        radius: number;
+        
+        constructor() {
+            this.x = Math.random() * canvas.width;
+            this.y = Math.random() * canvas.height;
+            this.radius = config.defaultRadius + Math.random() * config.variantRadius;
+        }
+
+        abstract draw(context: CanvasRenderingContext2D): void;
+        abstract update(): void;
+    }
+
+    class NetworkParticle extends BaseParticle {
       speed: number;
       directionAngle: number;
       vector: { x: number, y: number };
 
       constructor() {
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height;
-        this.radius = config.defaultRadius + Math.random() * config.variantRadius;
+        super();
         this.speed = config.defaultSpeed + Math.random() * config.variantSpeed;
         this.directionAngle = Math.floor(Math.random() * 360);
         this.vector = {
@@ -81,8 +92,7 @@ const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({ className, va
         };
       }
 
-      draw() {
-        if(!ctx) return;
+      draw(ctx: CanvasRenderingContext2D) {
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
         ctx.closePath();
@@ -93,41 +103,76 @@ const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({ className, va
       update() {
         this.x += this.vector.x;
         this.y += this.vector.y;
+        this.resetPosition();
+      }
 
+      resetPosition() {
         if (this.x < -this.radius) this.x = canvas.width + this.radius;
         if (this.x > canvas.width + this.radius) this.x = -this.radius;
         if (this.y < -this.radius) this.y = canvas.height + this.radius;
         if (this.y > canvas.height + this.radius) this.y = -this.radius;
       }
     }
+    
+    class GrowthParticle extends BaseParticle {
+        speed: number;
+        constructor() {
+            super();
+            this.y = canvas.height + this.radius;
+            this.speed = config.defaultSpeed + Math.random() * config.variantSpeed;
+        }
+        
+        draw(ctx: CanvasRenderingContext2D) {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = config.particleColor;
+            ctx.fill();
+
+            // Draw a tail
+            ctx.beginPath();
+            ctx.moveTo(this.x, this.y);
+            ctx.lineTo(this.x, this.y + this.radius * 4);
+            ctx.lineWidth = this.radius * 0.5;
+            ctx.strokeStyle = config.lineColor;
+            ctx.stroke();
+        }
+
+        update() {
+            this.y -= this.speed;
+            if(this.y < -this.radius * 5) {
+                this.y = canvas.height + this.radius;
+                this.x = Math.random() * canvas.width;
+            }
+        }
+    }
+
 
     const createParticles = () => {
       particles = [];
       for (let i = 0; i < config.particleAmount; i++) {
-        particles.push(new Particle());
+        if(config.type === 'growth'){
+            particles.push(new GrowthParticle());
+        } else {
+            particles.push(new NetworkParticle());
+        }
       }
     };
     
-    const linkParticles = () => {
-        if(!ctx || !config.linkRadius) return;
-        for (let i = 0; i < particles.length; i++) {
-            for (let j = i + 1; j < particles.length; j++) {
-                const dx = particles[i].x - particles[j].x;
-                const dy = particles[i].y - particles[j].y;
+    const linkNetworkParticles = () => {
+        if(!ctx) return;
+        const networkParticles = particles as NetworkParticle[];
+        for (let i = 0; i < networkParticles.length; i++) {
+            for (let j = i + 1; j < networkParticles.length; j++) {
+                const dx = networkParticles[i].x - networkParticles[j].x;
+                const dy = networkParticles[i].y - networkParticles[j].y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
                 if (distance < config.linkRadius) {
                     const opacity = 1 - (distance / config.linkRadius);
                     ctx.beginPath();
-                    ctx.moveTo(particles[i].x, particles[i].y);
-                    ctx.lineTo(particles[j].x, particles[j].y);
-                    
-                    if(config.type === 'network') {
-                         ctx.strokeStyle = config.lineColor.replace(/,\s*\d*\.?\d*\)/, `, ${opacity})`);
-                    } else {
-                         ctx.strokeStyle = config.lineColor;
-                    }
-                   
-                    ctx.lineWidth = config.type === 'network' ? 0.8 : 0.5;
+                    ctx.moveTo(networkParticles[i].x, networkParticles[i].y);
+                    ctx.lineTo(networkParticles[j].x, networkParticles[j].y);
+                    ctx.strokeStyle = config.lineColor.replace(/,\s*\d*\.?\d*\)/, `, ${opacity})`);
+                    ctx.lineWidth = 0.8;
                     ctx.stroke();
                 }
             }
@@ -139,21 +184,25 @@ const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({ className, va
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       particles.forEach(particle => {
         particle.update();
-        particle.draw();
+        particle.draw(ctx);
       });
-      linkParticles();
+      
+      if(config.type === 'network') {
+          linkNetworkParticles();
+      }
+
       animationFrameId = requestAnimationFrame(animate);
     };
 
-    createParticles();
-    animate();
-    
     const handleResize = () => {
         if (!canvas) return;
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         createParticles();
     }
+    
+    createParticles();
+    animate();
     
     window.addEventListener('resize', handleResize);
 
