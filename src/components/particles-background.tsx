@@ -24,25 +24,23 @@ const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({ className, va
       default: {
         particleColor: "hsla(231, 75%, 80%, 0.5)",
         lineColor: "hsla(231, 75%, 70%, 0.3)",
-        particleAmount: 50,
+        particleAmount: 80,
         defaultRadius: 2,
         variantRadius: 2,
         defaultSpeed: 0.1,
         variantSpeed: 0.2,
         linkRadius: 200,
-        type: 'network',
         icons: true,
       },
       signup: {
         particleColor: "hsla(174, 90%, 75%, 0.7)",
         lineColor: "hsla(174, 90%, 65%, 0.4)",
-        particleAmount: 50,
+        particleAmount: 80,
         defaultRadius: 2,
         variantRadius: 2,
         defaultSpeed: 0.1,
         variantSpeed: 0.2,
         linkRadius: 200,
-        type: 'network',
         icons: true,
       },
       admin: {
@@ -54,7 +52,6 @@ const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({ className, va
         defaultSpeed: 0.2,
         variantSpeed: 0.3,
         linkRadius: 180,
-        type: 'network',
         icons: false,
       }
     };
@@ -149,35 +146,8 @@ const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({ className, va
                     ctx.strokeStyle = config.lineColor.replace(/,\s*\d*\.?\d*\)/, `, ${opacity})`);
                     ctx.lineWidth = 0.8;
                     ctx.stroke();
-
-                    // Add smaller traveling particles along the line
-                    if (Math.random() > 0.99) { // low probability to reduce clutter
-                        const travelingParticle = {
-                            x: particles[i].x,
-                            y: particles[i].y,
-                            targetX: particles[j].x,
-                            targetY: particles[j].y,
-                            progress: 0,
-                            speed: Math.random() * 0.005 + 0.005
-                        };
-                        animateTravelingParticle(ctx, travelingParticle);
-                    }
                 }
             }
-        }
-    }
-
-    const animateTravelingParticle = (ctx: CanvasRenderingContext2D, p: any) => {
-        p.progress += p.speed;
-        if(p.progress < 1){
-            p.x = p.x + (p.targetX - p.x) * p.progress;
-            p.y = p.y + (p.targetY - p.y) * p.progress;
-
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
-            ctx.fillStyle = config.particleColor;
-            ctx.fill();
-            requestAnimationFrame(() => animateTravelingParticle(ctx, p));
         }
     }
 
@@ -211,6 +181,13 @@ const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({ className, va
                     ready = true;
                     createParticles();
                     if(!animationFrameId) animate();
+                }
+            }
+            // Handle cases where the image might already be loaded/cached
+            if (icon.complete) {
+                loadedCount++;
+                 if (loadedCount === icons.length) {
+                    ready = true;
                 }
             }
         });
