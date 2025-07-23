@@ -5,8 +5,26 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LanguageToggle } from '@/components/language-toggle';
-import { Landmark } from "lucide-react";
+import { Landmark, TrendingDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
+
+const chartData = [
+    { month: "January", desktop: 120 },
+    { month: "February", desktop: 150 },
+    { month: "March", desktop: 100 },
+    { month: "April", desktop: 180 },
+    { month: "May", desktop: 90 },
+    { month: "June", desktop: 200 },
+  ]
+  
+  const chartConfig = {
+    desktop: {
+      label: "Withdrawals",
+      color: "hsl(var(--destructive))",
+    },
+  } satisfies ChartConfig
 
 export default function WithdrawPage() {
   const { toast } = useToast();
@@ -22,7 +40,7 @@ export default function WithdrawPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto grid gap-8 animate-fade-in">
       <Card>
         <form onSubmit={handleWithdraw}>
         <CardHeader>
@@ -82,6 +100,48 @@ export default function WithdrawPage() {
         </CardFooter>
         </form>
       </Card>
+
+       <Card>
+        <CardHeader className="items-center">
+            <TrendingDown className="w-8 h-8 text-destructive" />
+            <CardTitle className="font-headline">Your Withdrawal History</CardTitle>
+            <CardDescription>
+            Monthly withdrawal amounts over the last 6 months.
+            </CardDescription>
+        </CardHeader>
+        <CardContent>
+            <ChartContainer config={chartConfig} className="h-[200px] w-full">
+            <AreaChart
+                accessibilityLayer
+                data={chartData}
+                margin={{
+                left: 12,
+                right: 12,
+                }}
+            >
+                <CartesianGrid vertical={false} />
+                <XAxis
+                dataKey="month"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tickFormatter={(value) => value.slice(0, 3)}
+                />
+                <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent indicator="dot" />}
+                />
+                <Area
+                dataKey="desktop"
+                type="natural"
+                fill="var(--color-desktop)"
+                fillOpacity={0.4}
+                stroke="var(--color-desktop)"
+                />
+            </AreaChart>
+            </ChartContainer>
+        </CardContent>
+        </Card>
     </div>
   );
 }

@@ -17,7 +17,14 @@ import {
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { DollarSign, Send, Landmark, User, LogOut, Wallet } from "lucide-react";
+import { DollarSign, Send, Landmark, LogOut, Wallet, ExternalLink } from "lucide-react";
+
+const navItems = [
+    { href: "/dashboard/deposit", label: "Deposit", icon: DollarSign },
+    { href: "/dashboard/transfer", label: "Transfer", icon: Send },
+    { href: "/dashboard/withdraw", label: "Withdrawal", icon: Landmark },
+    { href: "/dashboard/bpexch-login", label: "BPExch Login", icon: ExternalLink },
+]
 
 export default function DashboardLayout({
   children,
@@ -44,36 +51,18 @@ export default function DashboardLayout({
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                onClick={() => router.push("/dashboard/deposit")}
-                isActive={isActive("/dashboard/deposit")}
-                tooltip="Deposit"
-              >
-                <DollarSign />
-                <span>Deposit</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                onClick={() => router.push("/dashboard/transfer")}
-                isActive={isActive("/dashboard/transfer")}
-                tooltip="Transfer"
-              >
-                <Send />
-                <span>Transfer</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                onClick={() => router.push("/dashboard/withdraw")}
-                isActive={isActive("/dashboard/withdraw")}
-                tooltip="Withdrawal"
-              >
-                <Landmark />
-                <span>Withdrawal</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+            {navItems.map((item) => (
+                 <SidebarMenuItem key={item.href}>
+                 <SidebarMenuButton
+                   onClick={() => router.push(item.href)}
+                   isActive={isActive(item.href)}
+                   tooltip={item.label}
+                 >
+                   <item.icon />
+                   <span>{item.label}</span>
+                 </SidebarMenuButton>
+               </SidebarMenuItem>
+            ))}
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter className="p-4">
@@ -98,12 +87,22 @@ export default function DashboardLayout({
                 <SidebarTrigger />
             </div>
             <h2 className="text-2xl font-bold font-headline text-center md:text-left flex-1 md:flex-none">
-                {pathname.split('/').pop()?.charAt(0).toUpperCase() + pathname.split('/').pop()!.slice(1)}
+                {pathname.split('/').pop()?.replace('-', ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
             </h2>
         </header>
-        <main className="flex-1 p-4 md:p-6">
+        <main className="flex-1 p-4 md:p-6 mb-20 md:mb-0">
             {children}
         </main>
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-10">
+            <div className="flex justify-around items-center h-16">
+                {navItems.map((item) => (
+                    <Link href={item.href} key={item.href} className={`flex flex-col items-center justify-center gap-1 w-full h-full ${isActive(item.href) ? 'text-primary' : 'text-muted-foreground'}`}>
+                        <item.icon className="w-6 h-6"/>
+                        <span className="text-xs">{item.label}</span>
+                    </Link>
+                ))}
+            </div>
+        </nav>
       </SidebarInset>
     </SidebarProvider>
   );

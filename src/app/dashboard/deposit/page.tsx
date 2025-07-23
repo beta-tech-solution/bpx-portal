@@ -7,8 +7,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { LanguageToggle } from '@/components/language-toggle';
-import { UploadCloud, CheckCircle2, Hourglass } from 'lucide-react';
+import { UploadCloud, Hourglass, TrendingUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
+
+const chartData = [
+    { month: "January", desktop: 186 },
+    { month: "February", desktop: 305 },
+    { month: "March", desktop: 237 },
+    { month: "April", desktop: 73 },
+    { month: "May", desktop: 209 },
+    { month: "June", desktop: 214 },
+  ]
+  
+  const chartConfig = {
+    desktop: {
+      label: "Deposits",
+      color: "hsl(var(--primary))",
+    },
+  } satisfies ChartConfig
 
 export default function DepositPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -23,7 +41,6 @@ export default function DepositPage() {
       toast({
         title: "Deposit Submitted",
         description: "We have received your proof and will confirm it shortly.",
-        variant: "default",
       })
     } else {
       toast({
@@ -51,10 +68,10 @@ export default function DepositPage() {
 
   if (isSubmitted) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center h-full animate-fade-in">
         <Card className="w-full max-w-lg">
           <CardHeader className="items-center text-center">
-            <Hourglass className="w-12 h-12 text-primary mb-2" />
+            <Hourglass className="w-12 h-12 text-primary mb-2 animate-spin-slow" />
             <CardTitle className="font-headline">Deposit Awaiting Confirmation</CardTitle>
             <CardDescription>Your deposit is being reviewed by our team.</CardDescription>
           </CardHeader>
@@ -73,7 +90,7 @@ export default function DepositPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto grid gap-8 animate-fade-in">
         <Card>
             <CardHeader>
                 <CardTitle className="font-headline">Deposit Funds</CardTitle>
@@ -115,6 +132,47 @@ export default function DepositPage() {
                 </CardFooter>
             </form>
         </Card>
+         <Card>
+            <CardHeader className="items-center">
+              <TrendingUp className="w-8 h-8 text-primary" />
+              <CardTitle className="font-headline">Your Deposit Trends</CardTitle>
+              <CardDescription>
+                Monthly deposit amounts over the last 6 months.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={chartConfig} className="h-[200px] w-full">
+                <AreaChart
+                  accessibilityLayer
+                  data={chartData}
+                  margin={{
+                    left: 12,
+                    right: 12,
+                  }}
+                >
+                  <CartesianGrid vertical={false} />
+                  <XAxis
+                    dataKey="month"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    tickFormatter={(value) => value.slice(0, 3)}
+                  />
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent indicator="dot" />}
+                  />
+                  <Area
+                    dataKey="desktop"
+                    type="natural"
+                    fill="var(--color-desktop)"
+                    fillOpacity={0.4}
+                    stroke="var(--color-desktop)"
+                  />
+                </AreaChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
     </div>
   );
 }
