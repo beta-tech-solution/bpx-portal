@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { ArrowDownLeft, ArrowUpRight, Wallet, Send, FileText } from "lucide-react"
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from "recharts"
+import { ArrowDownLeft, ArrowUpRight, Wallet, Send, FileText, TrendingUp, TrendingDown } from "lucide-react"
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Area, AreaChart } from "recharts"
 import { ChartContainer, ChartTooltipContent, ChartTooltip, ChartConfig } from "@/components/ui/chart"
 
 const accountSummary = {
@@ -25,19 +25,39 @@ const recentTransactions = [
   { id: "txn_5", type: "Withdrawal", date: "2023-10-30", amount: "$25.50", status: "Rejected" },
 ];
 
-const chartData = [
-  { month: "Jan", deposits: 400, withdrawals: 240, transfers: 100 },
-  { month: "Feb", deposits: 300, withdrawals: 139, transfers: 120 },
-  { month: "Mar", deposits: 200, withdrawals: 980, transfers: 50 },
-  { month: "Apr", deposits: 278, withdrawals: 390, transfers: 200 },
-  { month: "May", deposits: 189, withdrawals: 480, transfers: 150 },
-  { month: "Jun", deposits: 239, withdrawals: 380, transfers: 80 },
+const depositsData = [
+  { month: "Jan", amount: 400 },
+  { month: "Feb", amount: 300 },
+  { month: "Mar", amount: 200 },
+  { month: "Apr", amount: 278 },
+  { month: "May", amount: 189 },
+  { month: "Jun", amount: 239 },
+];
+const withdrawalsData = [
+  { month: "Jan", amount: 240 },
+  { month: "Feb", amount: 139 },
+  { month: "Mar", amount: 980 },
+  { month: "Apr", amount: 390 },
+  { month: "May", amount: 480 },
+  { month: "Jun", amount: 380 },
+];
+const transfersData = [
+  { month: "Jan", amount: 100 },
+  { month: "Feb", amount: 120 },
+  { month: "Mar", amount: 50 },
+  { month: "Apr", amount: 200 },
+  { month: "May", amount: 150 },
+  { month: "Jun", amount: 80 },
 ];
 
-const chartConfig = {
-  deposits: { label: "Deposits", color: "hsl(var(--primary))" },
-  withdrawals: { label: "Withdrawals", color: "hsl(var(--destructive))" },
-  transfers: { label: "Transfers", color: "hsl(var(--accent))" },
+const depositsChartConfig = {
+  amount: { label: "Deposits", color: "hsl(var(--primary))" },
+} satisfies ChartConfig;
+const withdrawalsChartConfig = {
+    amount: { label: "Withdrawals", color: "hsl(var(--destructive))" },
+} satisfies ChartConfig;
+const transfersChartConfig = {
+    amount: { label: "Transfers", color: "hsl(var(--accent))" },
 } satisfies ChartConfig;
 
 
@@ -93,28 +113,60 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="font-headline">Account Activity</CardTitle>
-            <CardDescription>Your transaction history over the last 6 months.</CardDescription>
-          </CardHeader>
-          <CardContent>
-             <ChartContainer config={chartConfig} className="h-[300px] w-full">
-                <BarChart data={chartData}>
-                    <CartesianGrid vertical={false} />
-                    <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
-                    <YAxis />
-                    <Tooltip content={<ChartTooltipContent />} />
-                    <Legend />
-                    <Bar dataKey="deposits" fill="var(--color-deposits)" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="withdrawals" fill="var(--color-withdrawals)" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="transfers" fill="var(--color-transfers)" radius={[4, 4, 0, 0]} />
-                </BarChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-
+      <div className="grid lg:grid-cols-2 gap-8">
+        <div className="grid gap-8">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline flex items-center gap-2"><TrendingUp className="h-5 w-5 text-primary"/>Deposit History</CardTitle>
+                    <CardDescription>Your deposit history over the last 6 months.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ChartContainer config={depositsChartConfig} className="h-[200px] w-full">
+                        <AreaChart accessibilityLayer data={depositsData} margin={{left: 12, right: 12,}} >
+                            <CartesianGrid vertical={false} />
+                            <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value.slice(0, 3)} />
+                            <YAxis tickMargin={8} />
+                            <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
+                            <Area dataKey="amount" type="natural" fill="var(--color-amount)" fillOpacity={0.4} stroke="var(--color-amount)" />
+                        </AreaChart>
+                    </ChartContainer>
+                </CardContent>
+            </Card>
+             <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline flex items-center gap-2"><TrendingDown className="h-5 w-5 text-destructive"/>Withdrawal History</CardTitle>
+                    <CardDescription>Your withdrawal history over the last 6 months.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ChartContainer config={withdrawalsChartConfig} className="h-[200px] w-full">
+                        <AreaChart accessibilityLayer data={withdrawalsData} margin={{left: 12, right: 12,}} >
+                            <CartesianGrid vertical={false} />
+                            <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value.slice(0, 3)} />
+                            <YAxis tickMargin={8} />
+                            <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
+                            <Area dataKey="amount" type="natural" fill="var(--color-amount)" fillOpacity={0.4} stroke="var(--color-amount)" />
+                        </AreaChart>
+                    </ChartContainer>
+                </CardContent>
+            </Card>
+             <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline flex items-center gap-2"><Send className="h-5 w-5"/>Transfer History</CardTitle>
+                    <CardDescription>Your transfer history over the last 6 months.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ChartContainer config={transfersChartConfig} className="h-[200px] w-full">
+                        <BarChart accessibilityLayer data={transfersData} >
+                             <CartesianGrid vertical={false} />
+                            <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
+                            <YAxis />
+                            <Tooltip content={<ChartTooltipContent />} />
+                            <Bar dataKey="amount" fill="var(--color-amount)" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                    </ChartContainer>
+                </CardContent>
+            </Card>
+        </div>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="font-headline">Recent Transactions</CardTitle>

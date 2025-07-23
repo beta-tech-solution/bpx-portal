@@ -2,9 +2,9 @@
 "use client"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Bar, BarChart, CartesianGrid, Legend, Tooltip, XAxis, YAxis } from "recharts"
+import { Bar, BarChart, CartesianGrid, Legend, Tooltip, XAxis, YAxis, ResponsiveContainer, AreaChart, Area } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
-import { DollarSign, Users, Landmark, Send, AlertTriangle } from "lucide-react"
+import { DollarSign, Users, Landmark, Send, AlertTriangle, ArrowDownLeft, ArrowUpRight } from "lucide-react"
 
 const overviewData = {
   totalUsers: 150,
@@ -13,17 +13,49 @@ const overviewData = {
   pendingTransfers: 8,
 };
 
-const activityData = [
-  { name: 'Deposits', pending: 12, completed: 150, rejected: 10 },
-  { name: 'Withdrawals', pending: 5, completed: 80, rejected: 3 },
-  { name: 'Transfers', pending: 8, completed: 120, rejected: 1 },
+const depositsData = [
+  { month: "Jan", pending: 5, approved: 30 },
+  { month: "Feb", pending: 8, approved: 45 },
+  { month: "Mar", pending: 12, approved: 60 },
+  { month: "Apr", pending: 7, approved: 50 },
+  { month: "May", pending: 10, approved: 70 },
+  { month: "Jun", pending: 12, approved: 75 },
 ];
 
-const chartConfig = {
+const withdrawalsData = [
+  { month: "Jan", pending: 2, approved: 20 },
+  { month: "Feb", pending: 3, approved: 25 },
+  { month: "Mar", pending: 5, approved: 40 },
+  { month: "Apr", pending: 4, approved: 30 },
+  { month: "May", pending: 6, approved: 50 },
+  { month: "Jun", pending: 5, approved: 45 },
+];
+
+const transfersData = [
+    { month: "Jan", pending: 4, completed: 40 },
+    { month: "Feb", pending: 6, completed: 55 },
+    { month: "Mar", pending: 8, completed: 70 },
+    { month: "Apr", pending: 5, completed: 60 },
+    { month: "May", pending: 7, completed: 80 },
+    { month: "Jun", pending: 8, completed: 90 },
+];
+
+
+const depositsChartConfig = {
   pending: { label: "Pending", color: "hsl(var(--primary))" },
-  completed: { label: "Completed", color: "hsl(var(--accent))" },
-  rejected: { label: "Rejected", color: "hsl(var(--destructive))" },
+  approved: { label: "Approved", color: "hsl(var(--accent))" },
 } satisfies ChartConfig;
+
+const withdrawalsChartConfig = {
+    pending: { label: "Pending", color: "hsl(var(--primary))" },
+    approved: { label: "Approved", color: "hsl(var(--destructive))" },
+} satisfies ChartConfig;
+
+const transfersChartConfig = {
+    pending: { label: "Pending", color: "hsl(var(--primary))" },
+    completed: { label: "Completed", color: "hsl(var(--accent))" },
+} satisfies ChartConfig;
+
 
 export default function AdminDashboardPage() {
   return (
@@ -71,26 +103,65 @@ export default function AdminDashboardPage() {
             </Card>
         </div>
 
-        <Card>
-            <CardHeader>
-                <CardTitle className="font-headline">Transaction Overview</CardTitle>
-                <CardDescription>Current status of all transactions.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <ChartContainer config={chartConfig} className="h-[300px] w-full">
-                    <BarChart data={activityData} layout="vertical" margin={{ left: 10, right: 10 }}>
-                        <CartesianGrid horizontal={false} />
-                        <XAxis type="number" />
-                        <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} width={80} />
-                        <Tooltip content={<ChartTooltipContent />} />
-                        <Legend />
-                        <Bar dataKey="pending" stackId="a" fill="var(--color-pending)" radius={[0, 4, 4, 0]} />
-                        <Bar dataKey="completed" stackId="a" fill="var(--color-completed)" />
-                        <Bar dataKey="rejected" stackId="a" fill="var(--color-rejected)" radius={[4, 0, 0, 4]} />
-                    </BarChart>
-                </ChartContainer>
-            </CardContent>
-        </Card>
+        <div className="grid lg:grid-cols-1 gap-8">
+             <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline flex items-center gap-2"><ArrowDownLeft className="h-5 w-5 text-green-500" />Deposit Trends</CardTitle>
+                    <CardDescription>Pending vs. Approved deposits over the last 6 months.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ChartContainer config={depositsChartConfig} className="h-[250px] w-full">
+                        <BarChart data={depositsData}>
+                            <CartesianGrid vertical={false} />
+                            <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
+                            <YAxis />
+                            <Tooltip content={<ChartTooltipContent />} />
+                            <Legend />
+                            <Bar dataKey="pending" stackId="a" fill="var(--color-pending)" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="approved" stackId="a" fill="var(--color-approved)" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                    </ChartContainer>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                     <CardTitle className="font-headline flex items-center gap-2"><ArrowUpRight className="h-5 w-5 text-red-500" />Withdrawal Trends</CardTitle>
+                    <CardDescription>Pending vs. Approved withdrawals over the last 6 months.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ChartContainer config={withdrawalsChartConfig} className="h-[250px] w-full">
+                        <BarChart data={withdrawalsData}>
+                            <CartesianGrid vertical={false} />
+                            <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
+                            <YAxis />
+                            <Tooltip content={<ChartTooltipContent />} />
+                            <Legend />
+                            <Bar dataKey="pending" stackId="a" fill="var(--color-pending)" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="approved" stackId="a" fill="var(--color-approved)" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                    </ChartContainer>
+                </CardContent>
+            </Card>
+             <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline flex items-center gap-2"><Send className="h-5 w-5 text-muted-foreground" />Transfer Trends</CardTitle>
+                    <CardDescription>Pending vs. Completed transfers over the last 6 months.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ChartContainer config={transfersChartConfig} className="h-[250px] w-full">
+                         <AreaChart data={transfersData} margin={{ left: 12, right: 12 }}>
+                            <CartesianGrid vertical={false} />
+                            <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
+                            <YAxis tickMargin={8} />
+                            <Tooltip content={<ChartTooltipContent indicator="dot" />} />
+                            <Legend />
+                            <Area type="monotone" dataKey="pending" stackId="1" stroke="var(--color-pending)" fill="var(--color-pending)" fillOpacity={0.4} />
+                            <Area type="monotone" dataKey="completed" stackId="1" stroke="var(--color-completed)" fill="var(--color-completed)" fillOpacity={0.4} />
+                        </AreaChart>
+                    </ChartContainer>
+                </CardContent>
+            </Card>
+        </div>
     </div>
   )
 }
