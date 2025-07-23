@@ -69,7 +69,7 @@ export default function AdminLayout({
     if (loadingUser) return;
     if (error) {
         console.error("Auth error:", error);
-        router.push('/login');
+        router.push('/admin/login');
         return;
     }
     if (!user) {
@@ -94,8 +94,14 @@ export default function AdminLayout({
         }
       } else {
          toast({ title: "Access Denied", description: "User profile not found.", variant: "destructive" });
-         router.push('/login');
+         signOut(auth);
+         router.push('/admin/login');
       }
+    }, (err) => {
+        console.error("Firestore snapshot error:", err);
+        toast({ title: "Error", description: "Could not verify admin status.", variant: "destructive" });
+        signOut(auth);
+        router.push('/admin/login');
     });
 
     return () => unsubscribe();
