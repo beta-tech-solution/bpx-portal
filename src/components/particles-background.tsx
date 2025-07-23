@@ -24,23 +24,21 @@ const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({ className, va
     const options = {
       default: {
         particleColor: "hsla(231, 75%, 80%, 0.5)",
-        lineColor: "hsla(231, 75%, 70%, 0.1)",
+        particleAmount: 40,
+        defaultRadius: 2,
+        variantRadius: 2,
+        defaultSpeed: 0.1,
+        variantSpeed: 0.5,
+      },
+      admin: {
+        particleColor: "hsla(174, 100%, 70%, 0.5)",
+        lineColor: "hsla(174, 100%, 60%, 0.08)",
         particleAmount: 60,
         defaultRadius: 1.5,
         variantRadius: 1.5,
         defaultSpeed: 0.3,
         variantSpeed: 0.7,
         linkRadius: 180,
-      },
-      admin: {
-        particleColor: "hsla(174, 100%, 70%, 0.5)",
-        lineColor: "hsla(174, 100%, 60%, 0.08)",
-        particleAmount: 40,
-        defaultRadius: 2,
-        variantRadius: 2,
-        defaultSpeed: 0.2,
-        variantSpeed: 0.5,
-        linkRadius: 200,
       }
     };
     const config = options[variant];
@@ -78,24 +76,27 @@ const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({ className, va
       }
 
       update() {
+        if (this.x > canvas.width + 5 || this.x < -5 || this.y > canvas.height + 5 || this.y < -5) {
+          // Reset particle to a random position on the opposite side
+          if (this.x > canvas.width + 5) this.x = -5;
+          else if (this.x < -5) this.x = canvas.width + 5;
+          if (this.y > canvas.height + 5) this.y = -5;
+          else if (this.y < -5) this.y = canvas.height + 5;
+        }
         this.x += this.vector.x;
         this.y += this.vector.y;
-
-        if (this.x > canvas.width + 5 || this.x < -5 || this.y > canvas.height + 5 || this.y < -5) {
-            this.x = Math.random() * canvas.width;
-            this.y = Math.random() * canvas.height;
-        }
       }
     }
 
     const createParticles = () => {
+      particles = [];
       for (let i = 0; i < config.particleAmount; i++) {
         particles.push(new Particle());
       }
     };
     
     const linkParticles = () => {
-        if(!ctx) return;
+        if(!ctx || !config.linkRadius) return;
         for (let i = 0; i < particles.length; i++) {
             for (let j = i + 1; j < particles.length; j++) {
                 const dx = particles[i].x - particles[j].x;
@@ -106,14 +107,13 @@ const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({ className, va
                     ctx.beginPath();
                     ctx.moveTo(particles[i].x, particles[i].y);
                     ctx.lineTo(particles[j].x, particles[j].y);
-                    ctx.strokeStyle = config.lineColor.replace(')', `, ${opacity})`);
+                    ctx.strokeStyle = (config.lineColor || '').replace(')', `, ${opacity})`);
                     ctx.lineWidth = 0.5;
                     ctx.stroke();
                 }
             }
         }
     }
-
 
     const animate = () => {
       if(!ctx) return;
@@ -122,7 +122,9 @@ const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({ className, va
         particle.update();
         particle.draw();
       });
-      linkParticles();
+      if (variant === 'admin') {
+        linkParticles();
+      }
       animationFrameId = requestAnimationFrame(animate);
     };
 
@@ -133,7 +135,6 @@ const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({ className, va
         if (!canvas) return;
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        particles = [];
         createParticles();
     }
     

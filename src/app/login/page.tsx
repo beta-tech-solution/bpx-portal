@@ -101,7 +101,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background animate-fade-in overflow-hidden">
-      <ParticlesBackground />
+      <ParticlesBackground variant="default" />
       <Card className="w-full max-w-sm mx-4 z-10 bg-card/80 backdrop-blur-sm">
         <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
@@ -169,5 +169,3 @@ export default function LoginPage() {
     </div>
   )
 }
-
-    
