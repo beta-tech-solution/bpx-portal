@@ -19,6 +19,11 @@ import { db } from "@/lib/firebase/config"
 import { collection, onSnapshot, query, orderBy, Timestamp, addDoc, doc, updateDoc, setDoc } from 'firebase/firestore'
 import { format, subMinutes, subDays, eachDayOfInterval } from 'date-fns'
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
+import { useForm, Controller } from "react-hook-form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
+
 
 const userChartConfig = {
   count: { label: "New Users", color: "hsl(var(--primary))" },
@@ -208,45 +213,76 @@ export default function AdminUsersPage() {
   )
 }
 
+const UserFormSchema = z.object({
+    fullName: z.string().min(1, "Full name is required"),
+    email: z.string().email("Invalid email address"),
+    balance: z.coerce.number().min(0, "Balance must be non-negative"),
+    status: z.enum(['Active', 'Suspended']),
+    role: z.enum(['User', 'Admin']),
+    password: z.string().optional(),
+});
+
+type UserFormValues = z.infer<typeof UserFormSchema>;
+
 function UserDialog({ open, setOpen, user }: { open: boolean, setOpen: (open: boolean) => void, user: User | null }) {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = React.useState(false);
     
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        setIsLoading(true);
+    const form = useForm<UserFormValues>({
+        resolver: zodResolver(UserFormSchema),
+        defaultValues: {
+            fullName: user?.fullName || "",
+            email: user?.email || "",
+            balance: user?.balance || 0,
+            status: user?.status || 'Active',
+            role: user?.role || 'User',
+            password: "",
+        },
+    });
+     React.useEffect(() => {
+        form.reset({
+            fullName: user?.fullName || "",
+            email: user?.email || "",
+            balance: user?.balance || 0,
+            status: user?.status || 'Active',
+            role: user?.role || 'User',
+            password: "",
+        })
+    }, [user, form, open]);
 
-        const form = e.currentTarget;
-        const fullName = (form.elements.namedItem('fullName') as HTMLInputElement).value;
-        const email = (form.elements.namedItem('email') as HTMLInputElement).value;
-        const balance = parseFloat((form.elements.namedItem('balance') as HTMLInputElement).value);
-        const status = (form.elements.namedItem('status') as HTMLSelectElement).value as User['status'];
-        const role = (form.elements.namedItem('role') as HTMLSelectElement).value as User['role'];
-        const password = (form.elements.namedItem('password') as HTMLInputElement).value;
+
+    const handleSubmit = async (data: UserFormValues) => {
+        setIsLoading(true);
 
         try {
             if (user) { // Editing existing user
                 const userRef = doc(db, 'users', user.id);
-                await updateDoc(userRef, { fullName, email, balance, status, role });
+                await updateDoc(userRef, { 
+                    fullName: data.fullName, 
+                    email: data.email, 
+                    balance: data.balance, 
+                    status: data.status, 
+                    role: data.role 
+                });
                 toast({ title: "User Updated", description: "User details have been saved successfully." });
             } else { // Adding new user
-                if (!password) {
+                if (!data.password) {
                     toast({ title: "Error", description: "Password is required for new users.", variant: "destructive" });
                     setIsLoading(false);
                     return;
                 }
                  // We need a separate auth instance to create a user without signing in the admin
                 const tempAuth = getAuth();
-                const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
+                const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, data.password);
                 const newUser = userCredential.user;
 
                 await setDoc(doc(db, "users", newUser.uid), {
                     uid: newUser.uid,
-                    fullName,
-                    email,
-                    balance,
-                    status,
-                    role,
+                    fullName: data.fullName,
+                    email: data.email,
+                    balance: data.balance,
+                    status: data.status,
+                    role: data.role,
                     createdAt: new Date(),
                 });
                 toast({ title: "User Created", description: "New user has been added successfully." });
@@ -269,61 +305,117 @@ function UserDialog({ open, setOpen, user }: { open: boolean, setOpen: (open: bo
                         {user ? "Update the user's details below." : "Enter the details for the new user."}
                     </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleSubmit}>
-                    <ScrollArea className="max-h-[70vh] p-1">
-                    <div className="space-y-4 p-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="fullName">Full Name</Label>
-                            <Input id="fullName" name="fullName" defaultValue={user?.fullName} required />
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(handleSubmit)}>
+                        <ScrollArea className="max-h-[70vh] p-1">
+                        <div className="space-y-4 p-4">
+                            <FormField
+                                control={form.control}
+                                name="fullName"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Full Name</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="John Doe" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                             <FormField
+                                control={form.control}
+                                name="email"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Email</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="user@example.com" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="balance"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Balance</FormLabel>
+                                        <FormControl>
+                                            <Input type="number" step="0.01" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            {!user && (
+                                <FormField
+                                    control={form.control}
+                                    name="password"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Password</FormLabel>
+                                            <FormControl>
+                                                <Input type="password" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            )}
+                             <FormField
+                                control={form.control}
+                                name="status"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Status</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="Active">Active</SelectItem>
+                                        <SelectItem value="Suspended">Suspended</SelectItem>
+                                    </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="role"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Role</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                     <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="User">User</SelectItem>
+                                        <SelectItem value="Admin">Admin</SelectItem>
+                                    </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
                         </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="email">Email</Label>
-                            <Input id="email" name="email" type="email" defaultValue={user?.email} required />
-                        </div>
-                         <div className="grid gap-2">
-                            <Label htmlFor="balance">Balance</Label>
-                            <Input id="balance" name="balance" type="number" step="0.01" defaultValue={user?.balance.toString() ?? '0'} required />
-                        </div>
-                        {!user && (
-                            <div className="grid gap-2">
-                                <Label htmlFor="password">Password</Label>
-                                <Input id="password" name="password" type="password" required />
-                            </div>
-                        )}
-                         <div className="grid gap-2">
-                            <Label htmlFor="status">Status</Label>
-                            <Select name="status" defaultValue={user?.status ?? 'Active'}>
-                                <SelectTrigger id="status">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Active">Active</SelectItem>
-                                    <SelectItem value="Suspended">Suspended</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="role">Role</Label>
-                             <Select name="role" defaultValue={user?.role ?? 'User'}>
-                                <SelectTrigger id="role">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="User">User</SelectItem>
-                                    <SelectItem value="Admin">Admin</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                     </ScrollArea>
-                    <DialogFooter className="pt-4 pr-4">
-                        <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-                        <Button type="submit" disabled={isLoading}>
-                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Save Changes
-                        </Button>
-                    </DialogFooter>
-                </form>
+                        </ScrollArea>
+                        <DialogFooter className="pt-4 pr-4">
+                            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+                            <Button type="submit" disabled={isLoading}>
+                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Save Changes
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
             </DialogContent>
         </Dialog>
     )
