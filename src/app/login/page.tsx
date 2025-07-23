@@ -1,7 +1,9 @@
+
 "use client"
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -13,7 +15,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Wallet } from "lucide-react"
+import { Wallet, Eye, EyeOff } from "lucide-react"
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
@@ -28,6 +30,7 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 
 export default function LoginPage() {
     const router = useRouter()
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault()
@@ -54,9 +57,18 @@ export default function LoginPage() {
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" type="email" placeholder="m@example.com" required />
             </div>
-            <div className="grid gap-2">
+            <div className="grid gap-2 relative">
                 <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" required />
+                <Input id="password" type={showPassword ? "text" : "password"} required />
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-7 h-7 w-7 text-muted-foreground"
+                    onClick={() => setShowPassword(!showPassword)}
+                >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
             </div>
             <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
                 Sign In
@@ -77,11 +89,17 @@ export default function LoginPage() {
             </Button>
             </CardContent>
         </form>
-        <CardFooter className="text-sm">
+        <CardFooter className="text-sm flex flex-col items-start gap-2">
           <p>
             Don&apos;t have an account?{" "}
             <Link href="/signup" className="underline text-primary">
               Sign up
+            </Link>
+          </p>
+          <p>
+            Admin?{" "}
+            <Link href="/admin/login" className="underline text-primary">
+              Login here
             </Link>
           </p>
         </CardFooter>
@@ -89,3 +107,5 @@ export default function LoginPage() {
     </div>
   )
 }
+
+    
