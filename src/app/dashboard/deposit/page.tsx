@@ -32,9 +32,8 @@ const chartData = [
     },
   } satisfies ChartConfig
 
-// TODO: Replace with your Cloudinary credentials
-const CLOUDINARY_CLOUD_NAME = "YOUR_CLOUD_NAME";
-const CLOUDINARY_UPLOAD_PRESET = "YOUR_UPLOAD_PRESET";
+const CLOUDINARY_CLOUD_NAME = "datq7sbdp";
+const CLOUDINARY_UPLOAD_PRESET = "bpxmaster";
 
 
 export default function DepositPage() {
