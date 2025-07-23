@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { ArrowDownLeft, ArrowUpRight, Wallet, Send, TrendingUp, TrendingDown, Loader2 } from "lucide-react"
+import { ArrowDownLeft, ArrowUpRight, Wallet, Send, TrendingUp, TrendingDown, Loader2, Activity } from "lucide-react"
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
 import { ChartContainer, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
 import { auth, db } from "@/lib/firebase/config"
@@ -21,6 +21,12 @@ interface Transaction {
     date: string;
     amount: string;
     status: "Approved" | "Pending" | "Rejected" | "Transferred" | "Issue" | "Completed";
+}
+
+interface LoginActivity {
+    id: string;
+    date: string;
+    ip: string;
 }
 
 interface ChartData {
@@ -48,6 +54,7 @@ export default function DashboardPage() {
         totalTransfers: "0.00",
     });
     const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
+    const [recentLogins, setRecentLogins] = useState<LoginActivity[]>([]);
     const [depositsData, setDepositsData] = useState<ChartData[]>([]);
     const [withdrawalsData, setWithdrawalsData] = useState<ChartData[]>([]);
     const [transfersData, setTransfersData] = useState<ChartData[]>([]);
@@ -80,6 +87,22 @@ export default function DashboardPage() {
             }
         });
         unsubscribes.push(unsubscribeUser);
+
+        // Recent Logins
+        const loginsQuery = query(collection(db, 'bpexch_logins'), where('userId', '==', user.uid), orderBy('timestamp', 'desc'), limit(3));
+        const unsubscribeLogins = onSnapshot(loginsQuery, (snapshot) => {
+            const logins = snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    date: format((data.timestamp as any).toDate(), 'PPpp'),
+                    ip: data.ip
+                }
+            })
+            setRecentLogins(logins);
+        });
+        unsubscribes.push(unsubscribeLogins);
+
 
         const processTransactions = async () => {
             try {
@@ -289,39 +312,76 @@ export default function DashboardPage() {
                 </CardContent>
             </Card>
         </div>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="font-headline">Recent Transactions</CardTitle>
-            <Button variant="ghost" size="sm" asChild>
-                <Link href="#">
-                    View All
-                </Link>
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableBody>
-                {recentTransactions.length > 0 ? recentTransactions.map((transaction) => (
-                  <TableRow key={transaction.id}>
-                    <TableCell>
-                      <div className="font-medium">{transaction.type}</div>
-                      <div className="text-sm text-muted-foreground">{new Date(transaction.date).toLocaleDateString()}</div>
-                    </TableCell>
-                    <TableCell className="text-right font-mono font-bold">{transaction.amount}</TableCell>
-                     <TableCell className="text-right">
-                        <Badge variant={statusVariant[transaction.status as keyof typeof statusVariant]} className="font-normal">{transaction.status}</Badge>
-                     </TableCell>
-                  </TableRow>
-                )) : (
+        <div className="grid gap-8">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="font-headline">Recent Transactions</CardTitle>
+                <Button variant="ghost" size="sm" asChild>
+                    <Link href="#">
+                        View All
+                    </Link>
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableBody>
+                    {recentTransactions.length > 0 ? recentTransactions.map((transaction) => (
+                      <TableRow key={transaction.id}>
+                        <TableCell>
+                          <div className="font-medium">{transaction.type}</div>
+                          <div className="text-sm text-muted-foreground">{new Date(transaction.date).toLocaleDateString()}</div>
+                        </TableCell>
+                        <TableCell className="text-right font-mono font-bold">{transaction.amount}</TableCell>
+                         <TableCell className="text-right">
+                            <Badge variant={statusVariant[transaction.status as keyof typeof statusVariant]} className="font-normal">{transaction.status}</Badge>
+                         </TableCell>
+                      </TableRow>
+                    )) : (
+                        <TableRow>
+                            <TableCell colSpan={3} className="text-center text-muted-foreground">No recent transactions.</TableCell>
+                        </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+             <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="font-headline flex items-center gap-2"><Activity className="h-5 w-5"/>Login Activity</CardTitle>
+                 <Button variant="ghost" size="sm" asChild>
+                    <Link href="/dashboard/bpexch-login">
+                        View All
+                    </Link>
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                        <TableCell colSpan={3} className="text-center text-muted-foreground">No recent transactions.</TableCell>
+                        <TableHead>Date & Time</TableHead>
+                        <TableHead className="text-right">IP Address</TableHead>
                     </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {recentLogins.length > 0 ? recentLogins.map((login) => (
+                      <TableRow key={login.id}>
+                        <TableCell>
+                          <div className="font-medium">{login.date}</div>
+                        </TableCell>
+                        <TableCell className="text-right font-mono">{login.ip}</TableCell>
+                      </TableRow>
+                    )) : (
+                        <TableRow>
+                            <TableCell colSpan={2} className="text-center text-muted-foreground">No recent logins.</TableCell>
+                        </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+        </div>
       </div>
     </div>
   )
 }
+

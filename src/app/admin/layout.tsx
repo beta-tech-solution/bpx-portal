@@ -28,7 +28,7 @@ import {
   Settings,
   Shield,
   LayoutDashboard,
-  ExternalLink,
+  Activity,
   Loader2
 } from "lucide-react";
 import { db, auth } from "@/lib/firebase/config";
@@ -43,6 +43,7 @@ const navItems = [
     { href: "/admin/deposits", label: "Deposits", icon: DollarSign, countKey: 'deposits' },
     { href: "/admin/transfers", label: "Transfers", icon: Send, countKey: 'transfers' },
     { href: "/admin/withdrawals", label: "Withdrawals", icon: Landmark, countKey: 'withdrawals' },
+    { href: "/admin/bpexch-activity", label: "Login Activity", icon: Activity, countKey: null },
     { href: "/admin/settings", label: "Settings", icon: Settings, countKey: null },
 ]
 
