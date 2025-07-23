@@ -19,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Wallet, Eye, EyeOff, Loader2 } from "lucide-react"
 import { auth, db } from "@/lib/firebase/config"
 import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo } from "firebase/auth"
-import { doc, setDoc } from "firebase/firestore"
+import { doc, setDoc, serverTimestamp } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -81,9 +81,10 @@ export default function SignupPage() {
                 email,
                 phone: `${phoneCode}${phoneNumber}`,
                 gender,
-                createdAt: new Date(),
+                createdAt: serverTimestamp(),
                 balance: 0,
-                status: 'Active'
+                status: 'Active',
+                role: 'User' // Default role for new sign-ups
             });
 
             toast({ title: "Account Created", description: "Your account has been created successfully. Please sign in." })
@@ -116,9 +117,10 @@ export default function SignupPage() {
                     email: user.email,
                     phone: user.phoneNumber,
                     gender: 'Not specified',
-                    createdAt: new Date(),
+                    createdAt: serverTimestamp(),
                     balance: 0,
-                    status: 'Active'
+                    status: 'Active',
+                    role: 'User' // Default role
                 });
                 toast({ title: "Account Created", description: "Your account has been created successfully. Please sign in." })
                 router.push('/login')
@@ -248,5 +250,3 @@ export default function SignupPage() {
     </div>
   )
 }
-
-    

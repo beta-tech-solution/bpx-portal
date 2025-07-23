@@ -2,11 +2,10 @@
 "use client"
 
 import { useState, useEffect, useMemo } from 'react';
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Loader2, User, Search } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { db } from '@/lib/firebase/config';
 import { collection, query, onSnapshot, getDoc, doc, orderBy } from 'firebase/firestore';
 import { format } from 'date-fns';
@@ -44,12 +43,16 @@ export default function AdminBpexchActivityPage() {
               userName = userData.name;
               userEmail = userData.email;
           } else {
-              const userDoc = await getDoc(doc(db, 'users', data.userId));
-              if (userDoc.exists()) {
-                const userData = userDoc.data();
-                userName = userData.fullName;
-                userEmail = userData.email;
-                userCache.set(data.userId, { name: userName, email: userEmail });
+              try {
+                const userDoc = await getDoc(doc(db, 'users', data.userId));
+                if (userDoc.exists()) {
+                  const userData = userDoc.data();
+                  userName = userData.fullName;
+                  userEmail = userData.email;
+                  userCache.set(data.userId, { name: userName, email: userEmail });
+                }
+              } catch (e) {
+                  console.error("Could not fetch user", e)
               }
           }
         }

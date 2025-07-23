@@ -15,7 +15,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Shield, Eye, EyeOff, Loader2 } from "lucide-react"
 import { signInWithEmailAndPassword } from "firebase/auth"
-import { auth } from "@/lib/firebase/config"
+import { auth, db } from "@/lib/firebase/config"
+import { doc, getDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 
 export default function AdminLoginPage() {
@@ -32,19 +33,22 @@ export default function AdminLoginPage() {
         const password = (e.currentTarget.elements.namedItem('password') as HTMLInputElement).value
 
         try {
-            // A simple check to only allow the master admin email
-            if (email !== 'admin@bpxmaster.com') {
-                 toast({ title: "Access Denied", description: "You are not authorized to access this panel.", variant: "destructive" })
-                 setIsLoading(false)
-                 return
-            }
+            const userCredential = await signInWithEmailAndPassword(auth, email, password)
+            const user = userCredential.user;
 
-            await signInWithEmailAndPassword(auth, email, password)
-            toast({ title: "Login Successful", description: "Welcome, Admin!" })
-            router.push('/admin/dashboard')
+            const userDocRef = doc(db, 'users', user.uid);
+            const userDoc = await getDoc(userDocRef);
+
+            if (userDoc.exists() && userDoc.data().role === 'Admin') {
+                toast({ title: "Login Successful", description: "Welcome, Admin!" })
+                router.push('/admin/dashboard')
+            } else {
+                 await auth.signOut();
+                 toast({ title: "Access Denied", description: "You are not authorized to access this panel.", variant: "destructive" })
+            }
         } catch (error: any) {
             console.error("Admin login error:", error)
-            toast({ title: "Login Failed", description: "Invalid credentials. Please try again.", variant: "destructive" })
+            toast({ title: "Login Failed", description: "Invalid credentials or not an admin account.", variant: "destructive" })
         } finally {
             setIsLoading(false)
         }
@@ -66,7 +70,7 @@ export default function AdminLoginPage() {
             <CardContent className="grid gap-4">
             <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="admin@bpxmaster.com" required defaultValue="admin@bpxmaster.com" />
+                <Input id="email" type="email" placeholder="admin@example.com" required />
             </div>
             <div className="grid gap-2 relative">
                 <Label htmlFor="password">Password</Label>

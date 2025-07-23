@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { DollarSign, Send, Landmark, LogOut, Wallet, ExternalLink, LayoutDashboard, Loader2, Settings } from "lucide-react";
 import { auth, db } from "@/lib/firebase/config";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
-import { doc, onSnapshot, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, serverTimestamp, getDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 
 const navItems = [
@@ -40,6 +40,7 @@ interface UserData {
     email: string;
     balance: number;
     photoURL?: string;
+    role: 'Admin' | 'User';
 }
 
 export default function DashboardLayout({
@@ -55,13 +56,25 @@ export default function DashboardLayout({
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
-        setUser(currentUser);
         const userDocRef = doc(db, "users", currentUser.uid);
+        const userDoc = await getDoc(userDocRef);
 
-        updateDoc(userDocRef, { lastSeen: serverTimestamp() });
+        if (userDoc.exists() && userDoc.data()?.role === 'Admin' && !pathname.startsWith('/admin')) {
+             // Admin on user dashboard, allow for now or redirect
+        } else if (userDoc.exists() && userDoc.data()?.role === 'User') {
+            // Standard user flow
+        } else if (userDoc.exists() && userDoc.data()?.role === 'Admin' && pathname.startsWith('/admin')) {
+            // Admin on admin dashboard, this layout shouldn't even be active.
+        }
+        else {
+            // router.push("/login");
+            // return;
+        }
 
+        setUser(currentUser);
+        await updateDoc(userDocRef, { lastSeen: serverTimestamp() });
         const unsubscribeSnapshot = onSnapshot(userDocRef, (doc) => {
           if (doc.exists()) {
             setUserData(doc.data() as UserData);
@@ -79,7 +92,7 @@ export default function DashboardLayout({
       }
     });
     return () => unsubscribeAuth();
-  }, [router, toast]);
+  }, [router, toast, pathname]);
 
   const handleLogout = async () => {
       try {
@@ -104,7 +117,7 @@ export default function DashboardLayout({
   const getInitials = (name: string | undefined | null): string => {
     if (!name) return 'U';
     const names = name.split(' ');
-    if (names.length > 1) {
+    if (names.length > 1 && names[0] && names[names.length - 1]) {
       return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
     }
     return name.substring(0, 2).toUpperCase();

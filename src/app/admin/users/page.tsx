@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal, Edit, Trash2, PlusCircle, Users, Loader2 } from "lucide-react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
@@ -16,9 +16,9 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { db } from "@/lib/firebase/config"
-import { collection, onSnapshot, query, orderBy, Timestamp } from 'firebase/firestore'
-import { format, subMinutes } from 'date-fns'
-
+import { collection, onSnapshot, query, orderBy, Timestamp, addDoc, doc, updateDoc, setDoc } from 'firebase/firestore'
+import { format, subMinutes, subDays, eachDayOfInterval } from 'date-fns'
+import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 
 const userChartConfig = {
   count: { label: "New Users", color: "hsl(var(--primary))" },
@@ -30,7 +30,9 @@ interface User {
   email: string;
   balance: number;
   status: 'Active' | 'Suspended';
+  role: 'Admin' | 'User';
   lastSeen?: Timestamp;
+  createdAt?: Timestamp;
 }
 
 export default function AdminUsersPage() {
@@ -38,15 +40,39 @@ export default function AdminUsersPage() {
   const [users, setUsers] = React.useState<User[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
+  const [userChartData, setUserChartData] = React.useState<{ date: string; count: number }[]>([]);
 
   React.useEffect(() => {
     setLoading(true);
     const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const usersData: User[] = [];
-        querySnapshot.forEach((doc) => {
-            usersData.push({ id: doc.id, ...doc.data() } as User);
+        const thirtyDaysAgo = subDays(new Date(), 29);
+        const dailyCounts: { [key: string]: number } = {};
+
+        const days = eachDayOfInterval({ start: thirtyDaysAgo, end: new Date() });
+        days.forEach(day => {
+            dailyCounts[format(day, 'yyyy-MM-dd')] = 0;
         });
+
+        querySnapshot.forEach((doc) => {
+            const userData = { id: doc.id, ...doc.data() } as User
+            usersData.push(userData);
+
+            if (userData.createdAt) {
+                const creationDate = format(userData.createdAt.toDate(), 'yyyy-MM-dd');
+                if (dailyCounts[creationDate] !== undefined) {
+                    dailyCounts[creationDate]++;
+                }
+            }
+        });
+        
+        const chartData = Object.entries(dailyCounts).map(([date, count]) => ({
+            date: format(new Date(date), 'MMM d'),
+            count
+        }));
+        
+        setUserChartData(chartData);
         setUsers(usersData);
         setLoading(false);
     });
@@ -65,24 +91,15 @@ export default function AdminUsersPage() {
 
   const isUserOnline = (lastSeen: Timestamp | undefined) => {
       if (!lastSeen) return false;
-      const fiveMinutesAgo = subMinutes(new Date(), 2);
+      const fiveMinutesAgo = subMinutes(new Date(), 5);
       return lastSeen.toDate() > fiveMinutesAgo;
   }
 
   const formatLastSeen = (lastSeen: Timestamp | undefined) => {
       if (!lastSeen) return "Never";
+      if(isUserOnline(lastSeen)) return "Online";
       return format(lastSeen.toDate(), 'PPpp');
   }
-
-  const userChartData = [
-    { date: "2023-10-01", count: 12 },
-    { date: "2023-10-02", count: 15 },
-    { date: "2023-10-03", count: 8 },
-    { date: "2023-10-04", count: 20 },
-    { date: "2023-10-05", count: 18 },
-    { date: "2023-10-06", count: 25 },
-    { date: "2023-10-07", count: 22 },
-  ];
 
   if (loading) {
       return (
@@ -114,6 +131,7 @@ export default function AdminUsersPage() {
                 <TableHead>User</TableHead>
                 <TableHead>Balance</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Role</TableHead>
                 <TableHead>Last Seen</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -135,11 +153,10 @@ export default function AdminUsersPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                        {isUserOnline(user.lastSeen) ? (
-                            <span className="text-green-600 font-medium">Online</span>
-                        ) : (
-                            formatLastSeen(user.lastSeen)
-                        )}
+                        <Badge variant={user.role === 'Admin' ? 'default' : 'outline'}>{user.role}</Badge>
+                    </TableCell>
+                    <TableCell>
+                        {formatLastSeen(user.lastSeen)}
                     </TableCell>
                     <TableCell className="text-right">
                     <DropdownMenu>
@@ -169,18 +186,8 @@ export default function AdminUsersPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <CardTitle className="font-headline flex items-center gap-2"><Users className="h-5 w-5 text-primary" />New User Registrations</CardTitle>
-                    <CardDescription>New user sign-ups over a selected period.</CardDescription>
+                    <CardDescription>New user sign-ups over the last 30 days.</CardDescription>
                 </div>
-                <Select defaultValue="7">
-                    <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Select period" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="7">Last 7 days</SelectItem>
-                        <SelectItem value="30">Last 30 days</SelectItem>
-                        <SelectItem value="180">Last 6 months</SelectItem>
-                    </SelectContent>
-                </Select>
             </div>
         </CardHeader>
         <CardContent>
@@ -188,7 +195,7 @@ export default function AdminUsersPage() {
                 <BarChart data={userChartData}>
                     <CartesianGrid vertical={false} />
                     <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} />
-                    <YAxis />
+                    <YAxis allowDecimals={false} />
                     <Tooltip content={<ChartTooltipContent />} />
                     <Bar dataKey="count" fill="var(--color-count)" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -203,14 +210,56 @@ export default function AdminUsersPage() {
 
 function UserDialog({ open, setOpen, user }: { open: boolean, setOpen: (open: boolean) => void, user: User | null }) {
     const { toast } = useToast();
-    const handleSubmit = (e: React.FormEvent) => {
+    const [isLoading, setIsLoading] = React.useState(false);
+    
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        toast({
-            title: user ? "User Updated" : "User Created",
-            description: `User details have been saved successfully.`
-        })
-        setOpen(false);
+        setIsLoading(true);
+
+        const form = e.currentTarget;
+        const fullName = (form.elements.namedItem('fullName') as HTMLInputElement).value;
+        const email = (form.elements.namedItem('email') as HTMLInputElement).value;
+        const balance = parseFloat((form.elements.namedItem('balance') as HTMLInputElement).value);
+        const status = (form.elements.namedItem('status') as HTMLSelectElement).value as User['status'];
+        const role = (form.elements.namedItem('role') as HTMLSelectElement).value as User['role'];
+        const password = (form.elements.namedItem('password') as HTMLInputElement).value;
+
+        try {
+            if (user) { // Editing existing user
+                const userRef = doc(db, 'users', user.id);
+                await updateDoc(userRef, { fullName, email, balance, status, role });
+                toast({ title: "User Updated", description: "User details have been saved successfully." });
+            } else { // Adding new user
+                if (!password) {
+                    toast({ title: "Error", description: "Password is required for new users.", variant: "destructive" });
+                    setIsLoading(false);
+                    return;
+                }
+                 // We need a separate auth instance to create a user without signing in the admin
+                const tempAuth = getAuth();
+                const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
+                const newUser = userCredential.user;
+
+                await setDoc(doc(db, "users", newUser.uid), {
+                    uid: newUser.uid,
+                    fullName,
+                    email,
+                    balance,
+                    status,
+                    role,
+                    createdAt: new Date(),
+                });
+                toast({ title: "User Created", description: "New user has been added successfully." });
+            }
+            setOpen(false);
+        } catch (error: any) {
+            console.error("Error saving user:", error);
+            toast({ title: "Error", description: error.message || "Could not save user details.", variant: "destructive" });
+        } finally {
+            setIsLoading(false);
+        }
     }
+
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent className="max-w-md">
@@ -224,29 +273,55 @@ function UserDialog({ open, setOpen, user }: { open: boolean, setOpen: (open: bo
                     <ScrollArea className="max-h-[70vh] p-1">
                     <div className="space-y-4 p-4">
                         <div className="grid gap-2">
-                            <Label htmlFor="name">Full Name</Label>
-                            <Input id="name" defaultValue={user?.fullName} required />
+                            <Label htmlFor="fullName">Full Name</Label>
+                            <Input id="fullName" name="fullName" defaultValue={user?.fullName} required />
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="email">Email</Label>
-                            <Input id="email" type="email" defaultValue={user?.email} required />
+                            <Input id="email" name="email" type="email" defaultValue={user?.email} required />
                         </div>
                          <div className="grid gap-2">
                             <Label htmlFor="balance">Balance</Label>
-                            <Input id="balance" type="text" defaultValue={user?.balance.toString()} required />
+                            <Input id="balance" name="balance" type="number" step="0.01" defaultValue={user?.balance.toString() ?? '0'} required />
                         </div>
+                        {!user && (
+                            <div className="grid gap-2">
+                                <Label htmlFor="password">Password</Label>
+                                <Input id="password" name="password" type="password" required />
+                            </div>
+                        )}
                          <div className="grid gap-2">
                             <Label htmlFor="status">Status</Label>
-                            <select id="status" defaultValue={user?.status} className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
-                                <option>Active</option>
-                                <option>Suspended</option>
-                            </select>
+                            <Select name="status" defaultValue={user?.status ?? 'Active'}>
+                                <SelectTrigger id="status">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Active">Active</SelectItem>
+                                    <SelectItem value="Suspended">Suspended</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="role">Role</Label>
+                             <Select name="role" defaultValue={user?.role ?? 'User'}>
+                                <SelectTrigger id="role">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="User">User</SelectItem>
+                                    <SelectItem value="Admin">Admin</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
                      </ScrollArea>
                     <DialogFooter className="pt-4 pr-4">
                         <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-                        <Button type="submit">Save Changes</Button>
+                        <Button type="submit" disabled={isLoading}>
+                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Save Changes
+                        </Button>
                     </DialogFooter>
                 </form>
             </DialogContent>

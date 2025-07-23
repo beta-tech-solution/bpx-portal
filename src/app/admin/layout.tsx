@@ -28,11 +28,14 @@ import {
   Settings,
   Shield,
   LayoutDashboard,
-  ExternalLink
+  ExternalLink,
+  Loader2
 } from "lucide-react";
 import { db, auth } from "@/lib/firebase/config";
 import { collection, onSnapshot, query, where, doc } from "firebase/firestore";
 import { useAuthState } from "react-firebase-hooks/auth";
+import { signOut } from "firebase/auth";
+import { useToast } from "@/hooks/use-toast";
 
 const navItems = [
     { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, countKey: null },
@@ -40,7 +43,6 @@ const navItems = [
     { href: "/admin/deposits", label: "Deposits", icon: DollarSign, countKey: 'deposits' },
     { href: "/admin/transfers", label: "Transfers", icon: Send, countKey: 'transfers' },
     { href: "/admin/withdrawals", label: "Withdrawals", icon: Landmark, countKey: 'withdrawals' },
-    { href: "/admin/bpexch-activity", label: "BPExch Activity", icon: ExternalLink, countKey: null },
     { href: "/admin/settings", label: "Settings", icon: Settings, countKey: null },
 ]
 
@@ -51,8 +53,10 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [user, loadingUser] = useAuthState(auth);
+  const { toast } = useToast();
+  const [user, loadingUser, error] = useAuthState(auth);
   const [adminProfile, setAdminProfile] = React.useState({ name: 'Admin User', email: 'admin@bpx.com', photoURL: ''});
+  const [isAuthorizing, setIsAuthorizing] = React.useState(true);
 
   const [pendingCounts, setPendingCounts] = React.useState({
       deposits: 0,
@@ -61,20 +65,40 @@ export default function AdminLayout({
   });
 
   React.useEffect(() => {
-      if (user) {
-          const unsub = onSnapshot(doc(db, 'users', user.uid), (doc) => {
-              if (doc.exists()) {
-                  const data = doc.data();
-                  setAdminProfile({
-                      name: data.fullName || 'Admin User',
-                      email: data.email || 'admin@bpx.com',
-                      photoURL: data.photoURL || ''
-                  });
-              }
+    if (loadingUser) return;
+    if (error) {
+        console.error("Auth error:", error);
+        router.push('/login');
+        return;
+    }
+    if (!user) {
+      router.push('/admin/login');
+      return;
+    }
+
+    const userDocRef = doc(db, 'users', user.uid);
+    const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const userData = docSnap.data();
+        if (userData.role === 'Admin') {
+          setAdminProfile({
+            name: userData.fullName || 'Admin User',
+            email: userData.email || '',
+            photoURL: userData.photoURL || ''
           });
-          return () => unsub();
+          setIsAuthorizing(false);
+        } else {
+          toast({ title: "Access Denied", description: "You are not authorized to access this panel.", variant: "destructive" });
+          router.push('/dashboard');
+        }
+      } else {
+         toast({ title: "Access Denied", description: "User profile not found.", variant: "destructive" });
+         router.push('/login');
       }
-  }, [user]);
+    });
+
+    return () => unsubscribe();
+  }, [user, loadingUser, router, error, toast]);
 
   React.useEffect(() => {
       const collections = {
@@ -92,6 +116,17 @@ export default function AdminLayout({
       
       return () => unsubscribes.forEach(unsub => unsub());
   }, []);
+
+  const handleLogout = async () => {
+    try {
+        await signOut(auth);
+        toast({ title: "Logged Out", description: "You have been successfully logged out." });
+        router.push('/admin/login');
+    } catch (error) {
+        console.error("Logout error:", error);
+        toast({ title: "Logout Failed", description: "Could not log out. Please try again.", variant: "destructive" });
+    }
+  }
 
   const isActive = (path: string) => pathname.startsWith(path);
   
@@ -111,6 +146,14 @@ export default function AdminLayout({
     if (pathname.includes('/admin/users/')) return "User Details";
     const parts = pathname.split('/').pop()?.replace(/-/g, ' ').split(' ') ?? [];
     return parts.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  }
+
+  if (isAuthorizing || loadingUser) {
+    return (
+        <div className="flex items-center justify-center min-h-screen bg-background">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+    )
   }
 
   return (
@@ -155,7 +198,7 @@ export default function AdminLayout({
                     <p className="text-sm font-semibold text-sidebar-foreground truncate">{adminProfile.name}</p>
                     <p className="text-xs text-sidebar-foreground/70 truncate">{adminProfile.email}</p>
                 </div>
-                <Button variant="ghost" size="icon" className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent" onClick={() => router.push('/login')}>
+                <Button variant="ghost" size="icon" className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent" onClick={handleLogout}>
                     <LogOut className="w-4 h-4"/>
                 </Button>
             </div>
