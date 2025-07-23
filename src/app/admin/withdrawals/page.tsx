@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { CheckCircle, XCircle, MoreHorizontal } from "lucide-react"
+import { CheckCircle, XCircle, MoreHorizontal, ArrowUpRight } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +15,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useToast } from "@/hooks/use-toast"
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from "recharts"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 
 const withdrawals = [
@@ -29,6 +32,23 @@ const statusVariant = {
     Rejected: "destructive"
 } as const;
 
+
+const withdrawalChartData = [
+    { date: "2023-10-01", pending: 3, approved: 5, rejected: 0 },
+    { date: "2023-10-02", pending: 5, approved: 7, rejected: 1 },
+    { date: "2023-10-03", pending: 2, approved: 4, rejected: 0 },
+    { date: "2023-10-04", pending: 6, approved: 9, rejected: 2 },
+    { date: "2023-10-05", pending: 4, approved: 6, rejected: 1 },
+    { date: "2023-10-06", pending: 7, approved: 11, rejected: 0 },
+    { date: "2023-10-07", pending: 3, approved: 5, rejected: 1 },
+];
+  
+const withdrawalChartConfig = {
+    pending: { label: "Pending", color: "hsl(var(--primary))" },
+    approved: { label: "Approved", color: "hsl(var(--accent))" },
+    rejected: { label: "Rejected", color: "hsl(var(--destructive))" },
+} satisfies ChartConfig;
+
 export default function AdminWithdrawalsPage() {
     const filteredWithdrawals = (status: 'Pending' | 'Approved' | 'Rejected' | 'All') => {
         if (status === 'All') return withdrawals;
@@ -36,7 +56,7 @@ export default function AdminWithdrawalsPage() {
     }
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in grid gap-8">
     <Card>
       <CardHeader>
         <CardTitle className="font-headline">Withdrawal Management</CardTitle>
@@ -64,6 +84,41 @@ export default function AdminWithdrawalsPage() {
             </TabsContent>
         </Tabs>
       </CardContent>
+    </Card>
+
+    <Card>
+        <CardHeader>
+            <div className="flex items-center justify-between">
+                <div>
+                    <CardTitle className="font-headline flex items-center gap-2"><ArrowUpRight className="h-5 w-5 text-red-500" />Withdrawal Activity</CardTitle>
+                    <CardDescription>Withdrawal trends over a selected period.</CardDescription>
+                </div>
+                 <Select defaultValue="7">
+                    <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Select period" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="7">Last 7 days</SelectItem>
+                        <SelectItem value="30">Last 30 days</SelectItem>
+                        <SelectItem value="180">Last 6 months</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+        </CardHeader>
+        <CardContent>
+            <ChartContainer config={withdrawalChartConfig} className="h-[300px] w-full">
+                <BarChart data={withdrawalChartData}>
+                    <CartesianGrid vertical={false} />
+                    <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} />
+                    <YAxis />
+                    <Tooltip content={<ChartTooltipContent />} />
+                    <Legend />
+                    <Bar dataKey="pending" fill="var(--color-pending)" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="approved" fill="var(--color-approved)" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="rejected" fill="var(--color-rejected)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+            </ChartContainer>
+        </CardContent>
     </Card>
     </div>
   )

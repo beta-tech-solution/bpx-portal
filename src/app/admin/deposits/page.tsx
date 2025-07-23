@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { CheckCircle, XCircle, FileText, MoreHorizontal } from "lucide-react"
+import { CheckCircle, XCircle, FileText, MoreHorizontal, ArrowDownLeft } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +15,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useToast } from "@/hooks/use-toast"
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from "recharts"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 
 const deposits = [
@@ -31,6 +34,22 @@ const statusVariant = {
     Rejected: "destructive"
 } as const;
 
+const depositChartData = [
+    { date: "2023-10-01", pending: 5, approved: 10, rejected: 1 },
+    { date: "2023-10-02", pending: 7, approved: 12, rejected: 0 },
+    { date: "2023-10-03", pending: 3, approved: 8, rejected: 2 },
+    { date: "2023-10-04", pending: 8, approved: 15, rejected: 1 },
+    { date: "2023-10-05", pending: 6, approved: 11, rejected: 0 },
+    { date: "2023-10-06", pending: 10, approved: 18, rejected: 3 },
+    { date: "2023-10-07", pending: 4, approved: 9, rejected: 1 },
+];
+  
+const depositChartConfig = {
+    pending: { label: "Pending", color: "hsl(var(--primary))" },
+    approved: { label: "Approved", color: "hsl(var(--accent))" },
+    rejected: { label: "Rejected", color: "hsl(var(--destructive))" },
+} satisfies ChartConfig;
+
 export default function AdminDepositsPage() {
     const filteredDeposits = (status: 'Pending' | 'Approved' | 'Rejected' | 'All') => {
         if (status === 'All') return deposits;
@@ -38,7 +57,7 @@ export default function AdminDepositsPage() {
     }
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in grid gap-8">
     <Card>
       <CardHeader>
         <CardTitle className="font-headline">Deposit Management</CardTitle>
@@ -66,6 +85,41 @@ export default function AdminDepositsPage() {
             </TabsContent>
         </Tabs>
       </CardContent>
+    </Card>
+    
+     <Card>
+        <CardHeader>
+            <div className="flex items-center justify-between">
+                <div>
+                    <CardTitle className="font-headline flex items-center gap-2"><ArrowDownLeft className="h-5 w-5 text-green-500" />Deposit Activity</CardTitle>
+                    <CardDescription>Deposit trends over a selected period.</CardDescription>
+                </div>
+                 <Select defaultValue="7">
+                    <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Select period" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="7">Last 7 days</SelectItem>
+                        <SelectItem value="30">Last 30 days</SelectItem>
+                        <SelectItem value="180">Last 6 months</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+        </CardHeader>
+        <CardContent>
+            <ChartContainer config={depositChartConfig} className="h-[300px] w-full">
+                <BarChart data={depositChartData}>
+                    <CartesianGrid vertical={false} />
+                    <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} />
+                    <YAxis />
+                    <Tooltip content={<ChartTooltipContent />} />
+                    <Legend />
+                    <Bar dataKey="pending" fill="var(--color-pending)" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="approved" fill="var(--color-approved)" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="rejected" fill="var(--color-rejected)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+            </ChartContainer>
+        </CardContent>
     </Card>
     </div>
   )

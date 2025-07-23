@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { CheckCircle, AlertTriangle, MoreHorizontal, MessageSquare } from "lucide-react"
+import { CheckCircle, AlertTriangle, MoreHorizontal, MessageSquare, Send } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +15,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useToast } from "@/hooks/use-toast"
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from "recharts"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 
 const transfers = [
@@ -30,6 +33,24 @@ const statusVariant = {
     Issue: "destructive"
 } as const;
 
+
+const transferChartData = [
+    { date: "2023-10-01", pending: 4, transferred: 8, issue: 0 },
+    { date: "2023-10-02", pending: 6, transferred: 10, issue: 1 },
+    { date: "2023-10-03", pending: 2, transferred: 7, issue: 0 },
+    { date: "2023-10-04", pending: 7, transferred: 12, issue: 2 },
+    { date: "2023-10-05", pending: 5, transferred: 9, issue: 1 },
+    { date: "2023-10-06", pending: 8, transferred: 15, issue: 0 },
+    { date: "2023-10-07", pending: 3, transferred: 6, issue: 0 },
+];
+  
+const transferChartConfig = {
+    pending: { label: "Pending", color: "hsl(var(--primary))" },
+    transferred: { label: "Transferred", color: "hsl(var(--accent))" },
+    issue: { label: "Issue", color: "hsl(var(--destructive))" },
+} satisfies ChartConfig;
+
+
 export default function AdminTransfersPage() {
     const filteredTransfers = (status: 'Pending' | 'Transferred' | 'Issue' | 'All') => {
         if (status === 'All') return transfers;
@@ -37,7 +58,7 @@ export default function AdminTransfersPage() {
     }
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in grid gap-8">
     <Card>
       <CardHeader>
         <CardTitle className="font-headline">Transfer Management</CardTitle>
@@ -65,6 +86,41 @@ export default function AdminTransfersPage() {
             </TabsContent>
         </Tabs>
       </CardContent>
+    </Card>
+
+     <Card>
+        <CardHeader>
+            <div className="flex items-center justify-between">
+                <div>
+                    <CardTitle className="font-headline flex items-center gap-2"><Send className="h-5 w-5 text-muted-foreground" />Transfer Activity</CardTitle>
+                    <CardDescription>Transfer trends over a selected period.</CardDescription>
+                </div>
+                 <Select defaultValue="7">
+                    <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Select period" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="7">Last 7 days</SelectItem>
+                        <SelectItem value="30">Last 30 days</SelectItem>
+                        <SelectItem value="180">Last 6 months</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+        </CardHeader>
+        <CardContent>
+            <ChartContainer config={transferChartConfig} className="h-[300px] w-full">
+                <BarChart data={transferChartData}>
+                    <CartesianGrid vertical={false} />
+                    <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} />
+                    <YAxis />
+                    <Tooltip content={<ChartTooltipContent />} />
+                    <Legend />
+                    <Bar dataKey="pending" fill="var(--color-pending)" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="transferred" fill="var(--color-transferred)" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="issue" fill="var(--color-issue)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+            </ChartContainer>
+        </CardContent>
     </Card>
     </div>
   )

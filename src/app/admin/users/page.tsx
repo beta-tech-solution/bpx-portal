@@ -6,12 +6,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, Edit, Trash2, PlusCircle } from "lucide-react"
+import { MoreHorizontal, Edit, Trash2, PlusCircle, Users } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
 
 const users = [
   { id: 'usr_1', name: 'John Doe', email: 'john.d@example.com', balance: '$1,250.50', status: 'Active' },
@@ -19,6 +23,20 @@ const users = [
   { id: 'usr_3', name: 'Sam Wilson', email: 'sam.w@example.com', balance: '$2,100.75', status: 'Suspended' },
   { id: 'usr_4', name: 'Alice Johnson', email: 'alice.j@example.com', balance: '$300.20', status: 'Active' },
 ];
+
+const userChartData = [
+  { date: "2023-10-01", count: 12 },
+  { date: "2023-10-02", count: 15 },
+  { date: "2023-10-03", count: 8 },
+  { date: "2023-10-04", count: 20 },
+  { date: "2023-10-05", count: 18 },
+  { date: "2023-10-06", count: 25 },
+  { date: "2023-10-07", count: 22 },
+];
+
+const userChartConfig = {
+  count: { label: "New Users", color: "hsl(var(--primary))" },
+} satisfies ChartConfig;
 
 type User = typeof users[0];
 
@@ -38,7 +56,7 @@ export default function AdminUsersPage() {
 
   return (
     <>
-    <div className="animate-fade-in">
+    <div className="animate-fade-in grid gap-8">
     <Card>
       <CardHeader className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
@@ -93,6 +111,38 @@ export default function AdminUsersPage() {
             </Table>
         </div>
       </CardContent>
+    </Card>
+    
+    <Card>
+        <CardHeader>
+            <div className="flex items-center justify-between">
+                <div>
+                    <CardTitle className="font-headline flex items-center gap-2"><Users className="h-5 w-5 text-primary" />New User Registrations</CardTitle>
+                    <CardDescription>New user sign-ups over a selected period.</CardDescription>
+                </div>
+                <Select defaultValue="7">
+                    <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Select period" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="7">Last 7 days</SelectItem>
+                        <SelectItem value="30">Last 30 days</SelectItem>
+                        <SelectItem value="180">Last 6 months</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+        </CardHeader>
+        <CardContent>
+            <ChartContainer config={userChartConfig} className="h-[250px] w-full">
+                <BarChart data={userChartData}>
+                    <CartesianGrid vertical={false} />
+                    <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} />
+                    <YAxis />
+                    <Tooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="count" fill="var(--color-count)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+            </ChartContainer>
+        </CardContent>
     </Card>
     </div>
     <UserDialog open={open} setOpen={setOpen} user={selectedUser} />
