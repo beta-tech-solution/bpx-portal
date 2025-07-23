@@ -21,9 +21,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 
 const withdrawals = [
-  { id: 'wd_1', user: 'John Doe', amount: '$50.00', date: '2023-11-05', status: 'Pending', bank: 'Global Trust Bank', account: '1234567890' },
-  { id: 'wd_2', user: 'Jane Smith', amount: '$100.00', date: '2023-11-04', status: 'Approved', bank: 'First National', account: '0987654321' },
-  { id: 'wd_3', user: 'Sam Wilson', amount: '$25.00', date: '2023-11-03', status: 'Rejected', bank: 'Mega Bank', account: '1122334455' },
+  { id: 'wd_1', user: 'John Doe', amount: 'PKR 50.00', date: '2023-11-05', status: 'Pending', bank: 'Global Trust Bank', account: '1234567890' },
+  { id: 'wd_2', user: 'Jane Smith', amount: 'PKR 100.00', date: '2023-11-04', status: 'Approved', bank: 'First National', account: '0987654321' },
+  { id: 'wd_3', user: 'Sam Wilson', amount: 'PKR 25.00', date: '2023-11-03', status: 'Rejected', bank: 'Mega Bank', account: '1122334455' },
 ];
 
 const statusVariant = {
@@ -179,3 +179,5 @@ function WithdrawalTable({ data }: { data: typeof withdrawals }) {
         </Table>
     )
 }
+
+    

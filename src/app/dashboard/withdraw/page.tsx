@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { LanguageToggle } from '@/components/language-toggle';
 import { Landmark, TrendingDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
+import { Area, AreaChart, CartesianGrid, XAxis, Tooltip } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
 
 const chartData = [
@@ -34,7 +35,7 @@ export default function WithdrawPage() {
     const amount = (e.currentTarget.elements.namedItem('amount') as HTMLInputElement).value;
     toast({
         title: "Withdrawal Request Submitted",
-        description: `Your request to withdraw $${amount} has been received.`,
+        description: `Your request to withdraw PKR ${amount} has been received.`,
     });
     e.currentTarget.reset();
   }
@@ -50,7 +51,7 @@ export default function WithdrawPage() {
         <CardContent className="grid md:grid-cols-2 gap-8">
           <div className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="amount" className="font-headline">Amount</Label>
+              <Label htmlFor="amount" className="font-headline">Amount (PKR)</Label>
               <Input id="amount" name="amount" type="number" placeholder="0.00" required step="0.01" />
             </div>
             <div className="space-y-2">
@@ -127,7 +128,7 @@ export default function WithdrawPage() {
                 tickMargin={8}
                 tickFormatter={(value) => value.slice(0, 3)}
                 />
-                <ChartTooltip
+                <Tooltip
                 cursor={false}
                 content={<ChartTooltipContent indicator="dot" />}
                 />
@@ -145,3 +146,5 @@ export default function WithdrawPage() {
     </div>
   );
 }
+
+    

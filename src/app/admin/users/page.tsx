@@ -18,10 +18,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 
 const users = [
-  { id: 'usr_1', name: 'John Doe', email: 'john.d@example.com', balance: '$1,250.50', status: 'Active' },
-  { id: 'usr_2', name: 'Jane Smith', email: 'jane.s@example.com', balance: '$800.00', status: 'Active' },
-  { id: 'usr_3', name: 'Sam Wilson', email: 'sam.w@example.com', balance: '$2,100.75', status: 'Suspended' },
-  { id: 'usr_4', name: 'Alice Johnson', email: 'alice.j@example.com', balance: '$300.20', status: 'Active' },
+  { id: 'usr_1', name: 'John Doe', email: 'john.d@example.com', balance: 'PKR 1,250.50', status: 'Active' },
+  { id: 'usr_2', name: 'Jane Smith', email: 'jane.s@example.com', balance: 'PKR 800.00', status: 'Active' },
+  { id: 'usr_3', name: 'Sam Wilson', email: 'sam.w@example.com', balance: 'PKR 2,100.75', status: 'Suspended' },
+  { id: 'usr_4', name: 'Alice Johnson', email: 'alice.j@example.com', balance: 'PKR 300.20', status: 'Active' },
 ];
 
 const userChartData = [
@@ -182,7 +182,7 @@ function UserDialog({ open, setOpen, user }: { open: boolean, setOpen: (open: bo
                         </div>
                          <div className="grid gap-2">
                             <Label htmlFor="balance">Balance</Label>
-                            <Input id="balance" type="text" defaultValue={user?.balance.replace('$', '')} required />
+                            <Input id="balance" type="text" defaultValue={user?.balance.replace('PKR', '')} required />
                         </div>
                          <div className="grid gap-2">
                             <Label htmlFor="status">Status</Label>
@@ -202,3 +202,5 @@ function UserDialog({ open, setOpen, user }: { open: boolean, setOpen: (open: bo
         </Dialog>
     )
 }
+
+    

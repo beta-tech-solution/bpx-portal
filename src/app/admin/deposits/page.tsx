@@ -192,7 +192,7 @@ function DepositTable({ data, loading }: { data: Deposit[], loading: boolean }) 
           });
       }
 
-      toast({ title: `Deposit ${newStatus}`, description: `Deposit from ${deposit.userFullName} for $${deposit.amount} has been ${newStatus.toLowerCase()}.` });
+      toast({ title: `Deposit ${newStatus}`, description: `Deposit from ${deposit.userFullName} for PKR ${deposit.amount} has been ${newStatus.toLowerCase()}.` });
     } catch (error) {
       console.error("Error updating deposit status: ", error);
       toast({ title: "Error", description: "Could not update deposit status.", variant: "destructive" });
@@ -226,7 +226,7 @@ function DepositTable({ data, loading }: { data: Deposit[], loading: boolean }) 
         {data.map((deposit) => (
           <TableRow key={deposit.id}>
             <TableCell className="font-medium">{deposit.userFullName}</TableCell>
-            <TableCell className="font-mono">${deposit.amount}</TableCell>
+            <TableCell className="font-mono">PKR {deposit.amount}</TableCell>
             <TableCell>{deposit.date}</TableCell>
             <TableCell>
               <Badge variant={statusVariant[deposit.status]}>{deposit.status}</Badge>
@@ -265,3 +265,5 @@ function DepositTable({ data, loading }: { data: Deposit[], loading: boolean }) 
     </Table>
   );
 }
+
+    

@@ -11,7 +11,7 @@ import { ArrowDownLeft, ArrowUpRight, Wallet, Send, TrendingUp, TrendingDown, Lo
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
 import { ChartContainer, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
 import { auth, db } from "@/lib/firebase/config"
-import { collection, query, where, getDocs, onSnapshot, doc } from "firebase/firestore"
+import { collection, query, where, getDocs, onSnapshot, doc, orderBy, limit } from "firebase/firestore"
 import { onAuthStateChanged, User } from "firebase/auth"
 import { format } from 'date-fns';
 
@@ -111,7 +111,7 @@ export default function DashboardPage() {
                 let totalTransfers = 0;
                 const allTransfers = transfersSnapshot.docs.map(doc => {
                     const data = doc.data();
-                    if (data.status === 'Transferred') totalTransfers += parseFloat(data.amount);
+                    if (data.status === 'Transferred' || data.status === 'Completed') totalTransfers += parseFloat(data.amount);
                     return { ...data, id: doc.id, type: 'Transfer' };
                 });
                 
@@ -129,7 +129,7 @@ export default function DashboardPage() {
                     id: tx.id,
                     type: tx.type,
                     date: tx.date,
-                    amount: `$${parseFloat(tx.amount).toFixed(2)}`,
+                    amount: `PKR ${parseFloat(tx.amount).toFixed(2)}`,
                     status: tx.status
                 } as Transaction));
 
@@ -195,7 +195,7 @@ export default function DashboardPage() {
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">${accountSummary.balance}</div>
+            <div className="text-3xl font-bold">PKR {accountSummary.balance}</div>
             <p className="text-xs text-muted-foreground">Your current available balance</p>
           </CardContent>
         </Card>
@@ -205,7 +205,7 @@ export default function DashboardPage() {
             <ArrowDownLeft className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">${accountSummary.totalDeposits}</div>
+            <div className="text-3xl font-bold">PKR {accountSummary.totalDeposits}</div>
              <p className="text-xs text-muted-foreground">All time approved deposits</p>
           </CardContent>
         </Card>
@@ -215,7 +215,7 @@ export default function DashboardPage() {
             <ArrowUpRight className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">${accountSummary.totalWithdrawals}</div>
+            <div className="text-3xl font-bold">PKR {accountSummary.totalWithdrawals}</div>
              <p className="text-xs text-muted-foreground">All time approved withdrawals</p>
           </CardContent>
         </Card>
@@ -225,7 +225,7 @@ export default function DashboardPage() {
             <Send className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">${accountSummary.totalTransfers}</div>
+            <div className="text-3xl font-bold">PKR {accountSummary.totalTransfers}</div>
             <p className="text-xs text-muted-foreground">To BPExch account</p>
           </CardContent>
         </Card>
@@ -321,3 +321,5 @@ export default function DashboardPage() {
     </div>
   )
 }
+
+    

@@ -10,31 +10,27 @@ import { Progress } from "@/components/ui/progress";
 import { LanguageToggle } from '@/components/language-toggle';
 import { UploadCloud, Hourglass, TrendingUp, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
+import { Area, AreaChart, CartesianGrid, XAxis, Tooltip } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
 import { auth, db } from '@/lib/firebase/config';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, onSnapshot } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
+import { format } from 'date-fns';
 
-const chartData = [
-    { month: "January", desktop: 186 },
-    { month: "February", desktop: 305 },
-    { month: "March", desktop: 237 },
-    { month: "April", desktop: 73 },
-    { month: "May", desktop: 209 },
-    { month: "June", desktop: 214 },
-  ]
+interface DepositChartData {
+  month: string;
+  amount: number;
+}
   
-  const chartConfig = {
-    desktop: {
-      label: "Deposits",
-      color: "hsl(var(--primary))",
-    },
-  } satisfies ChartConfig
+const chartConfig = {
+  amount: {
+    label: "Deposits",
+    color: "hsl(var(--primary))",
+  },
+} satisfies ChartConfig
 
 const CLOUDINARY_CLOUD_NAME = "datq7sbdp";
 const CLOUDINARY_UPLOAD_PRESET = "bpxmaster";
-
 
 export default function DepositPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -42,6 +38,30 @@ export default function DepositPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [user] = useAuthState(auth);
   const { toast } = useToast();
+  const [chartData, setChartData] = useState<DepositChartData[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const q = query(collection(db, 'deposits'), where('userId', '==', user.uid), where('status', '==', 'Approved'));
+    
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const monthlyData: { [key: string]: number } = {};
+        
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            const date = new Date(data.date);
+            const month = format(date, 'MMM');
+            monthlyData[month] = (monthlyData[month] || 0) + parseFloat(data.amount);
+        });
+
+        const formattedChartData = Object.entries(monthlyData).map(([month, amount]) => ({ month, amount }));
+        setChartData(formattedChartData);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -75,7 +95,6 @@ export default function DepositPage() {
     }
 
     try {
-        // 1. Upload file to Cloudinary
         const formData = new FormData();
         formData.append('file', file);
         formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
@@ -92,13 +111,12 @@ export default function DepositPage() {
         const cloudinaryData = await uploadResponse.json();
         const proofUrl = cloudinaryData.secure_url;
 
-        // 2. Add deposit document to Firestore
         await addDoc(collection(db, 'deposits'), {
             userId: user.uid,
             amount,
             proofUrl,
             status: 'Pending',
-            date: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
+            date: new Date().toISOString().split('T')[0],
             createdAt: serverTimestamp()
         });
         
@@ -170,8 +188,8 @@ export default function DepositPage() {
                 <CardContent className="grid md:grid-cols-2 gap-8">
                     <div className="space-y-6">
                         <div>
-                            <Label htmlFor="amount" className="font-semibold font-headline">Amount (USD)</Label>
-                            <Input id="amount" name="amount" type="number" placeholder="100.00" required step="0.01" className="mt-2 text-3xl font-bold h-auto p-2" />
+                            <Label htmlFor="amount" className="font-semibold font-headline">Amount (PKR)</Label>
+                            <Input id="amount" name="amount" type="number" placeholder="1000.00" required step="0.01" className="mt-2 text-3xl font-bold h-auto p-2" />
                         </div>
                         <div>
                             <h3 className="font-semibold mb-2 font-headline">Deposit Account Details</h3>
@@ -207,38 +225,16 @@ export default function DepositPage() {
               <TrendingUp className="w-8 h-8 text-primary" />
               <CardTitle className="font-headline">Your Deposit Trends</CardTitle>
               <CardDescription>
-                Monthly deposit amounts over the last 6 months.
+                Monthly approved deposit amounts over the last 6 months.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <ChartContainer config={chartConfig} className="h-[200px] w-full">
-                <AreaChart
-                  accessibilityLayer
-                  data={chartData}
-                  margin={{
-                    left: 12,
-                    right: 12,
-                  }}
-                >
+                <AreaChart accessibilityLayer data={chartData} margin={{ left: 12, right: 12 }} >
                   <CartesianGrid vertical={false} />
-                  <XAxis
-                    dataKey="month"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    tickFormatter={(value) => value.slice(0, 3)}
-                  />
-                  <ChartTooltip
-                    cursor={false}
-                    content={<ChartTooltipContent indicator="dot" />}
-                  />
-                  <Area
-                    dataKey="desktop"
-                    type="natural"
-                    fill="var(--color-desktop)"
-                    fillOpacity={0.4}
-                    stroke="var(--color-desktop)"
-                  />
+                  <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
+                  <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
+                  <Area dataKey="amount" type="natural" fill="var(--color-amount)" fillOpacity={0.4} stroke="var(--color-amount)" />
                 </AreaChart>
               </ChartContainer>
             </CardContent>
@@ -246,3 +242,5 @@ export default function DepositPage() {
     </div>
   );
 }
+
+    

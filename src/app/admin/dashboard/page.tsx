@@ -3,12 +3,12 @@
 
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Bar, BarChart, CartesianGrid, Legend, Tooltip, XAxis, YAxis, ResponsiveContainer, AreaChart, Area } from "recharts"
+import { Bar, BarChart, CartesianGrid, Legend, Tooltip, XAxis, YAxis, AreaChart, Area } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
 import { DollarSign, Users, Landmark, Send, Loader2, ArrowDownLeft, ArrowUpRight } from "lucide-react"
 import { db } from "@/lib/firebase/config"
-import { collection, getDocs, query, where, Timestamp } from "firebase/firestore"
-import { subMonths, format, getMonth, getYear } from 'date-fns'
+import { collection, getDocs, query, where, Timestamp, onSnapshot } from "firebase/firestore"
+import { subMonths, format, addMonths } from 'date-fns'
 
 
 const depositsChartConfig = {
@@ -23,7 +23,7 @@ const withdrawalsChartConfig = {
 
 const transfersChartConfig = {
     pending: { label: "Pending", color: "hsl(var(--primary))" },
-    completed: { label: "Completed", color: "hsl(var(--accent))" },
+    transferred: { label: "Transferred", color: "hsl(var(--accent))" },
 } satisfies ChartConfig;
 
 interface MonthlyData {
@@ -48,65 +48,67 @@ export default function AdminDashboardPage() {
             setLoading(true);
             try {
                 const usersSnapshot = await getDocs(collection(db, "users"));
-                const depositsQuery = query(collection(db, "deposits"), where('status', '==', 'Pending'));
-                const withdrawalsQuery = query(collection(db, "withdrawals"), where('status', '==', 'Pending'));
-                const transfersQuery = query(collection(db, "transfers"), where('status', '==', 'Pending'));
-
-                const [depositsSnapshot, withdrawalsSnapshot, transfersSnapshot] = await Promise.all([
-                    getDocs(depositsQuery),
-                    getDocs(withdrawalsQuery),
-                    getDocs(transfersQuery)
-                ]);
-
-                setOverviewData({
-                    totalUsers: usersSnapshot.size,
-                    pendingDeposits: depositsSnapshot.size,
-                    pendingWithdrawals: withdrawalsSnapshot.size,
-                    pendingTransfers: transfersSnapshot.size,
-                });
-                
-                const processChartData = (snapshots: any[], statuses: string[]): MonthlyData[] => {
-                    const monthlyTotals: { [key: string]: { [key: string]: number } } = {};
-                    const sixMonthsAgo = subMonths(new Date(), 5);
-                    
-                    for (let i = 0; i < 6; i++) {
-                        const month = format(addMonths(sixMonthsAgo, i), 'MMM');
-                        monthlyTotals[month] = {};
-                        statuses.forEach(status => monthlyTotals[month][status] = 0);
-                    }
-
-                    snapshots.forEach(snapshot => {
-                        snapshot.forEach((doc: any) => {
-                             const data = doc.data();
-                            const date = (data.createdAt as Timestamp)?.toDate() || new Date(data.date);
-                             if (date >= sixMonthsAgo) {
-                                const month = format(date, 'MMM');
-                                if (monthlyTotals[month]) {
-                                     monthlyTotals[month][data.status.toLowerCase()] = (monthlyTotals[month][data.status.toLowerCase()] || 0) + 1;
-                                }
-                            }
-                        });
-                    });
-
-                     return Object.entries(monthlyTotals).map(([month, values]) => ({
-                        month,
-                        ...values
-                    }));
-                };
-                
-                const allDeposits = await getDocs(collection(db, "deposits"));
-                const allWithdrawals = await getDocs(collection(db, "withdrawals"));
-                const allTransfers = await getDocs(collection(db, "transfers"));
-
-                setDepositsData(processChartData([allDeposits.docs.map(d=>d.data())], ['pending', 'approved']));
-                setWithdrawalsData(processChartData([allWithdrawals.docs.map(d=>d.data())], ['pending', 'approved']));
-                setTransfersData(processChartData([allTransfers.docs.map(d=>d.data())], ['pending', 'completed']));
-
+                 setOverviewData(prev => ({ ...prev, totalUsers: usersSnapshot.size }));
             } catch (error) {
-                console.error("Error fetching admin dashboard data: ", error);
-            } finally {
-                setLoading(false);
+                 console.error("Error fetching users count: ", error);
             }
+
+            const setupListener = (collectionName: string, statusField: 'pendingDeposits' | 'pendingWithdrawals' | 'pendingTransfers') => {
+                const q = query(collection(db, collectionName), where('status', '==', 'Pending'));
+                return onSnapshot(q, (snapshot) => {
+                    setOverviewData(prev => ({ ...prev, [statusField]: snapshot.size }));
+                }, (error) => console.error(`Error fetching ${collectionName}:`, error));
+            };
+
+            const unsubDeposits = setupListener('deposits', 'pendingDeposits');
+            const unsubWithdrawals = setupListener('withdrawals', 'pendingWithdrawals');
+            const unsubTransfers = setupListener('transfers', 'pendingTransfers');
+
+            const processChartData = (snapshot: any, statuses: string[]): MonthlyData[] => {
+                const monthlyTotals: { [key: string]: { [key: string]: number } } = {};
+                const sixMonthsAgo = subMonths(new Date(), 5);
+                
+                for (let i = 0; i < 6; i++) {
+                    const monthDate = addMonths(sixMonthsAgo, i);
+                    const month = format(monthDate, 'MMM');
+                    monthlyTotals[month] = {};
+                    statuses.forEach(status => monthlyTotals[month][status.toLowerCase()] = 0);
+                }
+
+                snapshot.forEach((doc: any) => {
+                    const data = doc.data();
+                    const date = (data.createdAt as Timestamp)?.toDate() || new Date(data.date);
+                     if (date >= sixMonthsAgo) {
+                        const month = format(date, 'MMM');
+                        const status = data.status.toLowerCase();
+                        if (monthlyTotals[month] && statuses.includes(status)) {
+                             monthlyTotals[month][status] = (monthlyTotals[month][status] || 0) + 1;
+                        }
+                    }
+                });
+
+                 return Object.entries(monthlyTotals).map(([month, values]) => ({
+                    month,
+                    ...values
+                }));
+            };
+            
+            const allDepositsSnap = await getDocs(collection(db, "deposits"));
+            const allWithdrawalsSnap = await getDocs(collection(db, "withdrawals"));
+            const allTransfersSnap = await getDocs(collection(db, "transfers"));
+
+            setDepositsData(processChartData(allDepositsSnap.docs, ['pending', 'approved']));
+            setWithdrawalsData(processChartData(allWithdrawalsSnap.docs, ['pending', 'approved']));
+            setTransfersData(processChartData(allTransfersSnap.docs, ['pending', 'transferred']));
+            
+            setLoading(false);
+
+            return () => {
+                unsubDeposits();
+                unsubWithdrawals();
+                unsubTransfers();
+            };
+
         };
 
         fetchData();
@@ -219,7 +221,7 @@ export default function AdminDashboardPage() {
                             <Tooltip content={<ChartTooltipContent indicator="dot" />} />
                             <Legend />
                             <Area type="monotone" dataKey="pending" stackId="1" stroke="var(--color-pending)" fill="var(--color-pending)" fillOpacity={0.4} />
-                            <Area type="monotone" dataKey="completed" stackId="1" stroke="var(--color-completed)" fill="var(--color-completed)" fillOpacity={0.4} />
+                            <Area type="monotone" dataKey="transferred" stackId="1" stroke="var(--color-transferred)" fill="var(--color-transferred)" fillOpacity={0.4} />
                         </AreaChart>
                     </ChartContainer>
                 </CardContent>
@@ -228,8 +230,5 @@ export default function AdminDashboardPage() {
     </div>
   )
 }
-function addMonths(date: Date, months: number) {
-    const d = new Date(date);
-    d.setMonth(d.getMonth() + months);
-    return d;
-}
+
+    

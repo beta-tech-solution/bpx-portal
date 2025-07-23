@@ -15,13 +15,15 @@ import {
   SidebarFooter,
   SidebarTrigger,
   SidebarInset,
+  SidebarGroup,
+  SidebarGroupLabel,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DollarSign, Send, Landmark, LogOut, Wallet, ExternalLink, LayoutDashboard, Loader2 } from "lucide-react";
 import { auth, db } from "@/lib/firebase/config";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 
 const navItems = [
@@ -35,6 +37,7 @@ const navItems = [
 interface UserData {
     fullName: string;
     email: string;
+    balance: number;
 }
 
 export default function DashboardLayout({
@@ -50,24 +53,27 @@ export default function DashboardLayout({
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        try {
-            const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-            if (userDoc.exists()) {
-                setUserData(userDoc.data() as UserData);
-            }
-        } catch (error) {
-            console.error("Error fetching user data:", error);
-            toast({ title: "Error", description: "Could not fetch user details.", variant: "destructive" });
-        }
+        const userDocRef = doc(db, "users", currentUser.uid);
+        const unsubscribeSnapshot = onSnapshot(userDocRef, (doc) => {
+          if (doc.exists()) {
+            setUserData(doc.data() as UserData);
+          }
+          setLoading(false);
+        }, (error) => {
+          console.error("Error fetching user data:", error);
+          toast({ title: "Error", description: "Could not fetch user details.", variant: "destructive" });
+          setLoading(false);
+        });
+        return () => unsubscribeSnapshot();
       } else {
         router.push("/login");
+        setLoading(false);
       }
-      setLoading(false);
     });
-    return () => unsubscribe();
+    return () => unsubscribeAuth();
   }, [router, toast]);
 
   const handleLogout = async () => {
@@ -112,6 +118,12 @@ export default function DashboardLayout({
             </div>
         </SidebarHeader>
         <SidebarContent>
+            <SidebarGroup>
+                <SidebarGroupLabel>Wallet Balance</SidebarGroupLabel>
+                <div className="p-2 font-bold text-2xl font-mono text-sidebar-foreground">
+                    PKR {userData?.balance?.toFixed(2) ?? '0.00'}
+                </div>
+            </SidebarGroup>
           <SidebarMenu>
             {navItems.map((item) => (
                  <SidebarMenuItem key={item.href}>
