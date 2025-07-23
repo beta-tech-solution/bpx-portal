@@ -24,11 +24,13 @@ const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({ className, va
     const options = {
       default: {
         particleColor: "hsla(231, 75%, 80%, 0.5)",
+        lineColor: "hsla(231, 75%, 70%, 0.2)",
         particleAmount: 40,
         defaultRadius: 2,
         variantRadius: 2,
         defaultSpeed: 0.1,
         variantSpeed: 0.5,
+        linkRadius: 200,
       },
       admin: {
         particleColor: "hsla(174, 100%, 70%, 0.5)",
@@ -122,9 +124,7 @@ const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({ className, va
         particle.update();
         particle.draw();
       });
-      if (variant === 'admin') {
-        linkParticles();
-      }
+      linkParticles();
       animationFrameId = requestAnimationFrame(animate);
     };
 
