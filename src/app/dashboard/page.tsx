@@ -1,54 +1,31 @@
 
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { ArrowDownLeft, ArrowUpRight, Wallet, Send, FileText, TrendingUp, TrendingDown } from "lucide-react"
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Area, AreaChart } from "recharts"
-import { ChartContainer, ChartTooltipContent, ChartTooltip, ChartConfig } from "@/components/ui/chart"
+import { ArrowDownLeft, ArrowUpRight, Wallet, Send, TrendingUp, TrendingDown, Loader2 } from "lucide-react"
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
+import { ChartContainer, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
+import { auth, db } from "@/lib/firebase/config"
+import { collection, query, where, getDocs, orderBy, limit, doc, getDoc } from "firebase/firestore"
+import { onAuthStateChanged, User } from "firebase/auth"
 
-const accountSummary = {
-  balance: "550.75",
-  totalDeposits: "1200.00",
-  totalWithdrawals: "450.00",
-  totalTransfers: "200.00",
-};
+interface Transaction {
+    id: string;
+    type: "Deposit" | "Withdrawal" | "Transfer";
+    date: string;
+    amount: string;
+    status: "Completed" | "Pending" | "Rejected" | "Transferred" | "Issue";
+}
 
-const recentTransactions = [
-  { id: "txn_1", type: "Deposit", date: "2023-11-05", amount: "$100.00", status: "Completed" },
-  { id: "txn_2", type: "Withdrawal", date: "2023-11-04", amount: "$50.00", status: "Completed" },
-  { id: "txn_3", type: "Transfer", date: "2023-11-03", amount: "$75.00", status: "Completed" },
-  { id: "txn_4", type: "Deposit", date: "2023-11-01", amount: "$200.00", status: "Pending" },
-  { id: "txn_5", type: "Withdrawal", date: "2023-10-30", amount: "$25.50", status: "Rejected" },
-];
-
-const depositsData = [
-  { month: "Jan", amount: 400 },
-  { month: "Feb", amount: 300 },
-  { month: "Mar", amount: 200 },
-  { month: "Apr", amount: 278 },
-  { month: "May", amount: 189 },
-  { month: "Jun", amount: 239 },
-];
-const withdrawalsData = [
-  { month: "Jan", amount: 240 },
-  { month: "Feb", amount: 139 },
-  { month: "Mar", amount: 980 },
-  { month: "Apr", amount: 390 },
-  { month: "May", amount: 480 },
-  { month: "Jun", amount: 380 },
-];
-const transfersData = [
-  { month: "Jan", amount: 100 },
-  { month: "Feb", amount: 120 },
-  { month: "Mar", amount: 50 },
-  { month: "Apr", amount: 200 },
-  { month: "May", amount: 150 },
-  { month: "Jun", amount: 80 },
-];
+interface ChartData {
+    month: string;
+    amount: number;
+}
 
 const depositsChartConfig = {
   amount: { label: "Deposits", color: "hsl(var(--primary))" },
@@ -60,13 +37,139 @@ const transfersChartConfig = {
     amount: { label: "Transfers", color: "hsl(var(--accent))" },
 } satisfies ChartConfig;
 
-
 export default function DashboardPage() {
-  const statusVariant = {
-    Completed: "secondary",
-    Pending: "default",
-    Rejected: "destructive"
-  } as const;
+    const [user, setUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [accountSummary, setAccountSummary] = useState({
+        balance: "0.00",
+        totalDeposits: "0.00",
+        totalWithdrawals: "0.00",
+        totalTransfers: "0.00",
+    });
+    const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
+    const [depositsData, setDepositsData] = useState<ChartData[]>([]);
+    const [withdrawalsData, setWithdrawalsData] = useState<ChartData[]>([]);
+    const [transfersData, setTransfersData] = useState<ChartData[]>([]);
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            if (currentUser) {
+                setUser(currentUser);
+            } else {
+                setUser(null);
+                setLoading(false);
+            }
+        });
+        return () => unsubscribe();
+    }, []);
+
+    useEffect(() => {
+        if (!user) return;
+
+        const fetchData = async () => {
+            setLoading(true);
+
+            try {
+                // Fetch user balance
+                const userDocRef = doc(db, "users", user.uid);
+                const userDoc = await getDoc(userDocRef);
+                const userData = userDoc.data();
+                
+                // Fetch transactions
+                const depositsQuery = query(collection(db, "deposits"), where("userId", "==", user.uid));
+                const withdrawalsQuery = query(collection(db, "withdrawals"), where("userId", "==", user.uid));
+                const transfersQuery = query(collection(db, "transfers"), where("userId", "==", user.uid));
+
+                const [depositsSnapshot, withdrawalsSnapshot, transfersSnapshot] = await Promise.all([
+                    getDocs(depositsQuery),
+                    getDocs(withdrawalsQuery),
+                    getDocs(transfersQuery)
+                ]);
+
+                let totalDeposits = 0;
+                const allDeposits = depositsSnapshot.docs.map(doc => {
+                    const data = doc.data();
+                    if(data.status === 'Approved') totalDeposits += parseFloat(data.amount);
+                    return { ...data, id: doc.id, type: 'Deposit' };
+                });
+
+                let totalWithdrawals = 0;
+                const allWithdrawals = withdrawalsSnapshot.docs.map(doc => {
+                    const data = doc.data();
+                     if(data.status === 'Approved') totalWithdrawals += parseFloat(data.amount);
+                    return { ...data, id: doc.id, type: 'Withdrawal' };
+                });
+                
+                let totalTransfers = 0;
+                const allTransfers = transfersSnapshot.docs.map(doc => {
+                    const data = doc.data();
+                    if(data.status === 'Transferred') totalTransfers += parseFloat(data.amount);
+                    return { ...data, id: doc.id, type: 'Transfer' };
+                });
+                
+                setAccountSummary({
+                    balance: userData?.balance?.toFixed(2) ?? "0.00",
+                    totalDeposits: totalDeposits.toFixed(2),
+                    totalWithdrawals: totalWithdrawals.toFixed(2),
+                    totalTransfers: totalTransfers.toFixed(2)
+                });
+
+                const allTransactions = [...allDeposits, ...allWithdrawals, ...allTransfers]
+                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                .slice(0, 5)
+                .map(tx => ({
+                    id: tx.id,
+                    type: tx.type,
+                    date: tx.date,
+                    amount: `$${parseFloat(tx.amount).toFixed(2)}`,
+                    status: tx.status
+                } as Transaction));
+
+                setRecentTransactions(allTransactions);
+
+                const processChartData = (snapshot: any) => {
+                    const monthlyData: { [key: string]: number } = {};
+                    snapshot.docs.forEach((doc: any) => {
+                        const data = doc.data();
+                        const date = new Date(data.date);
+                        const month = date.toLocaleString('default', { month: 'short' });
+                        if(data.status === 'Approved' || data.status === 'Completed' || data.status === 'Transferred') {
+                            monthlyData[month] = (monthlyData[month] || 0) + parseFloat(data.amount);
+                        }
+                    });
+                    return Object.entries(monthlyData).map(([month, amount]) => ({ month, amount }));
+                };
+
+                setDepositsData(processChartData(depositsSnapshot));
+                setWithdrawalsData(processChartData(withdrawalsSnapshot));
+                setTransfersData(processChartData(transfersSnapshot));
+
+            } catch (error) {
+                console.error("Error fetching dashboard data:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [user]);
+
+    const statusVariant = {
+        Completed: "secondary",
+        Approved: "secondary",
+        Transferred: "secondary",
+        Pending: "default",
+        Rejected: "destructive",
+        Issue: "destructive"
+    } as const;
+
+  if (loading) {
+      return (
+          <div className="flex items-center justify-center min-h-screen">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+      )
+  }
 
   return (
     <div className="max-w-7xl mx-auto grid gap-8 animate-fade-in">
@@ -88,7 +191,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">${accountSummary.totalDeposits}</div>
-             <p className="text-xs text-muted-foreground">All time deposits</p>
+             <p className="text-xs text-muted-foreground">All time approved deposits</p>
           </CardContent>
         </Card>
         <Card>
@@ -98,7 +201,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">${accountSummary.totalWithdrawals}</div>
-             <p className="text-xs text-muted-foreground">All time withdrawals</p>
+             <p className="text-xs text-muted-foreground">All time approved withdrawals</p>
           </CardContent>
         </Card>
         <Card>
@@ -179,18 +282,22 @@ export default function DashboardPage() {
           <CardContent>
             <Table>
               <TableBody>
-                {recentTransactions.map((transaction) => (
+                {recentTransactions.length > 0 ? recentTransactions.map((transaction) => (
                   <TableRow key={transaction.id}>
                     <TableCell>
                       <div className="font-medium">{transaction.type}</div>
-                      <div className="text-sm text-muted-foreground">{transaction.date}</div>
+                      <div className="text-sm text-muted-foreground">{new Date(transaction.date).toLocaleDateString()}</div>
                     </TableCell>
                     <TableCell className="text-right font-mono font-bold">{transaction.amount}</TableCell>
                      <TableCell className="text-right">
                         <Badge variant={statusVariant[transaction.status as keyof typeof statusVariant]} className="font-normal">{transaction.status}</Badge>
                      </TableCell>
                   </TableRow>
-                ))}
+                )) : (
+                    <TableRow>
+                        <TableCell colSpan={3} className="text-center text-muted-foreground">No recent transactions.</TableCell>
+                    </TableRow>
+                )}
               </TableBody>
             </Table>
           </CardContent>
@@ -199,3 +306,4 @@ export default function DashboardPage() {
     </div>
   )
 }
+

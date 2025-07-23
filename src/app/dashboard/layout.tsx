@@ -18,7 +18,11 @@ import {
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { DollarSign, Send, Landmark, LogOut, Wallet, ExternalLink, LayoutDashboard } from "lucide-react";
+import { DollarSign, Send, Landmark, LogOut, Wallet, ExternalLink, LayoutDashboard, Loader2 } from "lucide-react";
+import { auth, db } from "@/lib/firebase/config";
+import { onAuthStateChanged, signOut, User } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { useToast } from "@/hooks/use-toast";
 
 const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -28,6 +32,11 @@ const navItems = [
     { href: "/dashboard/bpexch-login", label: "BPExch Login", icon: ExternalLink },
 ]
 
+interface UserData {
+    fullName: string;
+    email: string;
+}
+
 export default function DashboardLayout({
   children,
 }: {
@@ -35,6 +44,42 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { toast } = useToast();
+  const [user, setUser] = React.useState<User | null>(null);
+  const [userData, setUserData] = React.useState<UserData | null>(null);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+        try {
+            const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+            if (userDoc.exists()) {
+                setUserData(userDoc.data() as UserData);
+            }
+        } catch (error) {
+            console.error("Error fetching user data:", error);
+            toast({ title: "Error", description: "Could not fetch user details.", variant: "destructive" });
+        }
+      } else {
+        router.push("/login");
+      }
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, [router, toast]);
+
+  const handleLogout = async () => {
+      try {
+          await signOut(auth);
+          toast({ title: "Logged Out", description: "You have been successfully logged out." });
+          router.push('/login');
+      } catch (error) {
+          console.error("Logout error:", error);
+          toast({ title: "Logout Failed", description: "Could not log out. Please try again.", variant: "destructive" });
+      }
+  }
 
   const isActive = (path: string) => pathname === path;
 
@@ -43,6 +88,14 @@ export default function DashboardLayout({
     if (currentItem) return currentItem.label;
     const parts = pathname.split('/').pop()?.replace(/-/g, ' ').split(' ') ?? [];
     return parts.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  }
+  
+  if (loading) {
+      return (
+          <div className="flex items-center justify-center min-h-screen bg-background">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+      )
   }
 
   return (
@@ -77,14 +130,14 @@ export default function DashboardLayout({
         <SidebarFooter className="p-4">
             <div className="flex items-center gap-3 bg-sidebar-accent/10 p-2 rounded-lg">
                 <Avatar>
-                    <AvatarImage src="https://placehold.co/40x40" data-ai-hint="person avatar" alt="User" />
-                    <AvatarFallback>U</AvatarFallback>
+                    <AvatarImage src="https://placehold.co/40x40" data-ai-hint="person avatar" alt={userData?.fullName} />
+                    <AvatarFallback>{userData?.fullName?.[0] ?? 'U'}</AvatarFallback>
                 </Avatar>
-                <div className="flex-1">
-                    <p className="text-sm font-semibold text-sidebar-foreground">User</p>
-                    <p className="text-xs text-sidebar-foreground/70">user@bpx.com</p>
+                <div className="flex-1 overflow-hidden">
+                    <p className="text-sm font-semibold text-sidebar-foreground truncate">{userData?.fullName ?? 'User'}</p>
+                    <p className="text-xs text-sidebar-foreground/70 truncate">{userData?.email ?? 'user@bpx.com'}</p>
                 </div>
-                <Button variant="ghost" size="icon" className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent" onClick={() => router.push('/login')}>
+                <Button variant="ghost" size="icon" className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent" onClick={handleLogout}>
                     <LogOut className="w-4 h-4"/>
                 </Button>
             </div>
