@@ -165,6 +165,10 @@ export default function DashboardPage() {
         const unsubscribeDeposits = onSnapshot(depositsQuery, () => processTransactions());
         unsubscribes.push(unsubscribeDeposits);
         
+        const withdrawalsQuery = query(collection(db, "withdrawals"), where("userId", "==", user.uid));
+        const unsubscribeWithdrawals = onSnapshot(withdrawalsQuery, () => processTransactions());
+        unsubscribes.push(unsubscribeWithdrawals);
+
         return () => unsubscribes.forEach(unsub => unsub());
 
     }, [user]);
@@ -321,5 +325,3 @@ export default function DashboardPage() {
     </div>
   )
 }
-
-    
