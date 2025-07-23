@@ -19,7 +19,7 @@ import { auth, db } from "@/lib/firebase/config"
 import { doc, getDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { useAuthState } from "react-firebase-hooks/auth"
-import ParticlesBackground from "@/components/particles-background"
+import AdminLoginBackground from "@/components/admin-login-background"
 
 export default function AdminLoginPage() {
     const router = useRouter()
@@ -78,7 +78,7 @@ export default function AdminLoginPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background overflow-hidden">
-        <ParticlesBackground variant="admin" />
+        <AdminLoginBackground />
       <Card className="w-full max-w-sm mx-4 z-10 bg-card/80 backdrop-blur-sm">
         <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
