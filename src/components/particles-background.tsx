@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 
 interface ParticlesBackgroundProps {
@@ -24,35 +24,38 @@ const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({ className, va
       default: {
         particleColor: "hsla(231, 75%, 80%, 0.5)",
         lineColor: "hsla(231, 75%, 70%, 0.3)",
-        particleAmount: 40,
-        defaultRadius: 1.5,
-        variantRadius: 1,
-        defaultSpeed: 0.2,
-        variantSpeed: 0.4,
+        particleAmount: 50,
+        defaultRadius: 2,
+        variantRadius: 2,
+        defaultSpeed: 0.1,
+        variantSpeed: 0.2,
         linkRadius: 200,
-        type: 'growth',
+        type: 'network',
+        icons: true,
       },
       signup: {
         particleColor: "hsla(174, 90%, 75%, 0.7)",
         lineColor: "hsla(174, 90%, 65%, 0.4)",
         particleAmount: 50,
-        defaultRadius: 1.5,
-        variantRadius: 1.5,
-        defaultSpeed: 0.3,
-        variantSpeed: 0.5,
-        linkRadius: 220,
-        type: 'growth',
+        defaultRadius: 2,
+        variantRadius: 2,
+        defaultSpeed: 0.1,
+        variantSpeed: 0.2,
+        linkRadius: 200,
+        type: 'network',
+        icons: true,
       },
       admin: {
         particleColor: "hsla(174, 100%, 70%, 0.6)",
         lineColor: "hsla(174, 100%, 60%, 0.15)",
-        particleAmount: 60,
+        particleAmount: 80,
         defaultRadius: 1.5,
         variantRadius: 1,
-        defaultSpeed: 0.1,
-        variantSpeed: 0.2,
+        defaultSpeed: 0.2,
+        variantSpeed: 0.3,
         linkRadius: 180,
         type: 'network',
+        icons: false,
       }
     };
     const config = options[variant];
@@ -60,44 +63,54 @@ const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({ className, va
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    let particles: (Particle | GrowthParticle)[] = [];
+    let particles: Particle[] = [];
 
-    abstract class BaseParticle {
-        x: number;
-        y: number;
-        radius: number;
-        
-        constructor() {
-            this.x = Math.random() * canvas.width;
-            this.y = Math.random() * canvas.height;
-            this.radius = config.defaultRadius + Math.random() * config.variantRadius;
-        }
+    // Financial Icons as SVG strings
+    const dollarIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>`;
+    const chartIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M18.7 8a6 6 0 0 0-6 6"></path><path d="M13 13a2 2 0 0 0 2 2"></path></svg>`;
 
-        abstract draw(context: CanvasRenderingContext2D): void;
-        abstract update(): void;
-    }
+    const icons = [dollarIcon, chartIcon].map(svgString => {
+        const img = new Image();
+        img.src = `data:image/svg+xml;base64,${btoa(svgString.replace('currentColor', config.particleColor))}`;
+        return img;
+    });
 
-    class NetworkParticle extends BaseParticle {
+    class Particle {
+      x: number;
+      y: number;
+      radius: number;
       speed: number;
       directionAngle: number;
       vector: { x: number, y: number };
-
+      isIcon: boolean;
+      icon: HTMLImageElement | null;
+      
       constructor() {
-        super();
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.radius = config.defaultRadius + Math.random() * config.variantRadius;
         this.speed = config.defaultSpeed + Math.random() * config.variantSpeed;
         this.directionAngle = Math.floor(Math.random() * 360);
         this.vector = {
           x: Math.cos(this.directionAngle) * this.speed,
           y: Math.sin(this.directionAngle) * this.speed
         };
+        this.isIcon = config.icons && Math.random() > 0.9; // 10% chance to be an icon
+        this.icon = this.isIcon ? icons[Math.floor(Math.random() * icons.length)] : null;
       }
 
       draw(ctx: CanvasRenderingContext2D) {
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.closePath();
-        ctx.fillStyle = config.particleColor;
-        ctx.fill();
+        if (this.isIcon && this.icon && this.icon.complete) {
+            ctx.globalAlpha = 0.6;
+            ctx.drawImage(this.icon, this.x - 12, this.y - 12, 24, 24);
+            ctx.globalAlpha = 1.0;
+        } else {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.closePath();
+            ctx.fillStyle = config.particleColor;
+            ctx.fill();
+        }
       }
 
       update() {
@@ -107,75 +120,64 @@ const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({ className, va
       }
 
       resetPosition() {
-        if (this.x < -this.radius) this.x = canvas.width + this.radius;
-        if (this.x > canvas.width + this.radius) this.x = -this.radius;
-        if (this.y < -this.radius) this.y = canvas.height + this.radius;
-        if (this.y > canvas.height + this.radius) this.y = -this.radius;
+        if (this.x < 0) this.x = canvas.width;
+        if (this.x > canvas.width) this.x = 0;
+        if (this.y < 0) this.y = canvas.height;
+        if (this.y > canvas.height) this.y = 0;
       }
-    }
-    
-    class GrowthParticle extends BaseParticle {
-        speed: number;
-        constructor() {
-            super();
-            this.y = canvas.height + this.radius;
-            this.speed = config.defaultSpeed + Math.random() * config.variantSpeed;
-        }
-        
-        draw(ctx: CanvasRenderingContext2D) {
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-            ctx.fillStyle = config.particleColor;
-            ctx.fill();
-
-            // Draw a tail
-            ctx.beginPath();
-            ctx.moveTo(this.x, this.y);
-            ctx.lineTo(this.x, this.y + this.radius * 4);
-            ctx.lineWidth = this.radius * 0.5;
-            ctx.strokeStyle = config.lineColor;
-            ctx.stroke();
-        }
-
-        update() {
-            this.y -= this.speed;
-            if(this.y < -this.radius * 5) {
-                this.y = canvas.height + this.radius;
-                this.x = Math.random() * canvas.width;
-            }
-        }
     }
 
 
     const createParticles = () => {
       particles = [];
       for (let i = 0; i < config.particleAmount; i++) {
-        if(config.type === 'growth'){
-            particles.push(new GrowthParticle());
-        } else {
-            particles.push(new NetworkParticle());
-        }
+        particles.push(new Particle());
       }
     };
     
-    const linkNetworkParticles = () => {
-        if(!ctx) return;
-        const networkParticles = particles as NetworkParticle[];
-        for (let i = 0; i < networkParticles.length; i++) {
-            for (let j = i + 1; j < networkParticles.length; j++) {
-                const dx = networkParticles[i].x - networkParticles[j].x;
-                const dy = networkParticles[i].y - networkParticles[j].y;
+    const linkParticles = (ctx: CanvasRenderingContext2D) => {
+        for (let i = 0; i < particles.length; i++) {
+            for (let j = i + 1; j < particles.length; j++) {
+                const dx = particles[i].x - particles[j].x;
+                const dy = particles[i].y - particles[j].y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
                 if (distance < config.linkRadius) {
                     const opacity = 1 - (distance / config.linkRadius);
                     ctx.beginPath();
-                    ctx.moveTo(networkParticles[i].x, networkParticles[i].y);
-                    ctx.lineTo(networkParticles[j].x, networkParticles[j].y);
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(particles[j].x, particles[j].y);
                     ctx.strokeStyle = config.lineColor.replace(/,\s*\d*\.?\d*\)/, `, ${opacity})`);
                     ctx.lineWidth = 0.8;
                     ctx.stroke();
+
+                    // Add smaller traveling particles along the line
+                    if (Math.random() > 0.99) { // low probability to reduce clutter
+                        const travelingParticle = {
+                            x: particles[i].x,
+                            y: particles[i].y,
+                            targetX: particles[j].x,
+                            targetY: particles[j].y,
+                            progress: 0,
+                            speed: Math.random() * 0.005 + 0.005
+                        };
+                        animateTravelingParticle(ctx, travelingParticle);
+                    }
                 }
             }
+        }
+    }
+
+    const animateTravelingParticle = (ctx: CanvasRenderingContext2D, p: any) => {
+        p.progress += p.speed;
+        if(p.progress < 1){
+            p.x = p.x + (p.targetX - p.x) * p.progress;
+            p.y = p.y + (p.targetY - p.y) * p.progress;
+
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+            ctx.fillStyle = config.particleColor;
+            ctx.fill();
+            requestAnimationFrame(() => animateTravelingParticle(ctx, p));
         }
     }
 
@@ -186,10 +188,7 @@ const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({ className, va
         particle.update();
         particle.draw(ctx);
       });
-      
-      if(config.type === 'network') {
-          linkNetworkParticles();
-      }
+      linkParticles(ctx);
 
       animationFrameId = requestAnimationFrame(animate);
     };
@@ -201,8 +200,26 @@ const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({ className, va
         createParticles();
     }
     
-    createParticles();
-    animate();
+    // Initial setup
+    let ready = !config.icons;
+    if (config.icons) {
+        let loadedCount = 0;
+        icons.forEach(icon => {
+            icon.onload = () => {
+                loadedCount++;
+                if (loadedCount === icons.length) {
+                    ready = true;
+                    createParticles();
+                    if(!animationFrameId) animate();
+                }
+            }
+        });
+    }
+
+    if (ready) {
+        createParticles();
+        animate();
+    }
     
     window.addEventListener('resize', handleResize);
 
