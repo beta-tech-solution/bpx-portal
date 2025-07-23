@@ -16,8 +16,9 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Wallet, Eye, EyeOff, Loader2 } from "lucide-react"
-import { auth } from "@/lib/firebase/config"
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth"
+import { auth, db } from "@/lib/firebase/config"
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo } from "firebase/auth"
+import { doc, setDoc, getDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -60,8 +61,28 @@ export default function LoginPage() {
         setIsGoogleLoading(true)
         const provider = new GoogleAuthProvider()
         try {
-            await signInWithPopup(auth, provider)
-            toast({ title: "Login Successful", description: "Welcome back!" })
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
+            
+            // Check if user document exists, if not, create it
+            const userDocRef = doc(db, "users", user.uid);
+            const userDoc = await getDoc(userDocRef);
+
+            if (!userDoc.exists()) {
+                 await setDoc(doc(db, "users", user.uid), {
+                    uid: user.uid,
+                    fullName: user.displayName,
+                    email: user.email,
+                    phone: user.phoneNumber,
+                    createdAt: new Date(),
+                    balance: 0,
+                    status: 'Active'
+                });
+                toast({ title: "Account Created", description: "Welcome! Your account has been created." })
+            } else {
+                toast({ title: "Login Successful", description: "Welcome back!" })
+            }
+
             router.push('/dashboard')
         } catch (error: any) {
             console.error("Google login error:", error)
@@ -141,5 +162,3 @@ export default function LoginPage() {
     </div>
   )
 }
-
-    

@@ -70,10 +70,13 @@ export default function AdminDepositsPage() {
         });
       });
       
-      await Promise.all(userPromises);
+      await Promise.all(userPromises.filter(p => p !== null));
       
       setDeposits(depositsData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
       setLoading(false);
+    }, (error) => {
+        console.error("Error fetching deposits:", error);
+        setLoading(false);
     });
     return () => unsubscribe();
   }, []);
@@ -188,6 +191,10 @@ function DepositTable({ data, loading }: { data: Deposit[], loading: boolean }) 
 
       if (newStatus === 'Approved') {
           const userRef = doc(db, 'users', deposit.userId);
+          const userDoc = await getDoc(userRef);
+          if (!userDoc.exists()) {
+              throw new Error(`User document with ID ${deposit.userId} not found.`);
+          }
           batch.update(userRef, { balance: increment(parseFloat(deposit.amount)) });
       }
 
@@ -196,7 +203,7 @@ function DepositTable({ data, loading }: { data: Deposit[], loading: boolean }) 
       toast({ title: `Deposit ${newStatus}`, description: `Deposit from ${deposit.userFullName} for PKR ${deposit.amount} has been ${newStatus.toLowerCase()}.` });
     } catch (error) {
       console.error("Error updating deposit status: ", error);
-      toast({ title: "Error", description: "Could not update deposit status.", variant: "destructive" });
+      toast({ title: "Error", description: "Could not update deposit status. The user may not exist in the database.", variant: "destructive" });
     }
   };
 
