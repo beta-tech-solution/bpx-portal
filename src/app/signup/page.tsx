@@ -61,11 +61,11 @@ export default function SignupPage() {
             return
         }
         
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
         if (!passwordRegex.test(password)) {
             toast({
                 title: "Weak Password",
-                description: "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number.",
+                description: "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number and one special character.",
                 variant: "destructive"
             });
             setIsLoading(false);
@@ -131,7 +131,11 @@ export default function SignupPage() {
             }
         } catch (error: any) {
             console.error("Google signup error:", error)
-            toast({ title: "Google Sign-in Failed", description: "Could not sign in with Google. Please try again.", variant: "destructive" })
+            let errorMessage = "Could not sign in with Google. Please try again.";
+            if (error.code === 'auth/unauthorized-domain') {
+                errorMessage = "This domain is not authorized for Google Sign-In. Please contact support."
+            }
+            toast({ title: "Google Sign-in Failed", description: errorMessage, variant: "destructive" })
         } finally {
             setIsGoogleLoading(false)
         }
@@ -196,7 +200,7 @@ export default function SignupPage() {
                 </div>
                 <div className="grid gap-2 relative">
                     <Label htmlFor="password">Password</Label>
-                    <Input id="password" name="password" type={showPassword ? "text" : "password"} required />
+                    <Input id="password" name="password" type={showPassword ? "text" : "password"} required autoComplete="new-password" />
                      <Button
                         type="button"
                         variant="ghost"
@@ -252,3 +256,5 @@ export default function SignupPage() {
     </div>
   )
 }
+
+    

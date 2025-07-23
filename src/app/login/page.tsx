@@ -77,7 +77,8 @@ export default function LoginPage() {
                     phone: user.phoneNumber,
                     createdAt: new Date(),
                     balance: 0,
-                    status: 'Active'
+                    status: 'Active',
+                    role: 'User',
                 });
                 toast({ title: "Account Created", description: "Welcome! Your account has been created." })
             } else {
@@ -87,7 +88,11 @@ export default function LoginPage() {
             router.push('/dashboard')
         } catch (error: any) {
             console.error("Google login error:", error)
-            toast({ title: "Google Sign-in Failed", description: "Could not sign in with Google. Please try again.", variant: "destructive" })
+             let errorMessage = "Could not sign in with Google. Please try again.";
+            if (error.code === 'auth/unauthorized-domain') {
+                errorMessage = "This domain is not authorized for Google Sign-In. Please contact support."
+            }
+            toast({ title: "Google Sign-in Failed", description: errorMessage, variant: "destructive" })
         } finally {
             setIsGoogleLoading(false)
         }
@@ -164,3 +169,5 @@ export default function LoginPage() {
     </div>
   )
 }
+
+    
