@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 
 interface ParticlesBackgroundProps {
   className?: string;
-  variant?: 'default' | 'admin';
+  variant?: 'default' | 'admin' | 'signup';
 }
 
 const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({ className, variant = 'default' }) => {
@@ -25,12 +25,24 @@ const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({ className, va
       default: {
         particleColor: "hsla(231, 75%, 80%, 0.8)",
         lineColor: "hsla(231, 75%, 70%, 0.4)",
-        particleAmount: 50,
+        particleAmount: 70,
         defaultRadius: 2.5,
         variantRadius: 2,
         defaultSpeed: 0.1,
         variantSpeed: 0.2,
         linkRadius: 220,
+        type: 'lines',
+      },
+      signup: {
+        particleColor: "hsla(174, 90%, 75%, 0.7)",
+        lineColor: "hsla(174, 90%, 65%, 0.3)",
+        particleAmount: 80,
+        defaultRadius: 2,
+        variantRadius: 1.5,
+        defaultSpeed: 0.15,
+        variantSpeed: 0.25,
+        linkRadius: 200,
+        type: 'lines',
       },
       admin: {
         particleColor: "hsla(174, 100%, 70%, 0.6)",
@@ -41,6 +53,7 @@ const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({ className, va
         defaultSpeed: 0.2,
         variantSpeed: 0.5,
         linkRadius: 180,
+        type: 'network',
       }
     };
     const config = options[variant];
@@ -81,10 +94,10 @@ const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({ className, va
         this.x += this.vector.x;
         this.y += this.vector.y;
 
-        if (this.x < 0) this.x = canvas.width;
-        if (this.x > canvas.width) this.x = 0;
-        if (this.y < 0) this.y = canvas.height;
-        if (this.y > canvas.height) this.y = 0;
+        if (this.x < -this.radius) this.x = canvas.width + this.radius;
+        if (this.x > canvas.width + this.radius) this.x = -this.radius;
+        if (this.y < -this.radius) this.y = canvas.height + this.radius;
+        if (this.y > canvas.height + this.radius) this.y = -this.radius;
       }
     }
 
@@ -107,8 +120,14 @@ const ParticlesBackground: React.FC<ParticlesBackgroundProps> = ({ className, va
                     ctx.beginPath();
                     ctx.moveTo(particles[i].x, particles[i].y);
                     ctx.lineTo(particles[j].x, particles[j].y);
-                    ctx.strokeStyle = config.lineColor.replace(/,\s*\d*\.?\d*\)/, `, ${opacity})`);
-                    ctx.lineWidth = 0.8;
+                    
+                    if(config.type === 'network') {
+                         ctx.strokeStyle = config.lineColor.replace(/,\s*\d*\.?\d*\)/, `, ${opacity})`);
+                    } else {
+                         ctx.strokeStyle = config.lineColor;
+                    }
+                   
+                    ctx.lineWidth = config.type === 'network' ? 0.8 : 0.5;
                     ctx.stroke();
                 }
             }

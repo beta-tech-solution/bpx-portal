@@ -143,7 +143,7 @@ export default function SignupPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background py-8 animate-fade-in overflow-hidden">
-        <ParticlesBackground variant="default" />
+        <ParticlesBackground variant="signup" />
       <Card className="w-full max-w-md mx-4 z-10 bg-card/80 backdrop-blur-sm">
         <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
