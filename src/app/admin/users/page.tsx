@@ -38,6 +38,7 @@ export default function AdminUsersPage() {
 
   return (
     <>
+    <div className="animate-fade-in">
     <Card>
       <CardHeader className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
@@ -93,6 +94,7 @@ export default function AdminUsersPage() {
         </div>
       </CardContent>
     </Card>
+    </div>
     <UserDialog open={open} setOpen={setOpen} user={selectedUser} />
     </>
   )

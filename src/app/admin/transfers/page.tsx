@@ -37,6 +37,7 @@ export default function AdminTransfersPage() {
     }
 
   return (
+    <div className="animate-fade-in">
     <Card>
       <CardHeader>
         <CardTitle className="font-headline">Transfer Management</CardTitle>
@@ -65,6 +66,7 @@ export default function AdminTransfersPage() {
         </Tabs>
       </CardContent>
     </Card>
+    </div>
   )
 }
 

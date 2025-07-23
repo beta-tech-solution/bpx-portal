@@ -36,6 +36,7 @@ export default function AdminWithdrawalsPage() {
     }
 
   return (
+    <div className="animate-fade-in">
     <Card>
       <CardHeader>
         <CardTitle className="font-headline">Withdrawal Management</CardTitle>
@@ -64,6 +65,7 @@ export default function AdminWithdrawalsPage() {
         </Tabs>
       </CardContent>
     </Card>
+    </div>
   )
 }
 

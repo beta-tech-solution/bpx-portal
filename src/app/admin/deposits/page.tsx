@@ -38,6 +38,7 @@ export default function AdminDepositsPage() {
     }
 
   return (
+    <div className="animate-fade-in">
     <Card>
       <CardHeader>
         <CardTitle className="font-headline">Deposit Management</CardTitle>
@@ -66,6 +67,7 @@ export default function AdminDepositsPage() {
         </Tabs>
       </CardContent>
     </Card>
+    </div>
   )
 }
 

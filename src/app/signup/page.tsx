@@ -32,7 +32,7 @@ export default function SignupPage() {
     }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background py-8">
+    <div className="flex items-center justify-center min-h-screen bg-background py-8 animate-fade-in">
       <Card className="w-full max-w-md mx-4">
         <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
@@ -128,5 +128,3 @@ export default function SignupPage() {
     </div>
   )
 }
-
-    

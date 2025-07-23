@@ -20,7 +20,7 @@ export default function AdminSettingsPage() {
     }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto animate-fade-in">
         <form onSubmit={handleSubmit}>
             <Card>
                 <CardHeader>
