@@ -1,37 +1,37 @@
 
 "use client"
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Save, Loader2, User, Trash2 } from "lucide-react";
+import { Save, Loader2, User, Camera } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { auth, db } from "@/lib/firebase/config";
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { signOut } from 'firebase/auth';
-import { useRouter } from 'next/navigation';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
+const CLOUDINARY_CLOUD_NAME = "datq7sbdp";
+const CLOUDINARY_UPLOAD_PRESET = "bpxmaster";
 
 export default function UserSettingsPage() {
     const { toast } = useToast();
-    const router = useRouter();
     const [user, loadingUser] = useAuthState(auth);
-    const [userData, setUserData] = useState({ fullName: '', phone: '' });
+    const [userData, setUserData] = useState({ fullName: '', phone: '', photoURL: '' });
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const getInitials = (name: string | undefined | null): string => {
+        if (!name) return 'U';
+        const names = name.split(' ');
+        if (names.length > 1) {
+          return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+        }
+        return name.substring(0, 2).toUpperCase();
+      };
     
     useEffect(() => {
         if(user) {
@@ -41,7 +41,8 @@ export default function UserSettingsPage() {
                     const data = docSnap.data();
                     setUserData({
                         fullName: data.fullName || '',
-                        phone: data.phone || ''
+                        phone: data.phone || '',
+                        photoURL: data.photoURL || ''
                     });
                 }
                 setIsLoading(false);
@@ -55,6 +56,41 @@ export default function UserSettingsPage() {
         const { name, value } = e.target;
         setUserData(prev => ({...prev, [name]: value}));
     };
+
+    const handleProfilePictureChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if(!user) return;
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsSaving(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    
+            const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+                method: 'POST',
+                body: formData,
+            });
+    
+            if (!uploadResponse.ok) throw new Error('Cloudinary upload failed');
+            
+            const cloudinaryData = await uploadResponse.json();
+            const photoURL = cloudinaryData.secure_url;
+
+            const userDocRef = doc(db, 'users', user.uid);
+            await updateDoc(userDocRef, { photoURL });
+            setUserData(prev => ({...prev, photoURL}));
+
+            toast({ title: "Profile Picture Updated" });
+        } catch (error) {
+            console.error("Error updating profile picture:", error);
+            toast({ title: "Error", description: "Could not update profile picture.", variant: "destructive"});
+        } finally {
+            setIsSaving(false);
+        }
+    }
+
 
     const handleSaveChanges = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -78,17 +114,6 @@ export default function UserSettingsPage() {
         }
     }
 
-     const handleDeleteAccount = async () => {
-        if(!user) return;
-        // This is a placeholder. Full account deletion requires a backend function for security.
-        toast({
-            title: "Account Deletion Requested",
-            description: "Your account is scheduled for deletion. You will be logged out."
-        });
-        await signOut(auth);
-        router.push('/login');
-    }
-
     if (isLoading || loadingUser) {
         return (
             <div className="flex justify-center items-center h-full">
@@ -106,6 +131,16 @@ export default function UserSettingsPage() {
                         <CardDescription>Manage your personal information.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                        <div className="flex items-center gap-4">
+                            <input type="file" ref={fileInputRef} onChange={handleProfilePictureChange} className="hidden" accept="image/*" />
+                             <Avatar className="h-20 w-20">
+                                <AvatarImage src={userData.photoURL} alt={userData.fullName} />
+                                <AvatarFallback>{getInitials(userData.fullName)}</AvatarFallback>
+                            </Avatar>
+                             <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                                <Camera className="mr-2 h-4 w-4" /> Change Picture
+                            </Button>
+                        </div>
                         <div className="space-y-2">
                             <Label htmlFor="fullName">Full Name</Label>
                             <Input id="fullName" name="fullName" value={userData.fullName} onChange={handleInputChange} />
@@ -123,36 +158,6 @@ export default function UserSettingsPage() {
                     </CardFooter>
                 </Card>
             </form>
-             <Card>
-                <CardHeader>
-                    <CardTitle className="font-headline text-destructive">Danger Zone</CardTitle>
-                    <CardDescription>Manage your account deletion settings.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                         <Button variant="destructive">
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete Account
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete your
-                            account and remove your data from our servers.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive hover:bg-destructive/90">
-                            Continue
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                </CardContent>
-            </Card>
         </div>
     );
 }

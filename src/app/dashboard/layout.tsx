@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { DollarSign, Send, Landmark, LogOut, Wallet, ExternalLink, LayoutDashboard, Loader2, Settings } from "lucide-react";
 import { auth, db } from "@/lib/firebase/config";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, serverTimestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 
 const navItems = [
@@ -39,6 +39,7 @@ interface UserData {
     fullName: string;
     email: string;
     balance: number;
+    photoURL?: string;
 }
 
 export default function DashboardLayout({
@@ -58,6 +59,9 @@ export default function DashboardLayout({
       if (currentUser) {
         setUser(currentUser);
         const userDocRef = doc(db, "users", currentUser.uid);
+
+        updateDoc(userDocRef, { lastSeen: serverTimestamp() });
+
         const unsubscribeSnapshot = onSnapshot(userDocRef, (doc) => {
           if (doc.exists()) {
             setUserData(doc.data() as UserData);
@@ -152,7 +156,7 @@ export default function DashboardLayout({
         <SidebarFooter className="p-4">
             <div className="flex items-center gap-3 bg-sidebar-accent/10 p-2 rounded-lg">
                 <Avatar>
-                    <AvatarImage src="https://placehold.co/40x40" data-ai-hint="person avatar" alt={userData?.fullName} />
+                    <AvatarImage src={userData?.photoURL} data-ai-hint="person avatar" alt={userData?.fullName} />
                     <AvatarFallback>{getInitials(userData?.fullName)}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 overflow-hidden">
@@ -191,4 +195,3 @@ export default function DashboardLayout({
     </SidebarProvider>
   );
 }
-    

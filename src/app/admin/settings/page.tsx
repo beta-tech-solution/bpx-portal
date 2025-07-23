@@ -1,19 +1,20 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Save, PlusCircle, Trash2, Loader2, User, Mail } from "lucide-react"
+import { Save, PlusCircle, Trash2, Loader2, User, Camera } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { db, auth } from "@/lib/firebase/config"
-import { doc, getDoc, setDoc, getDocs, collection } from "firebase/firestore"
-import { Separator } from "@/components/ui/separator"
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore"
 import { useAuthState } from "react-firebase-hooks/auth"
-import { updateProfile, updateEmail } from "firebase/auth"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
+const CLOUDINARY_CLOUD_NAME = "datq7sbdp";
+const CLOUDINARY_UPLOAD_PRESET = "bpxmaster";
 
 interface Account {
   id: string
@@ -28,9 +29,18 @@ export default function AdminSettingsPage() {
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [user] = useAuthState(auth)
-    const [adminProfile, setAdminProfile] = useState({ name: '', email: '' })
+    const [adminProfile, setAdminProfile] = useState({ name: '', email: '', photoURL: '' })
     const [profileSaving, setProfileSaving] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const getInitials = (name: string | undefined | null): string => {
+        if (!name) return 'A';
+        const names = name.split(' ');
+        if (names.length > 1) {
+          return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+        }
+        return name.substring(0, 2).toUpperCase();
+      };
 
     useEffect(() => {
         const fetchSettings = async () => {
@@ -47,9 +57,16 @@ export default function AdminSettingsPage() {
         fetchSettings()
 
          if(user) {
-            setAdminProfile({
-                name: user.displayName || 'Admin User',
-                email: user.email || 'admin@bpx.com'
+            const userDocRef = doc(db, 'users', user.uid);
+            getDoc(userDocRef).then((docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                     setAdminProfile({
+                        name: data.fullName || 'Admin User',
+                        email: data.email || 'admin@bpx.com',
+                        photoURL: data.photoURL || ''
+                    });
+                }
             })
         }
     }, [user])
@@ -93,18 +110,50 @@ export default function AdminSettingsPage() {
         setAdminProfile(prev => ({...prev, [name]: value}));
     }
 
+    const handleProfilePictureChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if(!user) return;
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setProfileSaving(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    
+            const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+                method: 'POST',
+                body: formData,
+            });
+    
+            if (!uploadResponse.ok) throw new Error('Cloudinary upload failed');
+            
+            const cloudinaryData = await uploadResponse.json();
+            const photoURL = cloudinaryData.secure_url;
+
+            const userDocRef = doc(db, 'users', user.uid);
+            await updateDoc(userDocRef, { photoURL });
+            setAdminProfile(prev => ({...prev, photoURL}));
+
+            toast({ title: "Profile Picture Updated" });
+        } catch (error) {
+            console.error("Error updating profile picture:", error);
+            toast({ title: "Error", description: "Could not update profile picture.", variant: "destructive"});
+        } finally {
+            setProfileSaving(false);
+        }
+    }
+
     const handleSaveProfile = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if(!user) return;
         setProfileSaving(true);
         try {
-            if(adminProfile.name !== user.displayName) {
-                await updateProfile(user, { displayName: adminProfile.name });
-            }
-            if(adminProfile.email !== user.email) {
-                // await updateEmail(user, adminProfile.email); // Re-authentication needed for this
-                toast({title: "Email Update Skipped", description: "Updating email requires re-authentication. This feature is not enabled."});
-            }
+            const userDocRef = doc(db, 'users', user.uid);
+            await updateDoc(userDocRef, {
+                fullName: adminProfile.name,
+                email: adminProfile.email,
+            });
             toast({title: "Profile Updated", description: "Your admin profile has been updated."});
         } catch (error) {
             console.error("Error updating admin profile:", error);
@@ -113,7 +162,6 @@ export default function AdminSettingsPage() {
             setProfileSaving(false);
         }
     }
-
 
     if (loading) {
         return (
@@ -132,6 +180,16 @@ export default function AdminSettingsPage() {
                     <CardDescription>Manage your administrator profile details.</CardDescription>
                 </CardHeader>
                  <CardContent className="space-y-4">
+                     <div className="flex items-center gap-4">
+                        <input type="file" ref={fileInputRef} onChange={handleProfilePictureChange} className="hidden" accept="image/*" />
+                        <Avatar className="h-20 w-20">
+                            <AvatarImage src={adminProfile.photoURL} alt={adminProfile.name} />
+                            <AvatarFallback>{getInitials(adminProfile.name)}</AvatarFallback>
+                        </Avatar>
+                        <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                            <Camera className="mr-2 h-4 w-4" /> Change Picture
+                        </Button>
+                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="name">Display Name</Label>
                         <Input id="name" name="name" value={adminProfile.name} onChange={handleProfileChange} />

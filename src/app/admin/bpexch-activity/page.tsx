@@ -38,18 +38,20 @@ export default function AdminBpexchActivityPage() {
         let userName = 'Unknown';
         let userEmail = 'Unknown';
         
-        if (userCache.has(data.userId)) {
-            const userData = userCache.get(data.userId);
-            userName = userData.name;
-            userEmail = userData.email;
-        } else {
-            const userDoc = await getDoc(doc(db, 'users', data.userId));
-            if (userDoc.exists()) {
-              const userData = userDoc.data();
-              userName = userData.fullName;
+        if (data.userId) {
+          if (userCache.has(data.userId)) {
+              const userData = userCache.get(data.userId);
+              userName = userData.name;
               userEmail = userData.email;
-              userCache.set(data.userId, { name: userName, email: userEmail });
-            }
+          } else {
+              const userDoc = await getDoc(doc(db, 'users', data.userId));
+              if (userDoc.exists()) {
+                const userData = userDoc.data();
+                userName = userData.fullName;
+                userEmail = userData.email;
+                userCache.set(data.userId, { name: userName, email: userEmail });
+              }
+          }
         }
         
         activityData.push({
@@ -58,10 +60,13 @@ export default function AdminBpexchActivityPage() {
           userName,
           userEmail,
           ip: data.ip,
-          timestamp: format((data.timestamp as any).toDate(), 'PPpp'),
+          timestamp: data.timestamp ? format((data.timestamp as any).toDate(), 'PPpp') : 'No date',
         });
       }
       setActivity(activityData);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching activity: ", error);
       setLoading(false);
     });
 

@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, Edit, Trash2, PlusCircle, Users } from "lucide-react"
+import { MoreHorizontal, Edit, Trash2, PlusCircle, Users, Loader2 } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,34 +15,43 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { db } from "@/lib/firebase/config"
+import { collection, onSnapshot, query, orderBy, Timestamp } from 'firebase/firestore'
+import { format, subMinutes } from 'date-fns'
 
-
-const users = [
-  { id: 'usr_1', name: 'John Doe', email: 'john.d@example.com', balance: 'PKR 1,250.50', status: 'Active' },
-  { id: 'usr_2', name: 'Jane Smith', email: 'jane.s@example.com', balance: 'PKR 800.00', status: 'Active' },
-  { id: 'usr_3', name: 'Sam Wilson', email: 'sam.w@example.com', balance: 'PKR 2,100.75', status: 'Suspended' },
-  { id: 'usr_4', name: 'Alice Johnson', email: 'alice.j@example.com', balance: 'PKR 300.20', status: 'Active' },
-];
-
-const userChartData = [
-  { date: "2023-10-01", count: 12 },
-  { date: "2023-10-02", count: 15 },
-  { date: "2023-10-03", count: 8 },
-  { date: "2023-10-04", count: 20 },
-  { date: "2023-10-05", count: 18 },
-  { date: "2023-10-06", count: 25 },
-  { date: "2023-10-07", count: 22 },
-];
 
 const userChartConfig = {
   count: { label: "New Users", color: "hsl(var(--primary))" },
 } satisfies ChartConfig;
 
-type User = typeof users[0];
+interface User {
+  id: string;
+  fullName: string;
+  email: string;
+  balance: number;
+  status: 'Active' | 'Suspended';
+  lastSeen?: Timestamp;
+}
 
 export default function AdminUsersPage() {
   const [open, setOpen] = React.useState(false);
+  const [users, setUsers] = React.useState<User[]>([]);
+  const [loading, setLoading] = React.useState(true);
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
+
+  React.useEffect(() => {
+    setLoading(true);
+    const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const usersData: User[] = [];
+        querySnapshot.forEach((doc) => {
+            usersData.push({ id: doc.id, ...doc.data() } as User);
+        });
+        setUsers(usersData);
+        setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const handleEdit = (user: User) => {
     setSelectedUser(user);
@@ -52,6 +61,35 @@ export default function AdminUsersPage() {
   const handleAdd = () => {
       setSelectedUser(null);
       setOpen(true);
+  }
+
+  const isUserOnline = (lastSeen: Timestamp | undefined) => {
+      if (!lastSeen) return false;
+      const fiveMinutesAgo = subMinutes(new Date(), 2);
+      return lastSeen.toDate() > fiveMinutesAgo;
+  }
+
+  const formatLastSeen = (lastSeen: Timestamp | undefined) => {
+      if (!lastSeen) return "Never";
+      return format(lastSeen.toDate(), 'PPpp');
+  }
+
+  const userChartData = [
+    { date: "2023-10-01", count: 12 },
+    { date: "2023-10-02", count: 15 },
+    { date: "2023-10-03", count: 8 },
+    { date: "2023-10-04", count: 20 },
+    { date: "2023-10-05", count: 18 },
+    { date: "2023-10-06", count: 25 },
+    { date: "2023-10-07", count: 22 },
+  ];
+
+  if (loading) {
+      return (
+          <div className="flex justify-center items-center h-full">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+      )
   }
 
   return (
@@ -76,6 +114,7 @@ export default function AdminUsersPage() {
                 <TableHead>User</TableHead>
                 <TableHead>Balance</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Last Seen</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
             </TableHeader>
@@ -83,12 +122,24 @@ export default function AdminUsersPage() {
                 {users.map((user) => (
                 <TableRow key={user.id}>
                     <TableCell>
-                    <div className="font-medium">{user.name}</div>
+                    <div className="font-medium">{user.fullName}</div>
                     <div className="text-sm text-muted-foreground">{user.email}</div>
                     </TableCell>
-                    <TableCell className="font-mono">{user.balance}</TableCell>
+                    <TableCell className="font-mono">PKR {user.balance.toFixed(2)}</TableCell>
                     <TableCell>
-                    <Badge variant={user.status === 'Active' ? 'secondary' : 'destructive'}>{user.status}</Badge>
+                      <div className="flex items-center gap-2">
+                         <Badge variant={user.status === 'Active' ? 'secondary' : 'destructive'}>{user.status}</Badge>
+                         {isUserOnline(user.lastSeen) && (
+                            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" title="Online"></div>
+                         )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                        {isUserOnline(user.lastSeen) ? (
+                            <span className="text-green-600 font-medium">Online</span>
+                        ) : (
+                            formatLastSeen(user.lastSeen)
+                        )}
                     </TableCell>
                     <TableCell className="text-right">
                     <DropdownMenu>
@@ -174,7 +225,7 @@ function UserDialog({ open, setOpen, user }: { open: boolean, setOpen: (open: bo
                     <div className="space-y-4 p-4">
                         <div className="grid gap-2">
                             <Label htmlFor="name">Full Name</Label>
-                            <Input id="name" defaultValue={user?.name} required />
+                            <Input id="name" defaultValue={user?.fullName} required />
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="email">Email</Label>
@@ -182,7 +233,7 @@ function UserDialog({ open, setOpen, user }: { open: boolean, setOpen: (open: bo
                         </div>
                          <div className="grid gap-2">
                             <Label htmlFor="balance">Balance</Label>
-                            <Input id="balance" type="text" defaultValue={user?.balance.replace('PKR', '')} required />
+                            <Input id="balance" type="text" defaultValue={user?.balance.toString()} required />
                         </div>
                          <div className="grid gap-2">
                             <Label htmlFor="status">Status</Label>
@@ -202,5 +253,3 @@ function UserDialog({ open, setOpen, user }: { open: boolean, setOpen: (open: bo
         </Dialog>
     )
 }
-
-    

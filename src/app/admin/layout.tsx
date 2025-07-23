@@ -30,8 +30,9 @@ import {
   LayoutDashboard,
   ExternalLink
 } from "lucide-react";
-import { db } from "@/lib/firebase/config";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { db, auth } from "@/lib/firebase/config";
+import { collection, onSnapshot, query, where, doc } from "firebase/firestore";
+import { useAuthState } from "react-firebase-hooks/auth";
 
 const navItems = [
     { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, countKey: null },
@@ -50,11 +51,30 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [user, loadingUser] = useAuthState(auth);
+  const [adminProfile, setAdminProfile] = React.useState({ name: 'Admin User', email: 'admin@bpx.com', photoURL: ''});
+
   const [pendingCounts, setPendingCounts] = React.useState({
       deposits: 0,
       transfers: 0,
       withdrawals: 0
   });
+
+  React.useEffect(() => {
+      if (user) {
+          const unsub = onSnapshot(doc(db, 'users', user.uid), (doc) => {
+              if (doc.exists()) {
+                  const data = doc.data();
+                  setAdminProfile({
+                      name: data.fullName || 'Admin User',
+                      email: data.email || 'admin@bpx.com',
+                      photoURL: data.photoURL || ''
+                  });
+              }
+          });
+          return () => unsub();
+      }
+  }, [user]);
 
   React.useEffect(() => {
       const collections = {
@@ -74,6 +94,16 @@ export default function AdminLayout({
   }, []);
 
   const isActive = (path: string) => pathname.startsWith(path);
+  
+  const getInitials = (name: string | undefined | null): string => {
+    if (!name) return 'A';
+    const names = name.split(' ');
+    if (names.length > 1) {
+      return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
 
   const getPageTitle = () => {
     const currentItem = navItems.find(item => item.href === pathname);
@@ -118,12 +148,12 @@ export default function AdminLayout({
         <SidebarFooter className="p-4">
             <div className="flex items-center gap-3 bg-sidebar-accent/10 p-2 rounded-lg">
                 <Avatar>
-                    <AvatarImage src="https://placehold.co/40x40" data-ai-hint="admin avatar" alt="Admin" />
-                    <AvatarFallback>A</AvatarFallback>
+                    <AvatarImage src={adminProfile.photoURL || undefined} data-ai-hint="admin avatar" alt="Admin" />
+                    <AvatarFallback>{getInitials(adminProfile.name)}</AvatarFallback>
                 </Avatar>
-                <div className="flex-1">
-                    <p className="text-sm font-semibold text-sidebar-foreground">Admin User</p>
-                    <p className="text-xs text-sidebar-foreground/70">admin@bpx.com</p>
+                <div className="flex-1 overflow-hidden">
+                    <p className="text-sm font-semibold text-sidebar-foreground truncate">{adminProfile.name}</p>
+                    <p className="text-xs text-sidebar-foreground/70 truncate">{adminProfile.email}</p>
                 </div>
                 <Button variant="ghost" size="icon" className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent" onClick={() => router.push('/login')}>
                     <LogOut className="w-4 h-4"/>

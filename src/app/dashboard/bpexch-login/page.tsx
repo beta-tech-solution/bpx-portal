@@ -9,11 +9,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { CartesianGrid, Line, LineChart, XAxis, YAxis, Tooltip } from "recharts"
 import { ChartContainer, ChartTooltipContent, ChartTooltip } from "@/components/ui/chart"
-import { ExternalLink, Loader2 } from "lucide-react"
+import { ExternalLink, Loader2, ShieldOff, ShieldCheck } from "lucide-react"
 import { db, auth } from '@/lib/firebase/config';
-import { collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy, limit } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy, limit, doc, updateDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { format, subDays, eachDayOfInterval } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
 interface LoginActivity {
     id: string;
@@ -37,14 +38,22 @@ const chartConfig = {
 
 export default function BpexchLoginPage() {
     const [user] = useAuthState(auth);
+    const { toast } = useToast();
     const [loginActivity, setLoginActivity] = useState<LoginActivity[]>([]);
     const [chartData, setChartData] = useState<ChartData[]>([]);
+    const [blockedIps, setBlockedIps] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [isLogging, setIsLogging] = useState(false);
 
     useEffect(() => {
         if (!user) return;
         setLoading(true);
+
+        const userDocRef = doc(db, 'users', user.uid);
+        const unsubscribeUser = onSnapshot(userDocRef, (doc) => {
+            setBlockedIps(doc.data()?.blockedIps || []);
+        });
+
         const q = query(
             collection(db, 'bpexch_logins'), 
             where('userId', '==', user.uid),
@@ -66,6 +75,7 @@ export default function BpexchLoginPage() {
             
             snapshot.forEach(doc => {
                 const data = doc.data();
+                if(!data.timestamp) return;
                 const timestamp = (data.timestamp as any).toDate();
                 
                 activity.push({
@@ -91,9 +101,15 @@ export default function BpexchLoginPage() {
             
             setChartData(formattedChartData);
             setLoading(false);
+        }, (error) => {
+            console.error("Error fetching login activity:", error);
+            setLoading(false);
         });
 
-        return () => unsubscribe();
+        return () => {
+            unsubscribeUser();
+            unsubscribe();
+        }
     }, [user]);
 
     const handleLoginClick = async () => {
@@ -101,11 +117,18 @@ export default function BpexchLoginPage() {
         setIsLogging(true);
 
         try {
-            // Fetch IP Address from a third-party service
             const ipResponse = await fetch('https://api.ipify.org?format=json');
             if(!ipResponse.ok) throw new Error('Failed to fetch IP');
             const ipData = await ipResponse.json();
             const ip = ipData.ip;
+
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            const currentBlockedIps = userDoc.data()?.blockedIps || [];
+            if(currentBlockedIps.includes(ip)){
+                toast({ title: "Login Blocked", description: "This IP address has been blocked from accessing your account.", variant: "destructive" });
+                setIsLogging(false);
+                return;
+            }
             
             await addDoc(collection(db, 'bpexch_logins'), {
                 userId: user.uid,
@@ -117,8 +140,28 @@ export default function BpexchLoginPage() {
 
         } catch (error) {
             console.error("Error logging activity:", error);
+            toast({ title: "Error", description: "Could not log activity. Please check your connection.", variant: "destructive" });
         } finally {
             setIsLogging(false);
+        }
+    }
+
+    const toggleIpBlock = async (ip: string) => {
+        if(!user) return;
+        const userDocRef = doc(db, 'users', user.uid);
+        const isBlocked = blockedIps.includes(ip);
+
+        try {
+             if (isBlocked) {
+                await updateDoc(userDocRef, { blockedIps: arrayRemove(ip) });
+                toast({ title: "IP Unblocked", description: `${ip} can now access your account.` });
+            } else {
+                await updateDoc(userDocRef, { blockedIps: arrayUnion(ip) });
+                toast({ title: "IP Blocked", description: `${ip} can no longer access your account.` });
+            }
+        } catch (error) {
+            console.error("Error updating IP block status:", error);
+            toast({ title: "Error", description: "Could not update IP status.", variant: "destructive" });
         }
     }
 
@@ -149,20 +192,30 @@ export default function BpexchLoginPage() {
                 <TableRow>
                   <TableHead>Date & Time</TableHead>
                   <TableHead>IP Address</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {loginActivity.length > 0 ? loginActivity.map((activity) => (
+                {loginActivity.length > 0 ? loginActivity.map((activity) => {
+                  const isBlocked = blockedIps.includes(activity.ip);
+                  return (
                   <TableRow key={activity.id}>
                     <TableCell>
                       <div className="font-medium">{activity.date}</div>
                       <div className="text-sm text-muted-foreground">{activity.time}</div>
                     </TableCell>
-                    <TableCell>{activity.ip}</TableCell>
+                    <TableCell className="font-mono">{activity.ip}</TableCell>
+                    <TableCell className="text-right">
+                        <Button variant={isBlocked ? "secondary" : "destructive"} size="sm" onClick={() => toggleIpBlock(activity.ip)}>
+                           {isBlocked ? <ShieldCheck className="mr-2 h-4 w-4" /> : <ShieldOff className="mr-2 h-4 w-4" />}
+                           {isBlocked ? "Unblock" : "Block"}
+                        </Button>
+                    </TableCell>
                   </TableRow>
-                )) : (
+                  )
+                }) : (
                     <TableRow>
-                        <TableCell colSpan={2} className="text-center text-muted-foreground">No recent activity.</TableCell>
+                        <TableCell colSpan={3} className="text-center text-muted-foreground">No recent activity.</TableCell>
                     </TableRow>
                 )}
               </TableBody>
