@@ -1,44 +1,14 @@
 
 "use client"
 
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Bar, BarChart, CartesianGrid, Legend, Tooltip, XAxis, YAxis, ResponsiveContainer, AreaChart, Area } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
-import { DollarSign, Users, Landmark, Send, AlertTriangle, ArrowDownLeft, ArrowUpRight } from "lucide-react"
-
-const overviewData = {
-  totalUsers: 150,
-  pendingDeposits: 12,
-  pendingWithdrawals: 5,
-  pendingTransfers: 8,
-};
-
-const depositsData = [
-  { month: "Jan", pending: 5, approved: 30 },
-  { month: "Feb", pending: 8, approved: 45 },
-  { month: "Mar", pending: 12, approved: 60 },
-  { month: "Apr", pending: 7, approved: 50 },
-  { month: "May", pending: 10, approved: 70 },
-  { month: "Jun", pending: 12, approved: 75 },
-];
-
-const withdrawalsData = [
-  { month: "Jan", pending: 2, approved: 20 },
-  { month: "Feb", pending: 3, approved: 25 },
-  { month: "Mar", pending: 5, approved: 40 },
-  { month: "Apr", pending: 4, approved: 30 },
-  { month: "May", pending: 6, approved: 50 },
-  { month: "Jun", pending: 5, approved: 45 },
-];
-
-const transfersData = [
-    { month: "Jan", pending: 4, completed: 40 },
-    { month: "Feb", pending: 6, completed: 55 },
-    { month: "Mar", pending: 8, completed: 70 },
-    { month: "Apr", pending: 5, completed: 60 },
-    { month: "May", pending: 7, completed: 80 },
-    { month: "Jun", pending: 8, completed: 90 },
-];
+import { DollarSign, Users, Landmark, Send, Loader2, ArrowDownLeft, ArrowUpRight } from "lucide-react"
+import { db } from "@/lib/firebase/config"
+import { collection, getDocs, query, where, Timestamp } from "firebase/firestore"
+import { subMonths, format, getMonth, getYear } from 'date-fns'
 
 
 const depositsChartConfig = {
@@ -56,8 +26,101 @@ const transfersChartConfig = {
     completed: { label: "Completed", color: "hsl(var(--accent))" },
 } satisfies ChartConfig;
 
+interface MonthlyData {
+    month: string;
+    [key: string]: any;
+}
 
 export default function AdminDashboardPage() {
+    const [loading, setLoading] = useState(true);
+    const [overviewData, setOverviewData] = useState({
+        totalUsers: 0,
+        pendingDeposits: 0,
+        pendingWithdrawals: 0,
+        pendingTransfers: 0,
+    });
+    const [depositsData, setDepositsData] = useState<MonthlyData[]>([]);
+    const [withdrawalsData, setWithdrawalsData] = useState<MonthlyData[]>([]);
+    const [transfersData, setTransfersData] = useState<MonthlyData[]>([]);
+
+     useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const usersSnapshot = await getDocs(collection(db, "users"));
+                const depositsQuery = query(collection(db, "deposits"), where('status', '==', 'Pending'));
+                const withdrawalsQuery = query(collection(db, "withdrawals"), where('status', '==', 'Pending'));
+                const transfersQuery = query(collection(db, "transfers"), where('status', '==', 'Pending'));
+
+                const [depositsSnapshot, withdrawalsSnapshot, transfersSnapshot] = await Promise.all([
+                    getDocs(depositsQuery),
+                    getDocs(withdrawalsQuery),
+                    getDocs(transfersQuery)
+                ]);
+
+                setOverviewData({
+                    totalUsers: usersSnapshot.size,
+                    pendingDeposits: depositsSnapshot.size,
+                    pendingWithdrawals: withdrawalsSnapshot.size,
+                    pendingTransfers: transfersSnapshot.size,
+                });
+                
+                const processChartData = (snapshots: any[], statuses: string[]): MonthlyData[] => {
+                    const monthlyTotals: { [key: string]: { [key: string]: number } } = {};
+                    const sixMonthsAgo = subMonths(new Date(), 5);
+                    
+                    for (let i = 0; i < 6; i++) {
+                        const month = format(addMonths(sixMonthsAgo, i), 'MMM');
+                        monthlyTotals[month] = {};
+                        statuses.forEach(status => monthlyTotals[month][status] = 0);
+                    }
+
+                    snapshots.forEach(snapshot => {
+                        snapshot.forEach((doc: any) => {
+                             const data = doc.data();
+                            const date = (data.createdAt as Timestamp)?.toDate() || new Date(data.date);
+                             if (date >= sixMonthsAgo) {
+                                const month = format(date, 'MMM');
+                                if (monthlyTotals[month]) {
+                                     monthlyTotals[month][data.status.toLowerCase()] = (monthlyTotals[month][data.status.toLowerCase()] || 0) + 1;
+                                }
+                            }
+                        });
+                    });
+
+                     return Object.entries(monthlyTotals).map(([month, values]) => ({
+                        month,
+                        ...values
+                    }));
+                };
+                
+                const allDeposits = await getDocs(collection(db, "deposits"));
+                const allWithdrawals = await getDocs(collection(db, "withdrawals"));
+                const allTransfers = await getDocs(collection(db, "transfers"));
+
+                setDepositsData(processChartData([allDeposits.docs.map(d=>d.data())], ['pending', 'approved']));
+                setWithdrawalsData(processChartData([allWithdrawals.docs.map(d=>d.data())], ['pending', 'approved']));
+                setTransfersData(processChartData([allTransfers.docs.map(d=>d.data())], ['pending', 'completed']));
+
+            } catch (error) {
+                console.error("Error fetching admin dashboard data: ", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-full">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+
+
   return (
     <div className="max-w-7xl mx-auto grid gap-8 animate-fade-in">
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -164,4 +227,9 @@ export default function AdminDashboardPage() {
         </div>
     </div>
   )
+}
+function addMonths(date: Date, months: number) {
+    const d = new Date(date);
+    d.setMonth(d.getMonth() + months);
+    return d;
 }

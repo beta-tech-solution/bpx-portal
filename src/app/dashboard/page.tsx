@@ -11,15 +11,16 @@ import { ArrowDownLeft, ArrowUpRight, Wallet, Send, TrendingUp, TrendingDown, Lo
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
 import { ChartContainer, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
 import { auth, db } from "@/lib/firebase/config"
-import { collection, query, where, getDocs, orderBy, limit, doc, getDoc } from "firebase/firestore"
+import { collection, query, where, getDocs, onSnapshot, doc } from "firebase/firestore"
 import { onAuthStateChanged, User } from "firebase/auth"
+import { format } from 'date-fns';
 
 interface Transaction {
     id: string;
     type: "Deposit" | "Withdrawal" | "Transfer";
     date: string;
     amount: string;
-    status: "Completed" | "Pending" | "Rejected" | "Transferred" | "Issue";
+    status: "Approved" | "Pending" | "Rejected" | "Transferred" | "Issue" | "Completed";
 }
 
 interface ChartData {
@@ -52,7 +53,7 @@ export default function DashboardPage() {
     const [transfersData, setTransfersData] = useState<ChartData[]>([]);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
             if (currentUser) {
                 setUser(currentUser);
             } else {
@@ -60,21 +61,28 @@ export default function DashboardPage() {
                 setLoading(false);
             }
         });
-        return () => unsubscribe();
+        return () => unsubscribeAuth();
     }, []);
 
     useEffect(() => {
         if (!user) return;
 
-        const fetchData = async () => {
-            setLoading(true);
+        setLoading(true);
 
+        const unsubscribes: (() => void)[] = [];
+
+        // Fetch user balance
+        const userDocRef = doc(db, "users", user.uid);
+        const unsubscribeUser = onSnapshot(userDocRef, (doc) => {
+            if (doc.exists()) {
+                const userData = doc.data();
+                setAccountSummary(prev => ({ ...prev, balance: (userData.balance ?? 0).toFixed(2) }));
+            }
+        });
+        unsubscribes.push(unsubscribeUser);
+
+        const processTransactions = async () => {
             try {
-                // Fetch user balance
-                const userDocRef = doc(db, "users", user.uid);
-                const userDoc = await getDoc(userDocRef);
-                const userData = userDoc.data();
-                
                 // Fetch transactions
                 const depositsQuery = query(collection(db, "deposits"), where("userId", "==", user.uid));
                 const withdrawalsQuery = query(collection(db, "withdrawals"), where("userId", "==", user.uid));
@@ -89,30 +97,30 @@ export default function DashboardPage() {
                 let totalDeposits = 0;
                 const allDeposits = depositsSnapshot.docs.map(doc => {
                     const data = doc.data();
-                    if(data.status === 'Approved') totalDeposits += parseFloat(data.amount);
+                    if (data.status === 'Approved') totalDeposits += parseFloat(data.amount);
                     return { ...data, id: doc.id, type: 'Deposit' };
                 });
 
                 let totalWithdrawals = 0;
                 const allWithdrawals = withdrawalsSnapshot.docs.map(doc => {
                     const data = doc.data();
-                     if(data.status === 'Approved') totalWithdrawals += parseFloat(data.amount);
+                    if (data.status === 'Approved') totalWithdrawals += parseFloat(data.amount);
                     return { ...data, id: doc.id, type: 'Withdrawal' };
                 });
                 
                 let totalTransfers = 0;
                 const allTransfers = transfersSnapshot.docs.map(doc => {
                     const data = doc.data();
-                    if(data.status === 'Transferred') totalTransfers += parseFloat(data.amount);
+                    if (data.status === 'Transferred') totalTransfers += parseFloat(data.amount);
                     return { ...data, id: doc.id, type: 'Transfer' };
                 });
                 
-                setAccountSummary({
-                    balance: userData?.balance?.toFixed(2) ?? "0.00",
+                setAccountSummary(prev => ({
+                    ...prev,
                     totalDeposits: totalDeposits.toFixed(2),
                     totalWithdrawals: totalWithdrawals.toFixed(2),
                     totalTransfers: totalTransfers.toFixed(2)
-                });
+                }));
 
                 const allTransactions = [...allDeposits, ...allWithdrawals, ...allTransfers]
                 .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -127,22 +135,22 @@ export default function DashboardPage() {
 
                 setRecentTransactions(allTransactions);
 
-                const processChartData = (snapshot: any) => {
+                const processChartData = (snapshotDocs: any[], validStatus: string) => {
                     const monthlyData: { [key: string]: number } = {};
-                    snapshot.docs.forEach((doc: any) => {
-                        const data = doc.data();
+                    snapshotDocs.forEach((docData: any) => {
+                        const data = docData;
                         const date = new Date(data.date);
-                        const month = date.toLocaleString('default', { month: 'short' });
-                        if(data.status === 'Approved' || data.status === 'Completed' || data.status === 'Transferred') {
+                        const month = format(date, 'MMM');
+                        if(data.status === validStatus) {
                             monthlyData[month] = (monthlyData[month] || 0) + parseFloat(data.amount);
                         }
                     });
                     return Object.entries(monthlyData).map(([month, amount]) => ({ month, amount }));
                 };
 
-                setDepositsData(processChartData(depositsSnapshot));
-                setWithdrawalsData(processChartData(withdrawalsSnapshot));
-                setTransfersData(processChartData(transfersSnapshot));
+                setDepositsData(processChartData(allDeposits, 'Approved'));
+                setWithdrawalsData(processChartData(allWithdrawals, 'Approved'));
+                setTransfersData(processChartData(allTransfers, 'Transferred'));
 
             } catch (error) {
                 console.error("Error fetching dashboard data:", error);
@@ -151,7 +159,14 @@ export default function DashboardPage() {
             }
         };
 
-        fetchData();
+        processTransactions();
+        
+        const depositsQuery = query(collection(db, "deposits"), where("userId", "==", user.uid));
+        const unsubscribeDeposits = onSnapshot(depositsQuery, () => processTransactions());
+        unsubscribes.push(unsubscribeDeposits);
+        
+        return () => unsubscribes.forEach(unsub => unsub());
+
     }, [user]);
 
     const statusVariant = {
@@ -306,4 +321,3 @@ export default function DashboardPage() {
     </div>
   )
 }
-
