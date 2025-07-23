@@ -2,7 +2,7 @@
 "use client"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Bar, BarChart, CartesianGrid, Legend, Rectangle, Tooltip, XAxis, YAxis } from "recharts"
+import { Bar, BarChart, CartesianGrid, Legend, Tooltip, XAxis, YAxis } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
 import { DollarSign, Users, Landmark, Send, AlertTriangle } from "lucide-react"
 
@@ -81,7 +81,7 @@ export default function AdminDashboardPage() {
                     <BarChart data={activityData} layout="vertical" margin={{ left: 10, right: 10 }}>
                         <CartesianGrid horizontal={false} />
                         <XAxis type="number" />
-                        <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} />
+                        <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} width={80} />
                         <Tooltip content={<ChartTooltipContent />} />
                         <Legend />
                         <Bar dataKey="pending" stackId="a" fill="var(--color-pending)" radius={[0, 4, 4, 0]} />
@@ -94,5 +94,3 @@ export default function AdminDashboardPage() {
     </div>
   )
 }
-
-    

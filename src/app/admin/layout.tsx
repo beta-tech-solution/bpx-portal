@@ -51,6 +51,7 @@ export default function AdminLayout({
   const getPageTitle = () => {
     const currentItem = navItems.find(item => item.href === pathname);
     if (currentItem) return currentItem.label;
+    if (pathname.includes('/admin/users/')) return "User Details";
     const parts = pathname.split('/').pop()?.replace(/-/g, ' ').split(' ') ?? [];
     return parts.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   }
@@ -109,12 +110,20 @@ export default function AdminLayout({
                 {getPageTitle()}
             </h2>
         </header>
-        <main className="flex-1 p-4 md:p-6">
+        <main className="flex-1 p-4 md:p-6 mb-20 md:mb-0">
             {children}
         </main>
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-10">
+            <div className="flex justify-around items-center h-16">
+                {navItems.map((item) => (
+                    <Link href={item.href} key={item.href} className={`flex flex-col items-center justify-center gap-1 w-full h-full ${isActive(item.href) ? 'text-primary' : 'text-muted-foreground'}`}>
+                        <item.icon className="w-6 h-6"/>
+                        <span className="text-xs text-center">{item.label}</span>
+                    </Link>
+                ))}
+            </div>
+        </nav>
       </SidebarInset>
     </SidebarProvider>
   );
 }
-
-    

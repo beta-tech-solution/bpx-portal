@@ -14,6 +14,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useToast } from "@/hooks/use-toast"
 
 
 const withdrawals = [
@@ -67,6 +68,8 @@ export default function AdminWithdrawalsPage() {
 }
 
 function WithdrawalTable({ data }: { data: typeof withdrawals }) {
+    const { toast } = useToast()
+
     if (data.length === 0) {
         return <div className="text-center text-muted-foreground p-8">No withdrawals found.</div>
     }
@@ -104,8 +107,12 @@ function WithdrawalTable({ data }: { data: typeof withdrawals }) {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem className="text-green-600"><CheckCircle className="mr-2 h-4 w-4"/>Approve</DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive"><XCircle className="mr-2 h-4 w-4"/>Reject</DropdownMenuItem>
+                      <DropdownMenuItem className="text-green-600" onClick={() => toast({ title: "Withdrawal Approved" })}>
+                        <CheckCircle className="mr-2 h-4 w-4"/>Approve
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive" onClick={() => toast({ title: "Withdrawal Rejected", variant: "destructive"})}>
+                        <XCircle className="mr-2 h-4 w-4"/>Reject
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -115,5 +122,3 @@ function WithdrawalTable({ data }: { data: typeof withdrawals }) {
         </Table>
     )
 }
-
-    

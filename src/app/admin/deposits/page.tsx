@@ -14,6 +14,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useToast } from "@/hooks/use-toast"
 
 
 const deposits = [
@@ -69,6 +70,8 @@ export default function AdminDepositsPage() {
 }
 
 function DepositTable({ data }: { data: typeof deposits }) {
+    const { toast } = useToast()
+
     if (data.length === 0) {
         return <div className="text-center text-muted-foreground p-8">No deposits found.</div>
     }
@@ -103,8 +106,12 @@ function DepositTable({ data }: { data: typeof deposits }) {
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
                       <DropdownMenuItem><FileText className="mr-2 h-4 w-4"/>View Proof</DropdownMenuItem>
-                      <DropdownMenuItem className="text-green-600"><CheckCircle className="mr-2 h-4 w-4"/>Approve</DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive"><XCircle className="mr-2 h-4 w-4"/>Reject</DropdownMenuItem>
+                      <DropdownMenuItem className="text-green-600" onClick={() => toast({ title: "Deposit Approved", description: `Deposit from ${deposit.user} for ${deposit.amount} has been approved.`})}>
+                        <CheckCircle className="mr-2 h-4 w-4"/>Approve
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive" onClick={() => toast({ title: "Deposit Rejected", description: `Deposit from ${deposit.user} for ${deposit.amount} has been rejected.`, variant: "destructive" })}>
+                        <XCircle className="mr-2 h-4 w-4"/>Reject
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -114,5 +121,3 @@ function DepositTable({ data }: { data: typeof deposits }) {
         </Table>
     )
 }
-
-    

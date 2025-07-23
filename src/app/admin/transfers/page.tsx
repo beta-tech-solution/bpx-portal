@@ -14,6 +14,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useToast } from "@/hooks/use-toast"
 
 
 const transfers = [
@@ -68,6 +69,7 @@ export default function AdminTransfersPage() {
 }
 
 function TransferTable({ data }: { data: typeof transfers }) {
+    const { toast } = useToast()
     if (data.length === 0) {
         return <div className="text-center text-muted-foreground p-8">No transfers found.</div>
     }
@@ -101,8 +103,12 @@ function TransferTable({ data }: { data: typeof transfers }) {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem className="text-green-600"><CheckCircle className="mr-2 h-4 w-4"/>Mark as Transferred</DropdownMenuItem>
-                      <DropdownMenuItem className="text-amber-600"><AlertTriangle className="mr-2 h-4 w-4"/>Mark as Issue</DropdownMenuItem>
+                      <DropdownMenuItem className="text-green-600" onClick={() => toast({ title: "Transfer Marked as Transferred" })}>
+                        <CheckCircle className="mr-2 h-4 w-4"/>Mark as Transferred
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-amber-600" onClick={() => toast({ title: "Transfer Marked as Issue", variant: "destructive" })}>
+                        <AlertTriangle className="mr-2 h-4 w-4"/>Mark as Issue
+                      </DropdownMenuItem>
                        <DropdownMenuItem><MessageSquare className="mr-2 h-4 w-4"/>Add Instruction</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -113,5 +119,3 @@ function TransferTable({ data }: { data: typeof transfers }) {
         </Table>
     )
 }
-
-    
