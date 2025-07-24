@@ -81,8 +81,8 @@ export default function DashboardLayout({
             // Admin on admin dashboard, this layout shouldn't even be active.
         }
         else {
-            // router.push("/login");
-            // return;
+            router.push("/login");
+            return;
         }
 
         setUser(currentUser);
@@ -230,8 +230,8 @@ export default function DashboardLayout({
             <div className="flex justify-around items-center h-16">
                 {mainNavItems.map((item) => (
                     <Link href={item.href} key={item.href} className={`flex flex-col items-center justify-center gap-1 w-full h-full ${isActive(item.href) ? 'text-primary' : 'text-muted-foreground'}`}>
-                        <item.icon className="w-6 h-6"/>
-                        <span className="text-xs">{item.label}</span>
+                        <item.icon className="w-5 h-5"/>
+                        <span className="text-[10px]">{item.label}</span>
                     </Link>
                 ))}
             </div>
