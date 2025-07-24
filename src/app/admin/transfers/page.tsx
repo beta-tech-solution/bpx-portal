@@ -161,18 +161,20 @@ export default function AdminTransfersPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <ChartContainer config={transferChartConfig} className="h-[300px] w-full">
-            <BarChart data={transferChartData}>
-              <CartesianGrid vertical={false} />
-              <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} tickFormatter={(val) => format(new Date(val), 'MMM d')} />
-              <YAxis />
-              <Tooltip content={<ChartTooltipContent />} />
-              <Legend />
-              <Bar dataKey="pending" fill="var(--color-pending)" radius={[4, 4, 0, 0]} stackId="a" />
-              <Bar dataKey="transferred" fill="var(--color-transferred)" radius={[4, 4, 0, 0]} stackId="a" />
-              <Bar dataKey="issue" fill="var(--color-issue)" radius={[4, 4, 0, 0]} stackId="a" />
-            </BarChart>
-          </ChartContainer>
+            <div className="w-full overflow-x-auto">
+                <ChartContainer config={transferChartConfig} className="h-[300px] min-w-[600px] w-full">
+                    <BarChart data={transferChartData}>
+                    <CartesianGrid vertical={false} />
+                    <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} tickFormatter={(val) => format(new Date(val), 'MMM d')} />
+                    <YAxis />
+                    <Tooltip content={<ChartTooltipContent />} />
+                    <Legend />
+                    <Bar dataKey="pending" fill="var(--color-pending)" radius={[4, 4, 0, 0]} stackId="a" />
+                    <Bar dataKey="transferred" fill="var(--color-transferred)" radius={[4, 4, 0, 0]} stackId="a" />
+                    <Bar dataKey="issue" fill="var(--color-issue)" radius={[4, 4, 0, 0]} stackId="a" />
+                    </BarChart>
+                </ChartContainer>
+            </div>
         </CardContent>
       </Card>
     </div>

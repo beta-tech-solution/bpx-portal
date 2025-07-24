@@ -323,26 +323,28 @@ export default function DashboardPage() {
                 </Button>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableBody>
-                    {recentTransactions.length > 0 ? recentTransactions.map((transaction) => (
-                      <TableRow key={transaction.id}>
-                        <TableCell>
-                          <div className="font-medium">{transaction.type}</div>
-                          <div className="text-sm text-muted-foreground">{new Date(transaction.date).toLocaleDateString()}</div>
-                        </TableCell>
-                        <TableCell className="text-right font-mono font-bold">{transaction.amount}</TableCell>
-                         <TableCell className="text-right">
-                            <Badge variant={statusVariant[transaction.status as keyof typeof statusVariant]} className="font-normal">{transaction.status}</Badge>
-                         </TableCell>
-                      </TableRow>
-                    )) : (
-                        <TableRow>
-                            <TableCell colSpan={3} className="text-center text-muted-foreground">No recent transactions.</TableCell>
+                <div className="overflow-x-auto">
+                    <Table>
+                    <TableBody>
+                        {recentTransactions.length > 0 ? recentTransactions.map((transaction) => (
+                        <TableRow key={transaction.id}>
+                            <TableCell>
+                            <div className="font-medium">{transaction.type}</div>
+                            <div className="text-sm text-muted-foreground">{new Date(transaction.date).toLocaleDateString()}</div>
+                            </TableCell>
+                            <TableCell className="text-right font-mono font-bold">{transaction.amount}</TableCell>
+                            <TableCell className="text-right">
+                                <Badge variant={statusVariant[transaction.status as keyof typeof statusVariant]} className="font-normal">{transaction.status}</Badge>
+                            </TableCell>
                         </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                        )) : (
+                            <TableRow>
+                                <TableCell colSpan={3} className="text-center text-muted-foreground">No recent transactions.</TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                    </Table>
+                </div>
               </CardContent>
             </Card>
              <Card>
@@ -355,28 +357,30 @@ export default function DashboardPage() {
                 </Button>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                        <TableHead>Date & Time</TableHead>
-                        <TableHead className="text-right">IP Address</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {recentLogins.length > 0 ? recentLogins.map((login) => (
-                      <TableRow key={login.id}>
-                        <TableCell>
-                          <div className="font-medium">{login.date}</div>
-                        </TableCell>
-                        <TableCell className="text-right font-mono">{login.ip}</TableCell>
-                      </TableRow>
-                    )) : (
+                <div className="overflow-x-auto">
+                    <Table>
+                    <TableHeader>
                         <TableRow>
-                            <TableCell colSpan={2} className="text-center text-muted-foreground">No recent logins.</TableCell>
+                            <TableHead>Date & Time</TableHead>
+                            <TableHead className="text-right">IP Address</TableHead>
                         </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                        {recentLogins.length > 0 ? recentLogins.map((login) => (
+                        <TableRow key={login.id}>
+                            <TableCell>
+                            <div className="font-medium">{login.date}</div>
+                            </TableCell>
+                            <TableCell className="text-right font-mono">{login.ip}</TableCell>
+                        </TableRow>
+                        )) : (
+                            <TableRow>
+                                <TableCell colSpan={2} className="text-center text-muted-foreground">No recent logins.</TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                    </Table>
+                </div>
               </CardContent>
             </Card>
         </div>
@@ -384,4 +388,3 @@ export default function DashboardPage() {
     </div>
   )
 }
-

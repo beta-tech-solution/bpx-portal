@@ -161,18 +161,20 @@ export default function AdminDepositsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <ChartContainer config={depositChartConfig} className="h-[300px] w-full">
-            <BarChart data={depositChartData}>
-              <CartesianGrid vertical={false} />
-              <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} tickFormatter={(val) => format(new Date(val), 'MMM d')} />
-              <YAxis />
-              <Tooltip content={<ChartTooltipContent />} />
-              <Legend />
-              <Bar dataKey="pending" fill="var(--color-pending)" radius={[4, 4, 0, 0]} stackId="a" />
-              <Bar dataKey="approved" fill="var(--color-approved)" radius={[4, 4, 0, 0]} stackId="a" />
-              <Bar dataKey="rejected" fill="var(--color-rejected)" radius={[4, 4, 0, 0]} stackId="a" />
-            </BarChart>
-          </ChartContainer>
+          <div className="w-full overflow-x-auto">
+            <ChartContainer config={depositChartConfig} className="h-[300px] min-w-[600px] w-full">
+              <BarChart data={depositChartData}>
+                <CartesianGrid vertical={false} />
+                <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} tickFormatter={(val) => format(new Date(val), 'MMM d')} />
+                <YAxis />
+                <Tooltip content={<ChartTooltipContent />} />
+                <Legend />
+                <Bar dataKey="pending" fill="var(--color-pending)" radius={[4, 4, 0, 0]} stackId="a" />
+                <Bar dataKey="approved" fill="var(--color-approved)" radius={[4, 4, 0, 0]} stackId="a" />
+                <Bar dataKey="rejected" fill="var(--color-rejected)" radius={[4, 4, 0, 0]} stackId="a" />
+              </BarChart>
+            </ChartContainer>
+          </div>
         </CardContent>
       </Card>
     </div>

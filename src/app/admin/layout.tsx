@@ -17,6 +17,12 @@ import {
   SidebarInset,
   SidebarMenuBadge
 } from "@/components/ui/sidebar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +35,8 @@ import {
   Shield,
   LayoutDashboard,
   Activity,
-  Loader2
+  Loader2,
+  MoreVertical
 } from "lucide-react";
 import { db, auth } from "@/lib/firebase/config";
 import { collection, onSnapshot, query, where, doc } from "firebase/firestore";
@@ -39,11 +46,14 @@ import { useToast } from "@/hooks/use-toast";
 
 const navItems = [
     { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, countKey: null },
-    { href: "/admin/users", label: "Users", icon: Users, countKey: null },
     { href: "/admin/deposits", label: "Deposits", icon: DollarSign, countKey: 'deposits' },
     { href: "/admin/transfers", label: "Transfers", icon: Send, countKey: 'transfers' },
     { href: "/admin/withdrawals", label: "Withdrawals", icon: Landmark, countKey: 'withdrawals' },
     { href: "/admin/bpexch-activity", label: "Login Activity", icon: Activity, countKey: null },
+];
+
+const mobileHeaderItems = [
+    { href: "/admin/users", label: "Users", icon: Users, countKey: null },
     { href: "/admin/settings", label: "Settings", icon: Settings, countKey: null },
 ]
 
@@ -153,9 +163,9 @@ export default function AdminLayout({
     return name.substring(0, 2).toUpperCase();
   };
 
-
+  const fullNavItems = [ ...navItems, ...mobileHeaderItems ];
   const getPageTitle = () => {
-    const currentItem = navItems.find(item => item.href === pathname);
+    const currentItem = fullNavItems.find(item => item.href === pathname);
     if (currentItem) return currentItem.label;
     if (pathname.includes('/admin/users/')) return "User Details";
     const parts = pathname.split('/').pop()?.replace(/-/g, ' ').split(' ') ?? [];
@@ -189,7 +199,7 @@ export default function AdminLayout({
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            {navItems.map((item) => {
+            {fullNavItems.map((item) => {
                 const count = item.countKey ? pendingCounts[item.countKey as keyof typeof pendingCounts] : 0;
                 return (
                  <SidebarMenuItem key={item.href}>
@@ -230,14 +240,30 @@ export default function AdminLayout({
             <h2 className="text-2xl font-bold font-headline text-center hidden md:block">
                 {getPageTitle()}
             </h2>
-            <div className="flex-1"></div>
+            <div className="flex-1 justify-end items-center flex md:hidden">
+                 <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                            <MoreVertical />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        {mobileHeaderItems.map((item) => (
+                            <DropdownMenuItem key={item.href} onClick={() => router.push(item.href)}>
+                                <item.icon className="mr-2 h-4 w-4" />
+                                {item.label}
+                            </DropdownMenuItem>
+                        ))}
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
         </header>
         <main className="flex-1 p-4 md:p-6 mb-20 md:mb-0">
             {children}
         </main>
         <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-10">
             <div className="flex justify-around items-center h-16">
-                {navItems.slice(0, 5).map((item) => { // Limit to 5 items for mobile nav
+                {navItems.map((item) => {
                      const count = item.countKey ? pendingCounts[item.countKey as keyof typeof pendingCounts] : 0;
                      return (
                     <Link href={item.href} key={item.href} className={`relative flex flex-col items-center justify-center gap-1 w-full h-full ${isActive(item.href) ? 'text-primary' : 'text-muted-foreground'}`}>

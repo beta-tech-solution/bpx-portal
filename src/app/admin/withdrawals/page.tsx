@@ -162,7 +162,8 @@ export default function AdminWithdrawalsPage() {
               </div>
           </CardHeader>
           <CardContent>
-              <ChartContainer config={withdrawalChartConfig} className="h-[300px] w-full">
+            <div className="w-full overflow-x-auto">
+              <ChartContainer config={withdrawalChartConfig} className="h-[300px] min-w-[600px] w-full">
                   <BarChart data={withdrawalChartData}>
                       <CartesianGrid vertical={false} />
                       <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} tickFormatter={(val) => format(new Date(val), 'MMM d')} />
@@ -174,6 +175,7 @@ export default function AdminWithdrawalsPage() {
                       <Bar dataKey="rejected" fill="var(--color-rejected)" radius={[4, 4, 0, 0]} stackId="a" />
                   </BarChart>
               </ChartContainer>
+            </div>
           </CardContent>
       </Card>
     </div>
