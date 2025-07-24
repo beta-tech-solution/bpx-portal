@@ -214,15 +214,15 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto grid gap-8 animate-fade-in">
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="max-w-7xl mx-auto grid gap-6 animate-fade-in">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium font-headline">Wallet Balance</CardTitle>
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">PKR {accountSummary.balance}</div>
+            <div className="text-2xl lg:text-3xl font-bold">PKR {accountSummary.balance}</div>
             <p className="text-xs text-muted-foreground">Your current available balance</p>
           </CardContent>
         </Card>
@@ -232,7 +232,7 @@ export default function DashboardPage() {
             <ArrowDownLeft className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">PKR {accountSummary.totalDeposits}</div>
+            <div className="text-2xl lg:text-3xl font-bold">PKR {accountSummary.totalDeposits}</div>
              <p className="text-xs text-muted-foreground">All time approved deposits</p>
           </CardContent>
         </Card>
@@ -242,7 +242,7 @@ export default function DashboardPage() {
             <ArrowUpRight className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">PKR {accountSummary.totalWithdrawals}</div>
+            <div className="text-2xl lg:text-3xl font-bold">PKR {accountSummary.totalWithdrawals}</div>
              <p className="text-xs text-muted-foreground">All time approved withdrawals</p>
           </CardContent>
         </Card>
@@ -252,14 +252,14 @@ export default function DashboardPage() {
             <Send className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">PKR {accountSummary.totalTransfers}</div>
+            <div className="text-2xl lg:text-3xl font-bold">PKR {accountSummary.totalTransfers}</div>
             <p className="text-xs text-muted-foreground">To BPExch account</p>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-8">
-        <div className="grid gap-8">
+      <div className="grid lg:grid-cols-2 gap-6">
+        <div className="grid gap-6">
             <Card>
                 <CardHeader>
                     <CardTitle className="font-headline flex items-center gap-2"><TrendingUp className="h-5 w-5 text-primary"/>Deposit History</CardTitle>
@@ -312,7 +312,7 @@ export default function DashboardPage() {
                 </CardContent>
             </Card>
         </div>
-        <div className="grid gap-8">
+        <div className="grid gap-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="font-headline">Recent Transactions</CardTitle>
