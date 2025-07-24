@@ -130,7 +130,7 @@ export default function WithdrawPage() {
           <CardTitle className="font-headline">Request Withdrawal</CardTitle>
           <CardDescription>Withdraw funds from your wallet to your bank account.</CardDescription>
         </CardHeader>
-        <CardContent className="grid md:grid-cols-2 gap-8">
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-6">
             <div className="p-4 rounded-lg border bg-muted/50">
                 <Label>Current Wallet Balance</Label>

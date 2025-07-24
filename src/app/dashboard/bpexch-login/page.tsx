@@ -180,46 +180,48 @@ export default function BpexchLoginPage() {
                 </Button>
             </CardContent>
         </Card>
-      <div className="grid lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card>
           <CardHeader>
             <CardTitle className="font-headline">Recent Login Activity</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? <Loader2 className="animate-spin" /> : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date & Time</TableHead>
-                  <TableHead>IP Address</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loginActivity.length > 0 ? loginActivity.map((activity) => {
-                  const isBlocked = blockedIps.includes(activity.ip);
-                  return (
-                  <TableRow key={activity.id}>
-                    <TableCell>
-                      <div className="font-medium">{activity.date}</div>
-                      <div className="text-sm text-muted-foreground">{activity.time}</div>
-                    </TableCell>
-                    <TableCell className="font-mono">{activity.ip}</TableCell>
-                    <TableCell className="text-right">
-                        <Button variant={isBlocked ? "secondary" : "destructive"} size="sm" onClick={() => toggleIpBlock(activity.ip)}>
-                           {isBlocked ? <ShieldCheck className="mr-2 h-4 w-4" /> : <ShieldOff className="mr-2 h-4 w-4" />}
-                           {isBlocked ? "Unblock" : "Block"}
-                        </Button>
-                    </TableCell>
-                  </TableRow>
-                  )
-                }) : (
+            <div className="overflow-x-auto">
+                <Table>
+                <TableHeader>
                     <TableRow>
-                        <TableCell colSpan={3} className="text-center text-muted-foreground">No recent activity.</TableCell>
+                    <TableHead>Date & Time</TableHead>
+                    <TableHead>IP Address</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
                     </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                    {loginActivity.length > 0 ? loginActivity.map((activity) => {
+                    const isBlocked = blockedIps.includes(activity.ip);
+                    return (
+                    <TableRow key={activity.id}>
+                        <TableCell>
+                        <div className="font-medium">{activity.date}</div>
+                        <div className="text-sm text-muted-foreground">{activity.time}</div>
+                        </TableCell>
+                        <TableCell className="font-mono">{activity.ip}</TableCell>
+                        <TableCell className="text-right">
+                            <Button variant={isBlocked ? "secondary" : "destructive"} size="sm" onClick={() => toggleIpBlock(activity.ip)}>
+                            {isBlocked ? <ShieldCheck className="mr-2 h-4 w-4" /> : <ShieldOff className="mr-2 h-4 w-4" />}
+                            {isBlocked ? "Unblock" : "Block"}
+                            </Button>
+                        </TableCell>
+                    </TableRow>
+                    )
+                    }) : (
+                        <TableRow>
+                            <TableCell colSpan={3} className="text-center text-muted-foreground">No recent activity.</TableCell>
+                        </TableRow>
+                    )}
+                </TableBody>
+                </Table>
+            </div>
             )}
           </CardContent>
         </Card>

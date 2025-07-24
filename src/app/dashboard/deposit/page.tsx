@@ -208,7 +208,7 @@ export default function DepositPage() {
                 <CardDescription>Follow the instructions below to add funds to your account.</CardDescription>
             </CardHeader>
             <form onSubmit={handleSubmit}>
-                <CardContent className="grid md:grid-cols-2 gap-8">
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-6">
                         <div>
                             <Label htmlFor="amount" className="font-semibold font-headline">Amount (PKR)</Label>
@@ -282,5 +282,3 @@ export default function DepositPage() {
     </div>
   );
 }
-
-    

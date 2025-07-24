@@ -171,7 +171,7 @@ export default function TransferPage() {
 
   return (
     <div className="max-w-4xl mx-auto grid gap-8 animate-fade-in">
-      <div className="grid lg:grid-cols-5 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
         <div className="lg:col-span-3">
             <Card>
                 <form onSubmit={handleTransfer}>
@@ -206,44 +206,46 @@ export default function TransferPage() {
             </CardHeader>
             <CardContent>
                 <TooltipProvider>
-                    <Table>
-                    <TableHeader>
-                        <TableRow>
-                        <TableHead>Details</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {recentTransfers.map((transfer) => (
-                        <TableRow key={transfer.id}>
-                            <TableCell>
-                            <div className="font-medium">{transfer.date}</div>
-                             <div className="flex items-center gap-2 mt-1">
-                                <Badge variant={statusVariant[transfer.status]} className="font-normal">
-                                    {transfer.status}
-                                </Badge>
-                                {transfer.status === 'Issue' && transfer.instruction && (
-                                     <UiTooltip>
-                                        <TooltipTrigger>
-                                            <Info className="h-4 w-4 text-destructive" />
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p>{transfer.instruction}</p>
-                                        </TooltipContent>
-                                    </UiTooltip>
-                                )}
-                             </div>
-                            </TableCell>
-                            <TableCell className="text-right font-medium font-mono">PKR {transfer.amount}</TableCell>
-                        </TableRow>
-                        ))}
-                         {recentTransfers.length === 0 && (
+                    <div className="overflow-x-auto">
+                        <Table>
+                        <TableHeader>
                             <TableRow>
-                                <TableCell colSpan={2} className="text-center text-muted-foreground">No recent transfers.</TableCell>
+                            <TableHead>Details</TableHead>
+                            <TableHead className="text-right">Amount</TableHead>
                             </TableRow>
-                        )}
-                    </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {recentTransfers.map((transfer) => (
+                            <TableRow key={transfer.id}>
+                                <TableCell>
+                                <div className="font-medium">{transfer.date}</div>
+                                 <div className="flex items-center gap-2 mt-1">
+                                    <Badge variant={statusVariant[transfer.status]} className="font-normal">
+                                        {transfer.status}
+                                    </Badge>
+                                    {transfer.status === 'Issue' && transfer.instruction && (
+                                         <UiTooltip>
+                                            <TooltipTrigger>
+                                                <Info className="h-4 w-4 text-destructive" />
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>{transfer.instruction}</p>
+                                            </TooltipContent>
+                                        </UiTooltip>
+                                    )}
+                                 </div>
+                                </TableCell>
+                                <TableCell className="text-right font-medium font-mono">PKR {transfer.amount}</TableCell>
+                            </TableRow>
+                            ))}
+                             {recentTransfers.length === 0 && (
+                                <TableRow>
+                                    <TableCell colSpan={2} className="text-center text-muted-foreground">No recent transfers.</TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                        </Table>
+                    </div>
                 </TooltipProvider>
             </CardContent>
             </Card>
@@ -272,5 +274,3 @@ export default function TransferPage() {
     </div>
   );
 }
-
-    
