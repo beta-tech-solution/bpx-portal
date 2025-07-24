@@ -183,7 +183,7 @@ export default function DashboardLayout({
                 </div>
             </SidebarGroup>
           <SidebarMenu>
-            {allNavItems.map((item) => (
+            {mainNavItems.map((item) => (
                  <SidebarMenuItem key={item.href}>
                  <SidebarMenuButton
                    onClick={() => handleNavigation(item.href)}
@@ -195,6 +195,21 @@ export default function DashboardLayout({
                  </SidebarMenuButton>
                </SidebarMenuItem>
             ))}
+             <SidebarGroup>
+                <SidebarGroupLabel>External</SidebarGroupLabel>
+                 {mobileHeaderItems.map((item) => (
+                     <SidebarMenuItem key={item.href}>
+                        <SidebarMenuButton
+                        onClick={() => handleNavigation(item.href)}
+                        isActive={isActive(item.href)}
+                        tooltip={item.label}
+                        >
+                        <item.icon />
+                        <span>{item.label}</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                ))}
+            </SidebarGroup>
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter className="p-4">
@@ -259,5 +274,3 @@ export default function DashboardLayout({
     </SidebarProvider>
   );
 }
-
-    

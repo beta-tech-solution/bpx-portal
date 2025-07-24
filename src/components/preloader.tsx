@@ -37,33 +37,23 @@ export default function Preloader({ loadingText = "Loading..." }: PreloaderProps
             font-family: 'Poppins', sans-serif;
             font-size: 2.5rem;
             font-weight: 700;
-            color: hsl(var(--foreground));
-            margin-top: 1.5rem;
             position: relative;
-            overflow: hidden;
-            padding-bottom: 5px;
-        }
-
-        .title::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: -100%;
-            width: 100%;
-            height: 3px;
-            background: linear-gradient(90deg, transparent, hsl(var(--primary)), transparent);
-            animation: shimmer 3s infinite linear;
+            color: transparent;
+            -webkit-background-clip: text;
+            background-clip: text;
+            background-image: linear-gradient(to right, hsl(var(--muted-foreground)), hsl(var(--foreground)), hsl(var(--muted-foreground)));
+            animation: shimmer 4s infinite linear;
+            background-size: 200% 100%;
+            background-position: 200%;
+            margin-top: 1.5rem;
         }
 
         @keyframes shimmer {
             0% {
-                left: -100%;
-            }
-            50% {
-                left: 100%;
+                background-position: 200% center;
             }
             100% {
-                 left: 100%;
+                background-position: -200% center;
             }
         }
         
@@ -118,5 +108,3 @@ export default function Preloader({ loadingText = "Loading..." }: PreloaderProps
     </div>
   );
 }
-
-    
