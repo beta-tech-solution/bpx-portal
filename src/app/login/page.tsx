@@ -15,12 +15,14 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Wallet, Eye, EyeOff, Loader2 } from "lucide-react"
+import { Wallet, Eye, EyeOff, Loader2, Mail } from "lucide-react"
 import { auth, db } from "@/lib/firebase/config"
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo } from "firebase/auth"
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo, sendPasswordResetEmail } from "firebase/auth"
 import { doc, setDoc, getDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import ParticlesBackground from "@/components/particles-background"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog"
+
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
@@ -39,6 +41,9 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+    const [resetEmail, setResetEmail] = useState("")
+    const [isResetting, setIsResetting] = useState(false)
+    const [isDialogOpen, setIsDialogOpen] = useState(false)
 
     const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
@@ -65,7 +70,6 @@ export default function LoginPage() {
             const result = await signInWithPopup(auth, provider);
             const user = result.user;
             
-            // Check if user document exists, if not, create it
             const userDocRef = doc(db, "users", user.uid);
             const userDoc = await getDoc(userDocRef);
 
@@ -98,6 +102,29 @@ export default function LoginPage() {
         }
     }
 
+    const handlePasswordReset = async () => {
+        if (!resetEmail) {
+            toast({ title: "Error", description: "Please enter your email address.", variant: "destructive" });
+            return;
+        }
+        setIsResetting(true);
+        try {
+            await sendPasswordResetEmail(auth, resetEmail);
+            toast({ title: "Password Reset Email Sent", description: "Please check your inbox to reset your password." });
+            setIsDialogOpen(false);
+            setResetEmail("");
+        } catch (error: any) {
+            console.error("Password reset error:", error);
+            let message = "Could not send password reset email. Please try again.";
+            if (error.code === 'auth/user-not-found') {
+                message = "No user found with this email address.";
+            }
+            toast({ title: "Error", description: message, variant: "destructive" });
+        } finally {
+            setIsResetting(false);
+        }
+    }
+
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background animate-fade-in overflow-hidden">
@@ -119,7 +146,32 @@ export default function LoginPage() {
                 <Input id="email" type="email" placeholder="m@example.com" required />
             </div>
             <div className="grid gap-2 relative">
-                <Label htmlFor="password">Password</Label>
+                <div className="flex items-center justify-between">
+                    <Label htmlFor="password">Password</Label>
+                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="link" type="button" className="text-xs p-0 h-auto">Forgot password?</Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Reset Your Password</DialogTitle>
+                                <DialogDescription>
+                                    Enter your email address below and we&apos;ll send you a link to reset your password.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                                <div className="grid gap-2">
+                                     <Label htmlFor="reset-email">Email</Label>
+                                    <Input id="reset-email" type="email" placeholder="you@example.com" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} />
+                                </div>
+                                <Button onClick={handlePasswordReset} disabled={isResetting}>
+                                    {isResetting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Mail className="mr-2 h-4 w-4" />}
+                                    Send Reset Link
+                                </Button>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+                </div>
                 <Input id="password" type={showPassword ? "text" : "password"} required />
                 <Button
                     type="button"
