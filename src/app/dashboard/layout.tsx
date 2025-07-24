@@ -31,6 +31,7 @@ import { auth, db } from "@/lib/firebase/config";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import { doc, onSnapshot, updateDoc, serverTimestamp, getDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
+import Preloader from "@/components/preloader";
 
 const mainNavItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -66,6 +67,33 @@ export default function DashboardLayout({
   const [user, setUser] = React.useState<User | null>(null);
   const [userData, setUserData] = React.useState<UserData | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [isNavigating, setIsNavigating] = React.useState(false);
+  const [pageLoading, setPageLoading] = React.useState(true);
+  
+  const getPageTitle = () => {
+    const currentItem = allNavItems.find(item => item.href === pathname);
+    if (currentItem) return currentItem.label;
+    const parts = pathname.split('/').pop()?.replace(/-/g, ' ').split(' ') ?? [];
+    return parts.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  }
+
+  React.useEffect(() => {
+    // Show preloader for a moment on initial load
+    setPageLoading(true);
+    const timer = setTimeout(() => setPageLoading(false), 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  React.useEffect(() => {
+    setIsNavigating(false);
+  }, [pathname]);
+
+  const handleNavigation = (href: string) => {
+    if (pathname !== href) {
+        setIsNavigating(true);
+        router.push(href);
+    }
+  }
 
   React.useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
@@ -119,13 +147,6 @@ export default function DashboardLayout({
 
   const isActive = (path: string) => pathname === path;
 
-  const getPageTitle = () => {
-    const currentItem = allNavItems.find(item => item.href === pathname);
-    if (currentItem) return currentItem.label;
-    const parts = pathname.split('/').pop()?.replace(/-/g, ' ').split(' ') ?? [];
-    return parts.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-  }
-
   const getInitials = (name: string | undefined | null): string => {
     if (!name) return 'U';
     const names = name.split(' ');
@@ -134,13 +155,11 @@ export default function DashboardLayout({
     }
     return name.substring(0, 2).toUpperCase();
   };
-  
-  if (loading) {
-      return (
-          <div className="flex items-center justify-center min-h-screen bg-background">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-      )
+
+  const loadingText = `Loading My ${getPageTitle()}`;
+
+  if (loading || pageLoading || isNavigating) {
+    return <Preloader loadingText={loadingText} />;
   }
 
   return (
@@ -167,7 +186,7 @@ export default function DashboardLayout({
             {allNavItems.map((item) => (
                  <SidebarMenuItem key={item.href}>
                  <SidebarMenuButton
-                   onClick={() => router.push(item.href)}
+                   onClick={() => handleNavigation(item.href)}
                    isActive={isActive(item.href)}
                    tooltip={item.label}
                  >
@@ -214,7 +233,7 @@ export default function DashboardLayout({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         {mobileHeaderItems.map((item) => (
-                            <DropdownMenuItem key={item.href} onClick={() => router.push(item.href)}>
+                            <DropdownMenuItem key={item.href} onClick={() => handleNavigation(item.href)}>
                                 <item.icon className="mr-2 h-4 w-4" />
                                 {item.label}
                             </DropdownMenuItem>
@@ -240,3 +259,5 @@ export default function DashboardLayout({
     </SidebarProvider>
   );
 }
+
+    

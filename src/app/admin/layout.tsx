@@ -43,6 +43,7 @@ import { collection, onSnapshot, query, where, doc } from "firebase/firestore";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
+import Preloader from "@/components/preloader";
 
 const navItems = [
     { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, countKey: null },
@@ -68,12 +69,41 @@ export default function AdminLayout({
   const [user, loadingUser, error] = useAuthState(auth);
   const [adminProfile, setAdminProfile] = React.useState({ name: 'Admin User', email: 'admin@bpx.com', photoURL: ''});
   const [isAuthorizing, setIsAuthorizing] = React.useState(true);
+  const [isNavigating, setIsNavigating] = React.useState(false);
+  const [pageLoading, setPageLoading] = React.useState(false);
 
   const [pendingCounts, setPendingCounts] = React.useState({
       deposits: 0,
       transfers: 0,
       withdrawals: 0
   });
+
+  const fullNavItems = [ ...navItems, ...mobileHeaderItems ];
+  const getPageTitle = () => {
+    const currentItem = fullNavItems.find(item => item.href === pathname);
+    if (currentItem) return currentItem.label;
+    if (pathname.includes('/admin/users/')) return "User Details";
+    const parts = pathname.split('/').pop()?.replace(/-/g, ' ').split(' ') ?? [];
+    return parts.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  }
+
+  React.useEffect(() => {
+    // Show preloader for a moment on initial load
+    setPageLoading(true);
+    const timer = setTimeout(() => setPageLoading(false), 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  React.useEffect(() => {
+    setIsNavigating(false);
+  }, [pathname]);
+
+  const handleNavigation = (href: string) => {
+    if (pathname !== href) {
+        setIsNavigating(true);
+        router.push(href);
+    }
+  }
 
   React.useEffect(() => {
     if (pathname === '/admin/login') {
@@ -163,13 +193,10 @@ export default function AdminLayout({
     return name.substring(0, 2).toUpperCase();
   };
 
-  const fullNavItems = [ ...navItems, ...mobileHeaderItems ];
-  const getPageTitle = () => {
-    const currentItem = fullNavItems.find(item => item.href === pathname);
-    if (currentItem) return currentItem.label;
-    if (pathname.includes('/admin/users/')) return "User Details";
-    const parts = pathname.split('/').pop()?.replace(/-/g, ' ').split(' ') ?? [];
-    return parts.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  const loadingText = `Loading ${getPageTitle()}`;
+
+  if (pageLoading || isNavigating) {
+      return <Preloader loadingText={loadingText} />
   }
   
   if (pathname === '/admin/login') {
@@ -204,7 +231,7 @@ export default function AdminLayout({
                 return (
                  <SidebarMenuItem key={item.href}>
                  <SidebarMenuButton
-                   onClick={() => router.push(item.href)}
+                   onClick={() => handleNavigation(item.href)}
                    isActive={isActive(item.href)}
                    tooltip={item.label}
                  >
@@ -249,7 +276,7 @@ export default function AdminLayout({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         {mobileHeaderItems.map((item) => (
-                            <DropdownMenuItem key={item.href} onClick={() => router.push(item.href)}>
+                            <DropdownMenuItem key={item.href} onClick={() => handleNavigation(item.href)}>
                                 <item.icon className="mr-2 h-4 w-4" />
                                 {item.label}
                             </DropdownMenuItem>
@@ -282,3 +309,5 @@ export default function AdminLayout({
     </SidebarProvider>
   );
 }
+
+    
