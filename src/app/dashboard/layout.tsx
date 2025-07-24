@@ -261,9 +261,9 @@ export default function DashboardLayout({
             {children}
         </main>
         <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-10">
-            <div className="flex justify-around items-center h-16">
+            <div className="flex justify-center items-center h-16 gap-4">
                 {mainNavItems.map((item) => (
-                    <Link href={item.href} key={item.href} className={`flex flex-col items-center justify-center gap-1 w-full h-full ${isActive(item.href) ? 'text-primary' : 'text-muted-foreground'}`}>
+                    <Link href={item.href} key={item.href} className={`flex flex-col items-center justify-center gap-1 p-2 ${isActive(item.href) ? 'text-primary' : 'text-muted-foreground'}`}>
                         <item.icon className="w-5 h-5"/>
                         <span className="text-[10px]">{item.label}</span>
                     </Link>
