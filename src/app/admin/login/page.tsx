@@ -77,7 +77,7 @@ export default function AdminLoginPage() {
     }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background overflow-hidden">
+    <div className="flex items-center justify-center min-h-screen bg-background">
         <AdminLoginBackground />
       <Card className="w-full max-w-sm mx-4 z-10 bg-card/80 backdrop-blur-sm">
         <CardHeader className="text-center">

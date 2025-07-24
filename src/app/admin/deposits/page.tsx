@@ -143,13 +143,13 @@ export default function AdminDepositsPage() {
       
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <CardTitle className="font-headline flex items-center gap-2"><ArrowDownLeft className="h-5 w-5 text-green-500" />Deposit Activity</CardTitle>
               <CardDescription>Deposit trends over a selected period.</CardDescription>
             </div>
             <Select value={timeRange} onValueChange={setTimeRange}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Select period" />
               </SelectTrigger>
               <SelectContent>
@@ -220,56 +220,58 @@ function DepositTable({ data, loading }: { data: Deposit[], loading: boolean }) 
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>User</TableHead>
-          <TableHead>Amount</TableHead>
-          <TableHead>Date</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {data.map((deposit) => (
-          <TableRow key={deposit.id}>
-            <TableCell className="font-medium">{deposit.userFullName}</TableCell>
-            <TableCell className="font-mono">PKR {deposit.amount}</TableCell>
-            <TableCell>{deposit.date}</TableCell>
-            <TableCell>
-              <Badge variant={statusVariant[deposit.status]}>{deposit.status}</Badge>
-            </TableCell>
-            <TableCell className="text-right">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="h-8 w-8 p-0">
-                    <span className="sr-only">Open menu</span>
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                  <DropdownMenuItem asChild>
-                    <a href={deposit.proofUrl} target="_blank" rel="noopener noreferrer">
-                        <FileText className="mr-2 h-4 w-4" />View Proof
-                    </a>
-                    </DropdownMenuItem>
-                  {deposit.status === 'Pending' && (
-                    <>
-                      <DropdownMenuItem className="text-green-600" onClick={() => handleUpdateStatus(deposit, 'Approved')}>
-                        <CheckCircle className="mr-2 h-4 w-4" />Approve
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive" onClick={() => handleUpdateStatus(deposit, 'Rejected')}>
-                        <XCircle className="mr-2 h-4 w-4" />Reject
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </TableCell>
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>User</TableHead>
+            <TableHead>Amount</TableHead>
+            <TableHead>Date</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {data.map((deposit) => (
+            <TableRow key={deposit.id}>
+              <TableCell className="font-medium">{deposit.userFullName}</TableCell>
+              <TableCell className="font-mono">PKR {deposit.amount}</TableCell>
+              <TableCell>{deposit.date}</TableCell>
+              <TableCell>
+                <Badge variant={statusVariant[deposit.status]}>{deposit.status}</Badge>
+              </TableCell>
+              <TableCell className="text-right">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                      <span className="sr-only">Open menu</span>
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuItem asChild>
+                      <a href={deposit.proofUrl} target="_blank" rel="noopener noreferrer">
+                          <FileText className="mr-2 h-4 w-4" />View Proof
+                      </a>
+                      </DropdownMenuItem>
+                    {deposit.status === 'Pending' && (
+                      <>
+                        <DropdownMenuItem className="text-green-600" onClick={() => handleUpdateStatus(deposit, 'Approved')}>
+                          <CheckCircle className="mr-2 h-4 w-4" />Approve
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive" onClick={() => handleUpdateStatus(deposit, 'Rejected')}>
+                          <XCircle className="mr-2 h-4 w-4" />Reject
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }

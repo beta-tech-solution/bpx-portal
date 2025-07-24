@@ -105,31 +105,33 @@ export default function AdminBpexchActivityPage() {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead>IP Address</TableHead>
-                <TableHead>Timestamp</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredActivity.length > 0 ? filteredActivity.map(item => (
-                <TableRow key={item.id}>
-                  <TableCell>
-                    <div className="font-medium">{item.userName}</div>
-                    <div className="text-sm text-muted-foreground">{item.userEmail}</div>
-                  </TableCell>
-                  <TableCell className="font-mono">{item.ip}</TableCell>
-                  <TableCell>{item.timestamp}</TableCell>
-                </TableRow>
-              )) : (
+          <div className="overflow-x-auto">
+            <Table>
+                <TableHeader>
                 <TableRow>
-                    <TableCell colSpan={3} className="text-center text-muted-foreground">No activity found.</TableCell>
+                    <TableHead>User</TableHead>
+                    <TableHead>IP Address</TableHead>
+                    <TableHead>Timestamp</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                </TableHeader>
+                <TableBody>
+                {filteredActivity.length > 0 ? filteredActivity.map(item => (
+                    <TableRow key={item.id}>
+                    <TableCell>
+                        <div className="font-medium">{item.userName}</div>
+                        <div className="text-sm text-muted-foreground">{item.userEmail}</div>
+                    </TableCell>
+                    <TableCell className="font-mono">{item.ip}</TableCell>
+                    <TableCell>{item.timestamp}</TableCell>
+                    </TableRow>
+                )) : (
+                    <TableRow>
+                        <TableCell colSpan={3} className="text-center text-muted-foreground">No activity found.</TableCell>
+                    </TableRow>
+                )}
+                </TableBody>
+            </Table>
+          </div>
         )}
       </CardContent>
     </Card>

@@ -144,13 +144,13 @@ export default function AdminWithdrawalsPage() {
 
       <Card>
           <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div>
                       <CardTitle className="font-headline flex items-center gap-2"><ArrowUpRight className="h-5 w-5 text-red-500" />Withdrawal Activity</CardTitle>
                       <CardDescription>Withdrawal trends over a selected period.</CardDescription>
                   </div>
                    <Select value={timeRange} onValueChange={setTimeRange}>
-                      <SelectTrigger className="w-[180px]">
+                      <SelectTrigger className="w-full sm:w-[180px]">
                           <SelectValue placeholder="Select period" />
                       </SelectTrigger>
                       <SelectContent>
@@ -216,6 +216,7 @@ function WithdrawalTable({ data, loading }: { data: Withdrawal[], loading: boole
         return <div className="text-center text-muted-foreground p-8">No withdrawals found.</div>
     }
     return (
+        <div className="overflow-x-auto">
          <Table>
           <TableHeader>
             <TableRow>
@@ -264,5 +265,6 @@ function WithdrawalTable({ data, loading }: { data: Withdrawal[], loading: boole
             ))}
           </TableBody>
         </Table>
+        </div>
     )
 }

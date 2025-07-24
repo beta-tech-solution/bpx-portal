@@ -129,7 +129,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="max-w-7xl mx-auto grid gap-8 animate-fade-in">
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium font-headline">Total Users</CardTitle>
@@ -234,5 +234,3 @@ export default function AdminDashboardPage() {
     </div>
   )
 }
-
-    

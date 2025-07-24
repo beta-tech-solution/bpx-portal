@@ -224,26 +224,27 @@ export default function AdminLayout({
       </Sidebar>
       <SidebarInset>
         <header className="flex items-center justify-between p-4 border-b md:p-6 bg-card md:bg-transparent">
-            <div className="md:hidden">
-                <SidebarTrigger />
+            <div className="flex-1">
+                 <SidebarTrigger className="md:hidden" />
             </div>
-            <h2 className="text-2xl font-bold font-headline text-center md:text-left flex-1 md:flex-none">
+            <h2 className="text-2xl font-bold font-headline text-center hidden md:block">
                 {getPageTitle()}
             </h2>
+            <div className="flex-1"></div>
         </header>
         <main className="flex-1 p-4 md:p-6 mb-20 md:mb-0">
             {children}
         </main>
         <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-10">
             <div className="flex justify-around items-center h-16">
-                {navItems.map((item) => {
+                {navItems.slice(0, 5).map((item) => { // Limit to 5 items for mobile nav
                      const count = item.countKey ? pendingCounts[item.countKey as keyof typeof pendingCounts] : 0;
                      return (
                     <Link href={item.href} key={item.href} className={`relative flex flex-col items-center justify-center gap-1 w-full h-full ${isActive(item.href) ? 'text-primary' : 'text-muted-foreground'}`}>
                         <item.icon className="w-6 h-6"/>
                         <span className="text-xs text-center">{item.label}</span>
                         {count > 0 && (
-                            <div className="absolute top-1 right-4 text-xs bg-destructive text-destructive-foreground rounded-full h-4 w-4 flex items-center justify-center">
+                            <div className="absolute top-1 right-1/4 text-xs bg-destructive text-destructive-foreground rounded-full h-4 w-4 flex items-center justify-center">
                                 {count}
                             </div>
                         )}
@@ -255,4 +256,3 @@ export default function AdminLayout({
     </SidebarProvider>
   );
 }
-    
