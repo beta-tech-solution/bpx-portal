@@ -201,14 +201,14 @@ export default function DepositPage() {
   }
 
   return (
-    <div className="grid gap-8 animate-fade-in">
+    <div className="flex flex-col gap-8 animate-fade-in">
         <Card className="w-full max-w-2xl mx-auto">
             <CardHeader>
                 <CardTitle className="font-headline">Deposit Funds</CardTitle>
                 <CardDescription>Follow the instructions below to add funds to your account.</CardDescription>
             </CardHeader>
             <form onSubmit={handleSubmit}>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <CardContent className="flex flex-col gap-8">
                     <div className="space-y-6">
                         <div>
                             <Label htmlFor="amount" className="font-semibold font-headline">Amount (PKR)</Label>

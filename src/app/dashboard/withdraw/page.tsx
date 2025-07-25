@@ -123,14 +123,14 @@ export default function WithdrawPage() {
   }
 
   return (
-    <div className="grid gap-8 animate-fade-in">
+    <div className="flex flex-col gap-8 animate-fade-in">
       <Card className="w-full max-w-2xl mx-auto">
         <form onSubmit={handleWithdraw}>
         <CardHeader>
           <CardTitle className="font-headline">Request Withdrawal</CardTitle>
           <CardDescription>Withdraw funds from your wallet to your bank account.</CardDescription>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <CardContent className="flex flex-col gap-8">
           <div className="space-y-6">
             <div className="p-4 rounded-lg border bg-muted/50">
                 <Label>Current Wallet Balance</Label>
