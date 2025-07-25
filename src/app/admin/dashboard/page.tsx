@@ -7,8 +7,12 @@ import { Bar, BarChart, CartesianGrid, Legend, Tooltip, XAxis, YAxis, AreaChart,
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
 import { DollarSign, Users, Landmark, Send, Loader2, ArrowDownLeft, ArrowUpRight, TrendingUp } from "lucide-react"
 import { db } from "@/lib/firebase/config"
-import { collection, getDocs, query, where, Timestamp, onSnapshot, DocumentData } from "firebase/firestore"
+import { collection, getDocs, query, where, Timestamp, onSnapshot, DocumentData, orderBy, limit } from "firebase/firestore"
 import { subMonths, format, addMonths, startOfDay, subDays } from 'date-fns'
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 
 const depositsChartConfig = {
@@ -26,16 +30,24 @@ interface MonthlyData {
     [key: string]: any;
 }
 
+interface Transaction {
+  id: string;
+  type: 'Deposit' | 'Withdrawal';
+  amount: number;
+  date: string;
+  userName: string;
+}
+
 export default function AdminDashboardPage() {
     const [loading, setLoading] = useState(true);
     const [overviewData, setOverviewData] = useState({
         totalUsers: 0,
         pendingDeposits: 0,
         pendingWithdrawals: 0,
-        profitLast7Days: 0,
     });
     const [depositsData, setDepositsData] = useState<MonthlyData[]>([]);
     const [withdrawalsData, setWithdrawalsData] = useState<MonthlyData[]>([]);
+    const [profitTransactions, setProfitTransactions] = useState<Transaction[]>([]);
 
      useEffect(() => {
         setLoading(true);
@@ -70,30 +82,60 @@ export default function AdminDashboardPage() {
         };
 
         const setupProfitListener = () => {
-            const sevenDaysAgo = startOfDay(subDays(new Date(), 7));
-            
-            const depositsQuery = query(
+             const depositsQuery = query(
                 collection(db, 'deposits'),
                 where('status', '==', 'Approved'),
-                where('createdAt', '>=', Timestamp.fromDate(sevenDaysAgo))
+                orderBy('createdAt', 'desc'),
+                limit(3)
             );
             const withdrawalsQuery = query(
                 collection(db, 'withdrawals'),
                 where('status', '==', 'Approved'),
-                where('createdAt', '>=', Timestamp.fromDate(sevenDaysAgo))
+                orderBy('createdAt', 'desc'),
+                limit(3)
             );
 
-            let totalDeposits = 0;
-            let totalWithdrawals = 0;
-            
-            const unsubDeposits = onSnapshot(depositsQuery, (snapshot) => {
-                totalDeposits = snapshot.docs.reduce((sum, doc) => sum + parseFloat(doc.data().amount), 0);
-                setOverviewData(prev => ({...prev, profitLast7Days: totalDeposits - totalWithdrawals }));
-            });
+            const userCache = new Map<string, string>();
+            const getUserName = async (userId: string) => {
+                if (userCache.has(userId)) return userCache.get(userId);
+                try {
+                    const userDoc = await getDocs(query(collection(db, 'users'), where('uid', '==', userId)));
+                    if (!userDoc.empty) {
+                        const name = userDoc.docs[0].data().fullName;
+                        userCache.set(userId, name);
+                        return name;
+                    }
+                } catch (e) { console.error(e); }
+                return 'Unknown User';
+            };
 
-            const unsubWithdrawals = onSnapshot(withdrawalsQuery, (snapshot) => {
-                totalWithdrawals = snapshot.docs.reduce((sum, doc) => sum + parseFloat(doc.data().amount), 0);
-                setOverviewData(prev => ({...prev, profitLast7Days: totalDeposits - totalWithdrawals }));
+            const processTransactions = async (
+                depositsSnapshot: DocumentData,
+                withdrawalsSnapshot: DocumentData
+            ) => {
+                const deposits = await Promise.all(depositsSnapshot.docs.map(async (doc: DocumentData) => ({
+                    id: doc.id,
+                    type: 'Deposit' as const,
+                    amount: parseFloat(doc.data().amount),
+                    date: format((doc.data().createdAt as Timestamp).toDate(), 'PP'),
+                    userName: await getUserName(doc.data().userId),
+                })));
+                const withdrawals = await Promise.all(withdrawalsSnapshot.docs.map(async (doc: DocumentData) => ({
+                    id: doc.id,
+                    type: 'Withdrawal' as const,
+                    amount: parseFloat(doc.data().amount),
+                    date: format((doc.data().createdAt as Timestamp).toDate(), 'PP'),
+                    userName: await getUserName(doc.data().userId),
+                })));
+
+                setProfitTransactions([...deposits, ...withdrawals].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0,3));
+            }
+
+            const unsubDeposits = onSnapshot(depositsQuery, (depositsSnapshot) => {
+                getDocs(withdrawalsQuery).then(withdrawalsSnapshot => processTransactions(depositsSnapshot, withdrawalsSnapshot));
+            });
+            const unsubWithdrawals = onSnapshot(withdrawalsQuery, (withdrawalsSnapshot) => {
+                getDocs(depositsQuery).then(depositsSnapshot => processTransactions(depositsSnapshot, withdrawalsSnapshot));
             });
 
             return [unsubDeposits, unsubWithdrawals];
@@ -155,7 +197,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="max-w-7xl mx-auto grid gap-8 animate-fade-in">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium font-headline">Total Users</CardTitle>
@@ -186,16 +228,6 @@ export default function AdminDashboardPage() {
                     <p className="text-xs text-muted-foreground">Require approval</p>
                 </CardContent>
             </Card>
-             <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium font-headline">7-Day Profit</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-3xl font-bold">PKR {overviewData.profitLast7Days.toFixed(2)}</div>
-                    <p className="text-xs text-muted-foreground">Deposits - Withdrawals</p>
-                </CardContent>
-            </Card>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -205,7 +237,8 @@ export default function AdminDashboardPage() {
                     <CardDescription>Pending vs. Approved deposits over the last 6 months.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <ChartContainer config={depositsChartConfig} className="h-[250px] w-full">
+                   <div className="w-full overflow-x-auto">
+                    <ChartContainer config={depositsChartConfig} className="h-[250px] min-w-[600px] w-full">
                         <BarChart data={depositsData}>
                             <CartesianGrid vertical={false} />
                             <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
@@ -216,6 +249,7 @@ export default function AdminDashboardPage() {
                             <Bar dataKey="approved" stackId="a" fill="var(--color-approved)" radius={[4, 4, 0, 0]} />
                         </BarChart>
                     </ChartContainer>
+                   </div>
                 </CardContent>
             </Card>
             <Card>
@@ -224,7 +258,8 @@ export default function AdminDashboardPage() {
                     <CardDescription>Pending vs. Approved withdrawals over the last 6 months.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <ChartContainer config={withdrawalsChartConfig} className="h-[250px] w-full">
+                  <div className="w-full overflow-x-auto">
+                    <ChartContainer config={withdrawalsChartConfig} className="h-[250px] min-w-[600px] w-full">
                         <BarChart data={withdrawalsData}>
                             <CartesianGrid vertical={false} />
                             <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
@@ -235,6 +270,41 @@ export default function AdminDashboardPage() {
                             <Bar dataKey="approved" stackId="a" fill="var(--color-approved)" radius={[4, 4, 0, 0]} />
                         </BarChart>
                     </ChartContainer>
+                  </div>
+                </CardContent>
+            </Card>
+             <Card className="lg:col-span-2">
+                <CardHeader>
+                     <CardTitle className="font-headline flex items-center gap-2"><TrendingUp className="h-5 w-5 text-primary" />Recent Transactions</CardTitle>
+                    <CardDescription>Recent approved deposits and withdrawals.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableBody>
+                            {profitTransactions.map(tx => (
+                                <TableRow key={tx.id}>
+                                    <TableCell>
+                                        <div className="font-medium">{tx.userName}</div>
+                                        <div className="text-sm text-muted-foreground">{tx.date}</div>
+                                    </TableCell>
+                                    <TableCell>
+                                         <Badge variant={tx.type === 'Deposit' ? 'secondary' : 'destructive'}>{tx.type}</Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right font-mono">
+                                        PKR {tx.amount.toFixed(2)}
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                     {profitTransactions.length === 0 && (
+                        <p className="text-center text-muted-foreground p-4">No recent approved transactions.</p>
+                     )}
+                     <div className="flex justify-end mt-4">
+                        <Button variant="outline" asChild>
+                            <Link href="/admin/profit-stats">View All Stats</Link>
+                        </Button>
+                    </div>
                 </CardContent>
             </Card>
         </div>

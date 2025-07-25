@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react";
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { db, auth } from "@/lib/firebase/config";
 import { collection, query, onSnapshot, orderBy, doc, addDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Send, Loader2, Paperclip, FileText } from "lucide-react";
+import { Send, Loader2, Paperclip, FileText, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
@@ -31,6 +31,7 @@ interface Message {
 
 export default function AdminChatPage() {
   const { chatId } = useParams();
+  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -154,12 +155,17 @@ export default function AdminChatPage() {
     <Card className="h-full flex flex-col animate-fade-in">
       <audio ref={notificationAudioRef} src="/notification.mp3" preload="auto"></audio>
       <CardHeader className="border-b">
-        <CardTitle className="font-headline flex items-center gap-2">
-            <Avatar className="h-8 w-8">
-                <AvatarFallback>{getInitials(chatUser.name)}</AvatarFallback>
-            </Avatar>
-            {chatUser.name}
-        </CardTitle>
+        <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => router.push('/admin/chat')}>
+                <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <CardTitle className="font-headline flex items-center gap-2">
+                <Avatar className="h-8 w-8">
+                    <AvatarFallback>{getInitials(chatUser.name)}</AvatarFallback>
+                </Avatar>
+                {chatUser.name}
+            </CardTitle>
+        </div>
       </CardHeader>
       <CardContent className="flex-grow p-0">
         <ScrollArea className="h-full p-4" ref={scrollAreaRef}>

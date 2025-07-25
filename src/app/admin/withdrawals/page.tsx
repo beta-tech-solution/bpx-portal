@@ -112,7 +112,7 @@ export default function AdminWithdrawalsPage() {
 
 
   return (
-    <div className="animate-fade-in grid gap-8">
+    <div className="animate-fade-in grid gap-8 max-w-7xl mx-auto">
       <Card>
         <CardHeader>
           <CardTitle className="font-headline">Withdrawal Management</CardTitle>

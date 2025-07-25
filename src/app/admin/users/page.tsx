@@ -116,7 +116,7 @@ export default function AdminUsersPage() {
 
   return (
     <>
-    <div className="animate-fade-in grid gap-8">
+    <div className="animate-fade-in grid gap-8 max-w-7xl mx-auto">
     <Card>
       <CardHeader className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div>
@@ -196,7 +196,8 @@ export default function AdminUsersPage() {
             </div>
         </CardHeader>
         <CardContent>
-            <ChartContainer config={userChartConfig} className="h-[250px] w-full">
+          <div className="w-full overflow-x-auto">
+            <ChartContainer config={userChartConfig} className="h-[250px] min-w-[600px] w-full">
                 <BarChart data={userChartData}>
                     <CartesianGrid vertical={false} />
                     <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} />
@@ -205,6 +206,7 @@ export default function AdminUsersPage() {
                     <Bar dataKey="count" fill="var(--color-count)" radius={[4, 4, 0, 0]} />
                 </BarChart>
             </ChartContainer>
+          </div>
         </CardContent>
     </Card>
     </div>

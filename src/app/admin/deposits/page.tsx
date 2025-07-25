@@ -111,7 +111,7 @@ export default function AdminDepositsPage() {
   }, [deposits, timeRange]);
 
   return (
-    <div className="animate-fade-in grid gap-8">
+    <div className="animate-fade-in grid gap-8 max-w-7xl mx-auto">
       <Card>
         <CardHeader>
           <CardTitle className="font-headline">Deposit Management</CardTitle>

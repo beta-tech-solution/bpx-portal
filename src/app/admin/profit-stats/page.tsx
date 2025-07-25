@@ -13,9 +13,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Loader2, CalendarIcon, TrendingUp, ArrowDownLeft, ArrowUpRight } from "lucide-react"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from "recharts"
 import { db } from "@/lib/firebase/config"
-import { collection, query, where, getDocs, Timestamp } from "firebase/firestore"
+import { collection, query, where, getDocs, Timestamp, doc } from "firebase/firestore"
 
 interface Transaction {
   id: string
@@ -72,11 +72,12 @@ export default function ProfitStatsPage() {
 
       const userCache = new Map();
       const getUserName = async (userId: string) => {
+        if (!userId) return 'Unknown User';
         if(userCache.has(userId)) return userCache.get(userId);
         try {
-          const userDoc = await getDocs(query(collection(db, 'users'), where('uid', '==', userId)));
-          if(!userDoc.empty) {
-            const name = userDoc.docs[0].data().fullName;
+          const userDoc = await getDoc(doc(db, 'users', userId));
+          if(userDoc.exists()) {
+            const name = userDoc.data().fullName;
             userCache.set(userId, name);
             return name;
           }
@@ -143,7 +144,7 @@ export default function ProfitStatsPage() {
   }, [transactions]);
 
   return (
-    <div className="animate-fade-in grid gap-8">
+    <div className="animate-fade-in grid gap-8 max-w-7xl mx-auto">
       <Card>
         <CardHeader>
           <CardTitle className="font-headline">Profit Statistics</CardTitle>
@@ -229,7 +230,8 @@ export default function ProfitStatsPage() {
                     <CardTitle>Daily Trends</CardTitle>
                 </CardHeader>
                 <CardContent>
-                     <ChartContainer config={profitChartConfig} className="h-[250px] w-full">
+                  <div className="w-full overflow-x-auto">
+                     <ChartContainer config={profitChartConfig} className="h-[250px] min-w-[600px] w-full">
                         <BarChart data={chartData}>
                             <CartesianGrid vertical={false} />
                             <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} tickFormatter={(val) => format(new Date(val), 'MMM d')} />
@@ -240,6 +242,7 @@ export default function ProfitStatsPage() {
                             <Bar dataKey="withdrawals" fill="var(--color-withdrawals)" radius={[4, 4, 0, 0]} />
                         </BarChart>
                     </ChartContainer>
+                  </div>
                 </CardContent>
             </Card>
 
