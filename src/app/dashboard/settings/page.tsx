@@ -10,7 +10,7 @@ import { Save, Loader2, User, Camera, KeyRound, Mail, Phone, Calendar } from "lu
 import { useToast } from "@/hooks/use-toast";
 import { auth, db } from "@/lib/firebase/config";
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { doc, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, Timestamp, onSnapshot } from 'firebase/firestore';
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';

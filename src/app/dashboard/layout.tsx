@@ -37,14 +37,11 @@ const mainNavItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/dashboard/deposit", label: "Deposit", icon: DollarSign },
     { href: "/dashboard/withdraw", label: "Withdrawal", icon: Landmark },
+    { href: "/dashboard/bpexch-login", label: "BPExch Login", icon: ExternalLink },
+    { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
-const mobileHeaderItems = [
-     { href: "/dashboard/bpexch-login", label: "BPExch Login", icon: ExternalLink },
-     { href: "/dashboard/settings", label: "Settings", icon: Settings },
-]
-
-const allNavItems = [...mainNavItems, ...mobileHeaderItems];
+const allNavItems = [...mainNavItems];
 
 
 interface UserData {
@@ -194,21 +191,6 @@ export default function DashboardLayout({
                  </SidebarMenuButton>
                </SidebarMenuItem>
             ))}
-             <SidebarGroup>
-                <SidebarGroupLabel>External</SidebarGroupLabel>
-                 {mobileHeaderItems.map((item) => (
-                     <SidebarMenuItem key={item.href}>
-                        <SidebarMenuButton
-                        onClick={() => handleNavigation(item.href)}
-                        isActive={isActive(item.href)}
-                        tooltip={item.label}
-                        >
-                        <item.icon />
-                        <span>{item.label}</span>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                ))}
-            </SidebarGroup>
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter className="p-4">
@@ -238,29 +220,15 @@ export default function DashboardLayout({
             <h2 className="text-2xl font-bold font-headline text-center hidden md:block flex-1 md:flex-none">
                 {getPageTitle()}
             </h2>
-            <div className="md:hidden">
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                            <MoreVertical />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        {mobileHeaderItems.map((item) => (
-                            <DropdownMenuItem key={item.href} onClick={() => handleNavigation(item.href)}>
-                                <item.icon className="mr-2 h-4 w-4" />
-                                {item.label}
-                            </DropdownMenuItem>
-                        ))}
-                    </DropdownMenuContent>
-                </DropdownMenu>
+            <div className="md:hidden w-8">
+                {/* Empty div for spacing */}
             </div>
         </header>
         <main className="flex-1 p-4 md:p-6 mb-20 md:mb-0">
             {children}
         </main>
         <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-10">
-            <div className="flex justify-center items-center h-16 gap-4">
+            <div className="flex justify-around items-center h-16">
                 {mainNavItems.map((item) => (
                     <Link href={item.href} key={item.href} className={`flex flex-col items-center justify-center gap-1 p-2 ${isActive(item.href) ? 'text-primary' : 'text-muted-foreground'}`}>
                         <item.icon className="w-5 h-5"/>
