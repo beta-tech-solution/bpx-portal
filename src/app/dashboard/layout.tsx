@@ -95,12 +95,10 @@ export default function DashboardLayout({
   React.useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
-        // User is logged in, now check their verification status and role
         const userDocRef = doc(db, "users", currentUser.uid);
         const userDoc = await getDoc(userDocRef);
 
         if (!userDoc.exists()) {
-            // This case should ideally not happen if signup process is robust
             toast({ title: "Error", description: "User profile not found.", variant: "destructive"});
             signOut(auth);
             return;
@@ -108,14 +106,7 @@ export default function DashboardLayout({
         
         const userData = userDoc.data() as UserData;
 
-        // Check for role mismatch
-        if (userData.role === 'Admin') {
-            // Admin should be on admin pages, but we don't block them here.
-            // Admin layout will handle redirection if they try to access non-admin pages.
-        }
-
-        // Enforce email verification for standard users
-        if (userData.role === 'User' && !currentUser.emailVerified) {
+        if (userData.role !== 'Admin' && !currentUser.emailVerified) {
              toast({
                 title: "Email Not Verified",
                 description: "Please check your inbox and verify your email address to log in.",
@@ -129,7 +120,6 @@ export default function DashboardLayout({
         setUserData(userData);
         setLoading(false);
 
-        // Set up real-time listener for user data
         const unsubscribeSnapshot = onSnapshot(userDocRef, (doc) => {
           if (doc.exists()) {
             setUserData(doc.data() as UserData);
@@ -140,7 +130,6 @@ export default function DashboardLayout({
 
         return () => unsubscribeSnapshot();
       } else {
-        // No user is signed in
         router.push("/login");
         setLoading(false);
       }
@@ -243,7 +232,7 @@ export default function DashboardLayout({
                 {/* Empty div for spacing */}
             </div>
         </header>
-        <main className="flex-1 p-4 md:p-6 mb-20 md:mb-0">
+        <main className="flex-1 p-4 md:p-6 mb-20 md:mb-0 overflow-hidden">
             {children}
         </main>
         <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-10">

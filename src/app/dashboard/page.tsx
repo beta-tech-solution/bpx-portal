@@ -237,15 +237,17 @@ export default function DashboardPage() {
                     <CardDescription>Your deposit history over the last 6 months.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <ChartContainer config={depositsChartConfig} className="h-[200px] w-full">
-                        <AreaChart accessibilityLayer data={depositsData} margin={{left: -20, right: 12, top: 5, bottom: 0}} >
-                            <CartesianGrid vertical={false} />
-                            <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value.slice(0, 3)} />
-                            <YAxis tickMargin={8} width={50} />
-                            <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
-                            <Area dataKey="amount" type="natural" fill="var(--color-amount)" fillOpacity={0.4} stroke="var(--color-amount)" />
-                        </AreaChart>
-                    </ChartContainer>
+                    <div className="w-full overflow-x-auto">
+                        <ChartContainer config={depositsChartConfig} className="h-[200px] w-full">
+                            <AreaChart accessibilityLayer data={depositsData} margin={{left: -20, right: 12, top: 5, bottom: 0}} >
+                                <CartesianGrid vertical={false} />
+                                <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value.slice(0, 3)} />
+                                <YAxis tickMargin={8} width={50} />
+                                <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
+                                <Area dataKey="amount" type="natural" fill="var(--color-amount)" fillOpacity={0.4} stroke="var(--color-amount)" />
+                            </AreaChart>
+                        </ChartContainer>
+                    </div>
                 </CardContent>
             </Card>
              <Card>
@@ -254,15 +256,17 @@ export default function DashboardPage() {
                     <CardDescription>Your withdrawal history over the last 6 months.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <ChartContainer config={withdrawalsChartConfig} className="h-[200px] w-full">
-                        <AreaChart accessibilityLayer data={withdrawalsData} margin={{left: -20, right: 12, top: 5, bottom: 0}} >
-                            <CartesianGrid vertical={false} />
-                            <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value.slice(0, 3)} />
-                            <YAxis tickMargin={8} width={50} />
-                            <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
-                            <Area dataKey="amount" type="natural" fill="var(--color-amount)" fillOpacity={0.4} stroke="var(--color-amount)" />
-                        </AreaChart>
-                    </ChartContainer>
+                    <div className="w-full overflow-x-auto">
+                        <ChartContainer config={withdrawalsChartConfig} className="h-[200px] w-full">
+                            <AreaChart accessibilityLayer data={withdrawalsData} margin={{left: -20, right: 12, top: 5, bottom: 0}} >
+                                <CartesianGrid vertical={false} />
+                                <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value.slice(0, 3)} />
+                                <YAxis tickMargin={8} width={50} />
+                                <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
+                                <Area dataKey="amount" type="natural" fill="var(--color-amount)" fillOpacity={0.4} stroke="var(--color-amount)" />
+                            </AreaChart>
+                        </ChartContainer>
+                    </div>
                 </CardContent>
             </Card>
         </div>
