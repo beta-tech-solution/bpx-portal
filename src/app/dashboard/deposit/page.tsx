@@ -201,7 +201,7 @@ export default function DepositPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8 animate-fade-in">
+    <div className="animate-fade-in grid gap-8">
         <Card className="w-full max-w-2xl mx-auto">
             <CardHeader>
                 <CardTitle className="font-headline">Deposit Funds</CardTitle>
@@ -269,14 +269,16 @@ export default function DepositPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ChartContainer config={chartConfig} className="h-[200px] w-full">
-                <AreaChart accessibilityLayer data={chartData} margin={{ left: 12, right: 12 }} >
-                  <CartesianGrid vertical={false} />
-                  <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
-                  <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
-                  <Area dataKey="amount" type="natural" fill="var(--color-amount)" fillOpacity={0.4} stroke="var(--color-amount)" />
-                </AreaChart>
-              </ChartContainer>
+              <div className="w-full overflow-x-auto">
+                <ChartContainer config={chartConfig} className="h-[200px] min-w-[300px] w-full">
+                  <AreaChart accessibilityLayer data={chartData} margin={{ left: 12, right: 12 }} >
+                    <CartesianGrid vertical={false} />
+                    <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
+                    <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
+                    <Area dataKey="amount" type="natural" fill="var(--color-amount)" fillOpacity={0.4} stroke="var(--color-amount)" />
+                  </AreaChart>
+                </ChartContainer>
+              </div>
             </CardContent>
           </Card>
     </div>
