@@ -231,7 +231,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="grid gap-6">
-            <Card>
+            <Card className="sm:max-w-[calc(100vw-2rem)] md:max-w-full md:mx-0">
                 <CardHeader>
                     <CardTitle className="font-headline flex items-center gap-2"><TrendingUp className="h-5 w-5 text-primary"/>Deposit History</CardTitle>
                     <CardDescription>Your deposit history over the last 6 months.</CardDescription>
@@ -239,10 +239,10 @@ export default function DashboardPage() {
                 <CardContent>
                     <div className="w-full overflow-x-auto">
                         <ChartContainer config={depositsChartConfig} className="h-[200px] w-full">
-                            <AreaChart accessibilityLayer data={depositsData} margin={{left: -20, right: 12, top: 5, bottom: 0}} >
+                            <AreaChart accessibilityLayer data={depositsData} margin={{left: -20, right: 20, top: 5, bottom: 0}} >
                                 <CartesianGrid vertical={false} />
                                 <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value.slice(0, 3)} />
-                                <YAxis tickMargin={8} width={50} />
+                                <YAxis tickMargin={8} width={80} />
                                 <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
                                 <Area dataKey="amount" type="natural" fill="var(--color-amount)" fillOpacity={0.4} stroke="var(--color-amount)" />
                             </AreaChart>
@@ -250,7 +250,7 @@ export default function DashboardPage() {
                     </div>
                 </CardContent>
             </Card>
-             <Card>
+             <Card className="sm:max-w-[calc(100vw-2rem)] md:max-w-full md:mx-0">
                 <CardHeader>
                     <CardTitle className="font-headline flex items-center gap-2"><TrendingDown className="h-5 w-5 text-destructive"/>Withdrawal History</CardTitle>
                     <CardDescription>Your withdrawal history over the last 6 months.</CardDescription>
@@ -258,10 +258,10 @@ export default function DashboardPage() {
                 <CardContent>
                     <div className="w-full overflow-x-auto">
                         <ChartContainer config={withdrawalsChartConfig} className="h-[200px] w-full">
-                            <AreaChart accessibilityLayer data={withdrawalsData} margin={{left: -20, right: 12, top: 5, bottom: 0}} >
+                            <AreaChart accessibilityLayer data={withdrawalsData} margin={{left: -20, right: 20, top: 5, bottom: 0}} >
                                 <CartesianGrid vertical={false} />
                                 <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value.slice(0, 3)} />
-                                <YAxis tickMargin={8} width={50} />
+                                <YAxis tickMargin={8} width={80} />
                                 <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
                                 <Area dataKey="amount" type="natural" fill="var(--color-amount)" fillOpacity={0.4} stroke="var(--color-amount)" />
                             </AreaChart>

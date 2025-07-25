@@ -35,7 +35,9 @@ import {
   LayoutDashboard,
   Activity,
   Loader2,
-  MoreVertical
+  MoreVertical,
+  MessageSquare,
+  BarChart2
 } from "lucide-react";
 import { db, auth } from "@/lib/firebase/config";
 import { collection, onSnapshot, query, where, doc } from "firebase/firestore";
@@ -48,6 +50,8 @@ const navItems = [
     { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, countKey: null },
     { href: "/admin/deposits", label: "Deposits", icon: DollarSign, countKey: 'deposits' },
     { href: "/admin/withdrawals", label: "Withdrawals", icon: Landmark, countKey: 'withdrawals' },
+    { href: "/admin/chat", label: "Support Chat", icon: MessageSquare, countKey: 'chats' },
+    { href: "/admin/profit-stats", label: "Profit Stats", icon: BarChart2, countKey: null },
     { href: "/admin/bpexch-activity", label: "Login Activity", icon: Activity, countKey: null },
 ];
 
@@ -72,7 +76,8 @@ export default function AdminLayout({
 
   const [pendingCounts, setPendingCounts] = React.useState({
       deposits: 0,
-      withdrawals: 0
+      withdrawals: 0,
+      chats: 0,
   });
 
   const fullNavItems = [ ...navItems, ...mobileHeaderItems ];
@@ -80,6 +85,7 @@ export default function AdminLayout({
     const currentItem = fullNavItems.find(item => item.href === pathname);
     if (currentItem) return currentItem.label;
     if (pathname.includes('/admin/users/')) return "User Details";
+    if (pathname.includes('/admin/chat/')) return "Support Chat";
     const parts = pathname.split('/').pop()?.replace(/-/g, ' ').split(' ') ?? [];
     return parts.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   }
@@ -150,22 +156,28 @@ export default function AdminLayout({
   }, [user, loadingUser, router, error, toast, pathname]);
 
   React.useEffect(() => {
-      if (pathname === '/admin/login') return;
+      if (pathname === '/admin/login' || !user) return;
       
       const collections = {
           deposits: collection(db, 'deposits'),
-          withdrawals: collection(db, 'withdrawals')
+          withdrawals: collection(db, 'withdrawals'),
+          chats: collection(db, 'chats')
       };
 
       const unsubscribes = Object.entries(collections).map(([key, coll]) => {
-          const q = query(coll, where('status', '==', 'Pending'));
+          let q;
+          if (key === 'chats') {
+              q = query(coll, where('adminRead', '==', false));
+          } else {
+              q = query(coll, where('status', '==', 'Pending'));
+          }
           return onSnapshot(q, (snapshot) => {
               setPendingCounts(prev => ({ ...prev, [key]: snapshot.size }));
           });
       });
       
       return () => unsubscribes.forEach(unsub => unsub());
-  }, [pathname]);
+  }, [pathname, user]);
 
   const handleLogout = async () => {
     try {
@@ -281,7 +293,7 @@ export default function AdminLayout({
                 </DropdownMenu>
             </div>
         </header>
-        <main className="flex-1 p-4 md:p-6 mb-20 md:mb-0">
+        <main className="flex-1 p-4 md:p-6 mb-20 md:mb-0 overflow-hidden">
             {children}
         </main>
         <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-10">

@@ -32,6 +32,7 @@ import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import { doc, onSnapshot, updateDoc, serverTimestamp, getDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import Preloader from "@/components/preloader";
+import ChatWidget from "@/components/chat-widget";
 
 const mainNavItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -235,6 +236,7 @@ export default function DashboardLayout({
         <main className="flex-1 p-4 md:p-6 mb-20 md:mb-0 overflow-hidden">
             {children}
         </main>
+        {user && <ChatWidget />}
         <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-10">
             <div className="flex justify-around items-center h-16">
                 {mainNavItems.map((item) => (

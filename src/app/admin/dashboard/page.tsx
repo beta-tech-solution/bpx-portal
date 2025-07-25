@@ -5,10 +5,10 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Bar, BarChart, CartesianGrid, Legend, Tooltip, XAxis, YAxis, AreaChart, Area } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
-import { DollarSign, Users, Landmark, Send, Loader2, ArrowDownLeft, ArrowUpRight } from "lucide-react"
+import { DollarSign, Users, Landmark, Send, Loader2, ArrowDownLeft, ArrowUpRight, TrendingUp } from "lucide-react"
 import { db } from "@/lib/firebase/config"
 import { collection, getDocs, query, where, Timestamp, onSnapshot, DocumentData } from "firebase/firestore"
-import { subMonths, format, addMonths } from 'date-fns'
+import { subMonths, format, addMonths, startOfDay, subDays } from 'date-fns'
 
 
 const depositsChartConfig = {
@@ -32,6 +32,7 @@ export default function AdminDashboardPage() {
         totalUsers: 0,
         pendingDeposits: 0,
         pendingWithdrawals: 0,
+        profitLast7Days: 0,
     });
     const [depositsData, setDepositsData] = useState<MonthlyData[]>([]);
     const [withdrawalsData, setWithdrawalsData] = useState<MonthlyData[]>([]);
@@ -68,7 +69,41 @@ export default function AdminDashboardPage() {
             }));
         };
 
+        const setupProfitListener = () => {
+            const sevenDaysAgo = startOfDay(subDays(new Date(), 7));
+            
+            const depositsQuery = query(
+                collection(db, 'deposits'),
+                where('status', '==', 'Approved'),
+                where('createdAt', '>=', Timestamp.fromDate(sevenDaysAgo))
+            );
+            const withdrawalsQuery = query(
+                collection(db, 'withdrawals'),
+                where('status', '==', 'Approved'),
+                where('createdAt', '>=', Timestamp.fromDate(sevenDaysAgo))
+            );
+
+            let totalDeposits = 0;
+            let totalWithdrawals = 0;
+            
+            const unsubDeposits = onSnapshot(depositsQuery, (snapshot) => {
+                totalDeposits = snapshot.docs.reduce((sum, doc) => sum + parseFloat(doc.data().amount), 0);
+                setOverviewData(prev => ({...prev, profitLast7Days: totalDeposits - totalWithdrawals }));
+            });
+
+            const unsubWithdrawals = onSnapshot(withdrawalsQuery, (snapshot) => {
+                totalWithdrawals = snapshot.docs.reduce((sum, doc) => sum + parseFloat(doc.data().amount), 0);
+                setOverviewData(prev => ({...prev, profitLast7Days: totalDeposits - totalWithdrawals }));
+            });
+
+            return [unsubDeposits, unsubWithdrawals];
+        }
+
         const unsubscribes: (() => void)[] = [];
+
+        // Profit Listener
+        const [unsubDeposits, unsubWithdrawals] = setupProfitListener();
+        unsubscribes.push(unsubDeposits, unsubWithdrawals);
 
         // Total Users
         const usersQuery = query(collection(db, "users"));
@@ -120,7 +155,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="max-w-7xl mx-auto grid gap-8 animate-fade-in">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium font-headline">Total Users</CardTitle>
@@ -149,6 +184,16 @@ export default function AdminDashboardPage() {
                 <CardContent>
                     <div className="text-3xl font-bold">{overviewData.pendingWithdrawals}</div>
                     <p className="text-xs text-muted-foreground">Require approval</p>
+                </CardContent>
+            </Card>
+             <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium font-headline">7-Day Profit</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-3xl font-bold">PKR {overviewData.profitLast7Days.toFixed(2)}</div>
+                    <p className="text-xs text-muted-foreground">Deposits - Withdrawals</p>
                 </CardContent>
             </Card>
         </div>
