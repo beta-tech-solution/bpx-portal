@@ -21,11 +21,6 @@ const withdrawalsChartConfig = {
     approved: { label: "Approved", color: "hsl(var(--destructive))" },
 } satisfies ChartConfig;
 
-const transfersChartConfig = {
-    pending: { label: "Pending", color: "hsl(var(--primary))" },
-    transferred: { label: "Transferred", color: "hsl(var(--accent))" },
-} satisfies ChartConfig;
-
 interface MonthlyData {
     month: string;
     [key: string]: any;
@@ -37,11 +32,9 @@ export default function AdminDashboardPage() {
         totalUsers: 0,
         pendingDeposits: 0,
         pendingWithdrawals: 0,
-        pendingTransfers: 0,
     });
     const [depositsData, setDepositsData] = useState<MonthlyData[]>([]);
     const [withdrawalsData, setWithdrawalsData] = useState<MonthlyData[]>([]);
-    const [transfersData, setTransfersData] = useState<MonthlyData[]>([]);
 
      useEffect(() => {
         setLoading(true);
@@ -84,7 +77,7 @@ export default function AdminDashboardPage() {
         }, (error) => console.error("Error fetching users count:", error)));
 
         // Pending counts
-        const setupPendingListener = (collectionName: string, statusField: 'pendingDeposits' | 'pendingWithdrawals' | 'pendingTransfers') => {
+        const setupPendingListener = (collectionName: string, statusField: 'pendingDeposits' | 'pendingWithdrawals') => {
             const q = query(collection(db, collectionName), where('status', '==', 'Pending'));
             return onSnapshot(q, (snapshot) => {
                 setOverviewData(prev => ({ ...prev, [statusField]: snapshot.size }));
@@ -92,7 +85,6 @@ export default function AdminDashboardPage() {
         };
         unsubscribes.push(setupPendingListener('deposits', 'pendingDeposits'));
         unsubscribes.push(setupPendingListener('withdrawals', 'pendingWithdrawals'));
-        unsubscribes.push(setupPendingListener('transfers', 'pendingTransfers'));
         
         // Chart Data Listeners
         const setupChartListener = (
@@ -108,7 +100,6 @@ export default function AdminDashboardPage() {
 
         unsubscribes.push(setupChartListener('deposits', setDepositsData, ['Pending', 'Approved']));
         unsubscribes.push(setupChartListener('withdrawals', setWithdrawalsData, ['Pending', 'Approved']));
-        unsubscribes.push(setupChartListener('transfers', setTransfersData, ['Pending', 'Transferred']));
 
         setLoading(false);
 
@@ -129,7 +120,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="max-w-7xl mx-auto grid gap-8 animate-fade-in">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium font-headline">Total Users</CardTitle>
@@ -158,16 +149,6 @@ export default function AdminDashboardPage() {
                 <CardContent>
                     <div className="text-3xl font-bold">{overviewData.pendingWithdrawals}</div>
                     <p className="text-xs text-muted-foreground">Require approval</p>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium font-headline">Pending Transfers</CardTitle>
-                    <Send className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-3xl font-bold">{overviewData.pendingTransfers}</div>
-                    <p className="text-xs text-muted-foreground">Require processing</p>
                 </CardContent>
             </Card>
         </div>
@@ -208,25 +189,6 @@ export default function AdminDashboardPage() {
                             <Bar dataKey="pending" stackId="a" fill="var(--color-pending)" radius={[4, 4, 0, 0]} />
                             <Bar dataKey="approved" stackId="a" fill="var(--color-approved)" radius={[4, 4, 0, 0]} />
                         </BarChart>
-                    </ChartContainer>
-                </CardContent>
-            </Card>
-             <Card className="lg:col-span-2">
-                <CardHeader>
-                    <CardTitle className="font-headline flex items-center gap-2"><Send className="h-5 w-5 text-muted-foreground" />Transfer Trends</CardTitle>
-                    <CardDescription>Pending vs. Completed transfers over the last 6 months.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <ChartContainer config={transfersChartConfig} className="h-[250px] w-full">
-                         <AreaChart data={transfersData} margin={{ left: 12, right: 12 }}>
-                            <CartesianGrid vertical={false} />
-                            <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
-                            <YAxis tickMargin={8} />
-                            <Tooltip content={<ChartTooltipContent indicator="dot" />} />
-                            <Legend />
-                            <Area type="monotone" dataKey="pending" stackId="1" stroke="var(--color-pending)" fill="var(--color-pending)" fillOpacity={0.4} />
-                            <Area type="monotone" dataKey="transferred" stackId="1" stroke="var(--color-transferred)" fill="var(--color-transferred)" fillOpacity={0.4} />
-                        </AreaChart>
                     </ChartContainer>
                 </CardContent>
             </Card>

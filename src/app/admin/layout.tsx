@@ -27,7 +27,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DollarSign,
-  Send,
   Landmark,
   LogOut,
   Users,
@@ -48,7 +47,6 @@ import Preloader from "@/components/preloader";
 const navItems = [
     { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, countKey: null },
     { href: "/admin/deposits", label: "Deposits", icon: DollarSign, countKey: 'deposits' },
-    { href: "/admin/transfers", label: "Transfers", icon: Send, countKey: 'transfers' },
     { href: "/admin/withdrawals", label: "Withdrawals", icon: Landmark, countKey: 'withdrawals' },
     { href: "/admin/bpexch-activity", label: "Login Activity", icon: Activity, countKey: null },
 ];
@@ -74,7 +72,6 @@ export default function AdminLayout({
 
   const [pendingCounts, setPendingCounts] = React.useState({
       deposits: 0,
-      transfers: 0,
       withdrawals: 0
   });
 
@@ -157,7 +154,6 @@ export default function AdminLayout({
       
       const collections = {
           deposits: collection(db, 'deposits'),
-          transfers: collection(db, 'transfers'),
           withdrawals: collection(db, 'withdrawals')
       };
 
@@ -309,5 +305,3 @@ export default function AdminLayout({
     </SidebarProvider>
   );
 }
-
-    

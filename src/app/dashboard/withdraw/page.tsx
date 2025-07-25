@@ -123,8 +123,8 @@ export default function WithdrawPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto grid gap-8 animate-fade-in">
-      <Card>
+    <div className="grid gap-8 animate-fade-in">
+      <Card className="w-full max-w-2xl mx-auto">
         <form onSubmit={handleWithdraw}>
         <CardHeader>
           <CardTitle className="font-headline">Request Withdrawal</CardTitle>
@@ -188,7 +188,7 @@ export default function WithdrawPage() {
         </form>
       </Card>
 
-       <Card>
+       <Card className="w-full max-w-2xl mx-auto">
         <CardHeader className="items-center">
             <TrendingDown className="w-8 h-8 text-destructive" />
             <CardTitle className="font-headline">Your Withdrawal History</CardTitle>

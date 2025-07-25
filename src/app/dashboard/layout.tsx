@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { DollarSign, Send, Landmark, LogOut, Wallet, ExternalLink, LayoutDashboard, Loader2, Settings, MoreVertical } from "lucide-react";
+import { DollarSign, Landmark, LogOut, Wallet, ExternalLink, LayoutDashboard, Loader2, Settings, MoreVertical } from "lucide-react";
 import { auth, db } from "@/lib/firebase/config";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import { doc, onSnapshot, updateDoc, serverTimestamp, getDoc } from "firebase/firestore";
@@ -36,7 +36,6 @@ import Preloader from "@/components/preloader";
 const mainNavItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/dashboard/deposit", label: "Deposit", icon: DollarSign },
-    { href: "/dashboard/transfer", label: "Transfer", icon: Send },
     { href: "/dashboard/withdraw", label: "Withdrawal", icon: Landmark },
 ];
 

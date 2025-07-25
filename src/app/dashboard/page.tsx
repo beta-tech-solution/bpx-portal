@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { ArrowDownLeft, ArrowUpRight, Wallet, Send, TrendingUp, TrendingDown, Loader2, Activity } from "lucide-react"
+import { ArrowDownLeft, ArrowUpRight, Wallet, TrendingUp, TrendingDown, Loader2, Activity } from "lucide-react"
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
 import { ChartContainer, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
 import { auth, db } from "@/lib/firebase/config"
@@ -17,10 +17,10 @@ import { format } from 'date-fns';
 
 interface Transaction {
     id: string;
-    type: "Deposit" | "Withdrawal" | "Transfer";
+    type: "Deposit" | "Withdrawal";
     date: string;
     amount: string;
-    status: "Approved" | "Pending" | "Rejected" | "Transferred" | "Issue" | "Completed";
+    status: "Approved" | "Pending" | "Rejected";
 }
 
 interface LoginActivity {
@@ -40,9 +40,6 @@ const depositsChartConfig = {
 const withdrawalsChartConfig = {
     amount: { label: "Withdrawals", color: "hsl(var(--destructive))" },
 } satisfies ChartConfig;
-const transfersChartConfig = {
-    amount: { label: "Transfers", color: "hsl(var(--accent))" },
-} satisfies ChartConfig;
 
 export default function DashboardPage() {
     const [user, setUser] = useState<User | null>(null);
@@ -51,13 +48,11 @@ export default function DashboardPage() {
         balance: "0.00",
         totalDeposits: "0.00",
         totalWithdrawals: "0.00",
-        totalTransfers: "0.00",
     });
     const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
     const [recentLogins, setRecentLogins] = useState<LoginActivity[]>([]);
     const [depositsData, setDepositsData] = useState<ChartData[]>([]);
     const [withdrawalsData, setWithdrawalsData] = useState<ChartData[]>([]);
-    const [transfersData, setTransfersData] = useState<ChartData[]>([]);
 
     useEffect(() => {
         const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
@@ -109,12 +104,10 @@ export default function DashboardPage() {
                 // Fetch transactions
                 const depositsQuery = query(collection(db, "deposits"), where("userId", "==", user.uid));
                 const withdrawalsQuery = query(collection(db, "withdrawals"), where("userId", "==", user.uid));
-                const transfersQuery = query(collection(db, "transfers"), where("userId", "==", user.uid));
 
-                const [depositsSnapshot, withdrawalsSnapshot, transfersSnapshot] = await Promise.all([
+                const [depositsSnapshot, withdrawalsSnapshot] = await Promise.all([
                     getDocs(depositsQuery),
-                    getDocs(withdrawalsQuery),
-                    getDocs(transfersQuery)
+                    getDocs(withdrawalsQuery)
                 ]);
 
                 let totalDeposits = 0;
@@ -131,21 +124,13 @@ export default function DashboardPage() {
                     return { ...data, id: doc.id, type: 'Withdrawal' };
                 });
                 
-                let totalTransfers = 0;
-                const allTransfers = transfersSnapshot.docs.map(doc => {
-                    const data = doc.data();
-                    if (data.status === 'Transferred' || data.status === 'Completed') totalTransfers += parseFloat(data.amount);
-                    return { ...data, id: doc.id, type: 'Transfer' };
-                });
-                
                 setAccountSummary(prev => ({
                     ...prev,
                     totalDeposits: totalDeposits.toFixed(2),
                     totalWithdrawals: totalWithdrawals.toFixed(2),
-                    totalTransfers: totalTransfers.toFixed(2)
                 }));
 
-                const allTransactions = [...allDeposits, ...allWithdrawals, ...allTransfers]
+                const allTransactions = [...allDeposits, ...allWithdrawals]
                 .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                 .slice(0, 5)
                 .map(tx => ({
@@ -173,7 +158,6 @@ export default function DashboardPage() {
 
                 setDepositsData(processChartData(allDeposits, 'Approved'));
                 setWithdrawalsData(processChartData(allWithdrawals, 'Approved'));
-                setTransfersData(processChartData(allTransfers, 'Transferred'));
 
             } catch (error) {
                 console.error("Error fetching dashboard data:", error);
@@ -197,12 +181,9 @@ export default function DashboardPage() {
     }, [user]);
 
     const statusVariant = {
-        Completed: "secondary",
         Approved: "secondary",
-        Transferred: "secondary",
         Pending: "default",
         Rejected: "destructive",
-        Issue: "destructive"
     } as const;
 
   if (loading) {
@@ -215,7 +196,7 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-7xl mx-auto grid gap-6 animate-fade-in">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium font-headline">Wallet Balance</CardTitle>
@@ -244,16 +225,6 @@ export default function DashboardPage() {
           <CardContent>
             <div className="text-2xl lg:text-3xl font-bold">PKR {accountSummary.totalWithdrawals}</div>
              <p className="text-xs text-muted-foreground">All time approved withdrawals</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium font-headline">Total Transfers</CardTitle>
-            <Send className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl lg:text-3xl font-bold">PKR {accountSummary.totalTransfers}</div>
-            <p className="text-xs text-muted-foreground">To BPExch account</p>
           </CardContent>
         </Card>
       </div>
@@ -291,23 +262,6 @@ export default function DashboardPage() {
                             <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
                             <Area dataKey="amount" type="natural" fill="var(--color-amount)" fillOpacity={0.4} stroke="var(--color-amount)" />
                         </AreaChart>
-                    </ChartContainer>
-                </CardContent>
-            </Card>
-             <Card>
-                <CardHeader>
-                    <CardTitle className="font-headline flex items-center gap-2"><Send className="h-5 w-5"/>Transfer History</CardTitle>
-                    <CardDescription>Your transfer history over the last 6 months.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <ChartContainer config={transfersChartConfig} className="h-[200px] w-full">
-                        <BarChart accessibilityLayer data={transfersData} >
-                             <CartesianGrid vertical={false} />
-                            <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
-                            <YAxis />
-                            <Tooltip content={<ChartTooltipContent />} />
-                            <Bar dataKey="amount" fill="var(--color-amount)" radius={[4, 4, 0, 0]} />
-                        </BarChart>
                     </ChartContainer>
                 </CardContent>
             </Card>

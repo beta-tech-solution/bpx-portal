@@ -201,8 +201,8 @@ export default function DepositPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto grid gap-8 animate-fade-in">
-        <Card>
+    <div className="grid gap-8 animate-fade-in">
+        <Card className="w-full max-w-2xl mx-auto">
             <CardHeader>
                 <CardTitle className="font-headline">Deposit Funds</CardTitle>
                 <CardDescription>Follow the instructions below to add funds to your account.</CardDescription>
@@ -260,7 +260,7 @@ export default function DepositPage() {
                 </CardFooter>
             </form>
         </Card>
-         <Card>
+         <Card className="w-full max-w-2xl mx-auto">
             <CardHeader className="items-center">
               <TrendingUp className="w-8 h-8 text-primary" />
               <CardTitle className="font-headline">Your Deposit Trends</CardTitle>
