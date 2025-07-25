@@ -52,10 +52,24 @@ export default function LoginPage() {
         const password = (e.currentTarget.elements.namedItem('password') as HTMLInputElement).value
 
         try {
-            const userCredential = await signInWithEmailAndPassword(auth, email, password)
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
             
-            // Check if email is verified
-            if (!userCredential.user.emailVerified) {
+            const userDocRef = doc(db, 'users', user.uid);
+            const userDoc = await getDoc(userDocRef);
+
+            if (userDoc.exists()) {
+                const userData = userDoc.data();
+                // If user is Admin, bypass email verification check
+                if (userData.role === 'Admin') {
+                    toast({ title: "Admin Login Successful", description: "Welcome back!" });
+                    router.push('/admin/dashboard');
+                    return;
+                }
+            }
+            
+            // Check if email is verified for non-admin users
+            if (!user.emailVerified) {
                 await auth.signOut();
                 toast({
                     title: "Email Not Verified",
