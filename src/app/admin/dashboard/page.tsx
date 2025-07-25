@@ -8,8 +8,8 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "
 import { DollarSign, Users, Landmark, Send, Loader2, ArrowDownLeft, ArrowUpRight, TrendingUp } from "lucide-react"
 import { db } from "@/lib/firebase/config"
 import { collection, getDocs, query, where, Timestamp, onSnapshot, DocumentData, orderBy, limit } from "firebase/firestore"
-import { subMonths, format, addMonths, startOfDay, subDays } from 'date-fns'
-import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
+import { subMonths, format, addMonths, startOfDay, subDays, endOfDay } from 'date-fns'
+import { Table, TableBody, TableCell, TableRow, TableHead, TableHeader } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -38,6 +38,11 @@ interface Transaction {
   userName: string;
 }
 
+interface DailyProfit {
+    date: string;
+    profit: number;
+}
+
 export default function AdminDashboardPage() {
     const [loading, setLoading] = useState(true);
     const [overviewData, setOverviewData] = useState({
@@ -48,6 +53,7 @@ export default function AdminDashboardPage() {
     const [depositsData, setDepositsData] = useState<MonthlyData[]>([]);
     const [withdrawalsData, setWithdrawalsData] = useState<MonthlyData[]>([]);
     const [profitTransactions, setProfitTransactions] = useState<Transaction[]>([]);
+    const [dailyProfitData, setDailyProfitData] = useState<DailyProfit[]>([]);
 
      useEffect(() => {
         setLoading(true);
@@ -146,6 +152,62 @@ export default function AdminDashboardPage() {
         // Profit Listener
         const [unsubDeposits, unsubWithdrawals] = setupProfitListener();
         unsubscribes.push(unsubDeposits, unsubWithdrawals);
+        
+        // 7-day profit
+        const fetchSevenDayProfit = async () => {
+            const sevenDaysAgo = startOfDay(subDays(new Date(), 6));
+            
+            const depositsQuery = query(
+                collection(db, "deposits"),
+                where("status", "==", "Approved"),
+                where("createdAt", ">=", Timestamp.fromDate(sevenDaysAgo))
+            );
+            const withdrawalsQuery = query(
+                collection(db, "withdrawals"),
+                where("status", "==", "Approved"),
+                where("createdAt", ">=", Timestamp.fromDate(sevenDaysAgo))
+            );
+
+            const [depositsSnapshot, withdrawalsSnapshot] = await Promise.all([
+                getDocs(depositsQuery),
+                getDocs(withdrawalsQuery),
+            ]);
+
+            const dailyData: { [key: string]: { deposits: number, withdrawals: number } } = {};
+
+            for (let i = 0; i < 7; i++) {
+                const date = format(subDays(new Date(), i), 'yyyy-MM-dd');
+                dailyData[date] = { deposits: 0, withdrawals: 0 };
+            }
+
+            depositsSnapshot.forEach(doc => {
+                const data = doc.data();
+                const date = format((data.createdAt as Timestamp).toDate(), 'yyyy-MM-dd');
+                if (dailyData[date]) {
+                    dailyData[date].deposits += parseFloat(data.amount);
+                }
+            });
+            
+            withdrawalsSnapshot.forEach(doc => {
+                const data = doc.data();
+                const date = format((data.createdAt as Timestamp).toDate(), 'yyyy-MM-dd');
+                if (dailyData[date]) {
+                    dailyData[date].withdrawals += parseFloat(data.amount);
+                }
+            });
+
+            const profitData = Object.entries(dailyData)
+                .map(([date, {deposits, withdrawals}]) => ({
+                    date: format(new Date(date), 'MMM d'),
+                    profit: deposits - withdrawals,
+                }))
+                .sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+            setDailyProfitData(profitData);
+        }
+        
+        fetchSevenDayProfit();
+
 
         // Total Users
         const usersQuery = query(collection(db, "users"));
@@ -273,7 +335,36 @@ export default function AdminDashboardPage() {
                   </div>
                 </CardContent>
             </Card>
-             <Card className="lg:col-span-2">
+            <Card>
+                <CardHeader>
+                     <CardTitle className="font-headline flex items-center gap-2"><TrendingUp className="h-5 w-5 text-primary" />Last 7 Days Profit</CardTitle>
+                    <CardDescription>Daily net profit from the last week.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Date</TableHead>
+                                <TableHead className="text-right">Profit (PKR)</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {dailyProfitData.map(item => (
+                                <TableRow key={item.date}>
+                                    <TableCell>{item.date}</TableCell>
+                                    <TableCell className="text-right font-mono">{item.profit.toFixed(2)}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                    <div className="flex justify-end mt-4">
+                        <Button variant="outline" asChild>
+                            <Link href="/admin/profit-stats">View All Stats</Link>
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+             <Card>
                 <CardHeader>
                      <CardTitle className="font-headline flex items-center gap-2"><TrendingUp className="h-5 w-5 text-primary" />Recent Transactions</CardTitle>
                     <CardDescription>Recent approved deposits and withdrawals.</CardDescription>
@@ -300,11 +391,6 @@ export default function AdminDashboardPage() {
                      {profitTransactions.length === 0 && (
                         <p className="text-center text-muted-foreground p-4">No recent approved transactions.</p>
                      )}
-                     <div className="flex justify-end mt-4">
-                        <Button variant="outline" asChild>
-                            <Link href="/admin/profit-stats">View All Stats</Link>
-                        </Button>
-                    </div>
                 </CardContent>
             </Card>
         </div>

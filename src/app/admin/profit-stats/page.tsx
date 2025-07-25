@@ -32,10 +32,7 @@ const profitChartConfig = {
 } satisfies ChartConfig
 
 export default function ProfitStatsPage() {
-  const [date, setDate] = useState<DateRange | undefined>({
-    from: subDays(new Date(), 29),
-    to: new Date(),
-  })
+  const [date, setDate] = useState<DateRange | undefined>()
   const [loading, setLoading] = useState(false)
   const [stats, setStats] = useState({
     totalDeposits: 0,
@@ -75,9 +72,10 @@ export default function ProfitStatsPage() {
         if (!userId) return 'Unknown User';
         if(userCache.has(userId)) return userCache.get(userId);
         try {
-          const userDoc = await getDoc(doc(db, 'users', userId));
-          if(userDoc.exists()) {
-            const name = userDoc.data().fullName;
+          // Changed query to match user document structure
+          const userDocs = await getDocs(query(collection(db, 'users'), where('uid', '==', userId)));
+          if(!userDocs.empty) {
+            const name = userDocs.docs[0].data().fullName;
             userCache.set(userId, name);
             return name;
           }
@@ -130,7 +128,16 @@ export default function ProfitStatsPage() {
   }
 
   useEffect(() => {
-    fetchStats()
+    // Moved initial state setup into useEffect to prevent hydration error
+    if (!date) {
+        setDate({
+            from: subDays(new Date(), 29),
+            to: new Date(),
+        })
+    } else {
+        fetchStats()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date])
 
   const chartData = useMemo(() => {
