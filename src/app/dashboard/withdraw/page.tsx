@@ -198,7 +198,7 @@ export default function WithdrawPage() {
         </CardHeader>
         <CardContent>
             <div className="w-full overflow-x-auto">
-                <ChartContainer config={chartConfig} className="h-[200px] min-w-[300px] w-full">
+                <ChartContainer config={chartConfig} className="h-[200px] w-full">
                 <AreaChart accessibilityLayer data={chartData} margin={{ left: 12, right: 12 }} >
                     <CartesianGrid vertical={false} />
                     <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
