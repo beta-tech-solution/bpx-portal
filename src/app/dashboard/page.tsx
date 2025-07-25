@@ -237,17 +237,15 @@ export default function DashboardPage() {
                     <CardDescription>Your deposit history over the last 6 months.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="w-full overflow-x-auto">
-                        <ChartContainer config={depositsChartConfig} className="h-[200px] min-w-[300px] w-full">
-                            <AreaChart accessibilityLayer data={depositsData} margin={{left: 12, right: 12,}} >
-                                <CartesianGrid vertical={false} />
-                                <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value.slice(0, 3)} />
-                                <YAxis tickMargin={8} />
-                                <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
-                                <Area dataKey="amount" type="natural" fill="var(--color-amount)" fillOpacity={0.4} stroke="var(--color-amount)" />
-                            </AreaChart>
-                        </ChartContainer>
-                    </div>
+                    <ChartContainer config={depositsChartConfig} className="h-[200px] w-full">
+                        <AreaChart accessibilityLayer data={depositsData} margin={{left: 12, right: 12,}} >
+                            <CartesianGrid vertical={false} />
+                            <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value.slice(0, 3)} />
+                            <YAxis tickMargin={8} />
+                            <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
+                            <Area dataKey="amount" type="natural" fill="var(--color-amount)" fillOpacity={0.4} stroke="var(--color-amount)" />
+                        </AreaChart>
+                    </ChartContainer>
                 </CardContent>
             </Card>
              <Card>
@@ -256,17 +254,15 @@ export default function DashboardPage() {
                     <CardDescription>Your withdrawal history over the last 6 months.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="w-full overflow-x-auto">
-                        <ChartContainer config={withdrawalsChartConfig} className="h-[200px] min-w-[300px] w-full">
-                            <AreaChart accessibilityLayer data={withdrawalsData} margin={{left: 12, right: 12,}} >
-                                <CartesianGrid vertical={false} />
-                                <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value.slice(0, 3)} />
-                                <YAxis tickMargin={8} />
-                                <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
-                                <Area dataKey="amount" type="natural" fill="var(--color-amount)" fillOpacity={0.4} stroke="var(--color-amount)" />
-                            </AreaChart>
-                        </ChartContainer>
-                    </div>
+                    <ChartContainer config={withdrawalsChartConfig} className="h-[200px] w-full">
+                        <AreaChart accessibilityLayer data={withdrawalsData} margin={{left: 12, right: 12,}} >
+                            <CartesianGrid vertical={false} />
+                            <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value.slice(0, 3)} />
+                            <YAxis tickMargin={8} />
+                            <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
+                            <Area dataKey="amount" type="natural" fill="var(--color-amount)" fillOpacity={0.4} stroke="var(--color-amount)" />
+                        </AreaChart>
+                    </ChartContainer>
                 </CardContent>
             </Card>
         </div>
