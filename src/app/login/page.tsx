@@ -52,7 +52,20 @@ export default function LoginPage() {
         const password = (e.currentTarget.elements.namedItem('password') as HTMLInputElement).value
 
         try {
-            await signInWithEmailAndPassword(auth, email, password)
+            const userCredential = await signInWithEmailAndPassword(auth, email, password)
+            
+            // Check if email is verified
+            if (!userCredential.user.emailVerified) {
+                await auth.signOut();
+                toast({
+                    title: "Email Not Verified",
+                    description: "Please check your inbox and verify your email address to log in.",
+                    variant: "destructive"
+                });
+                setIsLoading(false);
+                return;
+            }
+
             toast({ title: "Login Successful", description: "Welcome back!" })
             router.push('/dashboard')
         } catch (error: any) {
@@ -83,6 +96,7 @@ export default function LoginPage() {
                     balance: 0,
                     status: 'Active',
                     role: 'User',
+                    emailVerified: user.emailVerified, // Store verification status
                 });
                 toast({ title: "Account Created", description: "Welcome! Your account has been created." })
             } else {

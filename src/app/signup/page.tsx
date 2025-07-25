@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Wallet, Eye, EyeOff, Loader2 } from "lucide-react"
 import { auth, db } from "@/lib/firebase/config"
-import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo } from "firebase/auth"
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo, sendEmailVerification } from "firebase/auth"
 import { doc, setDoc, serverTimestamp } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import ParticlesBackground from "@/components/particles-background"
@@ -76,6 +76,8 @@ export default function SignupPage() {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password)
             const user = userCredential.user
 
+            await sendEmailVerification(user);
+
             await setDoc(doc(db, "users", user.uid), {
                 uid: user.uid,
                 fullName,
@@ -85,10 +87,11 @@ export default function SignupPage() {
                 createdAt: serverTimestamp(),
                 balance: 0,
                 status: 'Active',
-                role: 'User' // Default role for new sign-ups
+                role: 'User',
+                emailVerified: user.emailVerified,
             });
 
-            toast({ title: "Account Created", description: "Your account has been created successfully. Please sign in." })
+            toast({ title: "Account Created", description: "A verification email has been sent to your inbox. Please verify your email to log in." })
             router.push('/login')
 
         } catch (error: any) {
@@ -121,7 +124,8 @@ export default function SignupPage() {
                     createdAt: serverTimestamp(),
                     balance: 0,
                     status: 'Active',
-                    role: 'User' // Default role
+                    role: 'User',
+                    emailVerified: user.emailVerified
                 });
                 toast({ title: "Account Created", description: "Your account has been created successfully. Please sign in." })
                 router.push('/login')

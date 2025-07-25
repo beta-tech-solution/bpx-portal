@@ -50,6 +50,7 @@ interface UserData {
     balance: number;
     photoURL?: string;
     role: 'Admin' | 'User';
+    emailVerified: boolean;
 }
 
 export default function DashboardLayout({
@@ -94,41 +95,59 @@ export default function DashboardLayout({
   React.useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
+        // User is logged in, now check their verification status and role
         const userDocRef = doc(db, "users", currentUser.uid);
         const userDoc = await getDoc(userDocRef);
 
-        if (userDoc.exists() && userDoc.data()?.role === 'Admin' && !pathname.startsWith('/admin')) {
-             // Admin on user dashboard, allow for now or redirect
-        } else if (userDoc.exists() && userDoc.data()?.role === 'User') {
-            // Standard user flow
-        } else if (userDoc.exists() && userDoc.data()?.role === 'Admin' && pathname.startsWith('/admin')) {
-            // Admin on admin dashboard, this layout shouldn't even be active.
+        if (!userDoc.exists()) {
+            // This case should ideally not happen if signup process is robust
+            toast({ title: "Error", description: "User profile not found.", variant: "destructive"});
+            signOut(auth);
+            return;
         }
-        else {
-            router.push("/login");
+        
+        const userData = userDoc.data() as UserData;
+
+        // Check for role mismatch
+        if (userData.role === 'Admin') {
+            // Admin should be on admin pages, but we don't block them here.
+            // Admin layout will handle redirection if they try to access non-admin pages.
+        }
+
+        // Enforce email verification for standard users
+        if (userData.role === 'User' && !currentUser.emailVerified) {
+             toast({
+                title: "Email Not Verified",
+                description: "Please check your inbox and verify your email address to log in.",
+                variant: "destructive"
+            });
+            signOut(auth);
             return;
         }
 
         setUser(currentUser);
-        await updateDoc(userDocRef, { lastSeen: serverTimestamp() });
+        setUserData(userData);
+        setLoading(false);
+
+        // Set up real-time listener for user data
         const unsubscribeSnapshot = onSnapshot(userDocRef, (doc) => {
           if (doc.exists()) {
             setUserData(doc.data() as UserData);
           }
-          setLoading(false);
-        }, (error) => {
-          console.error("Error fetching user data:", error);
-          toast({ title: "Error", description: "Could not fetch user details.", variant: "destructive" });
-          setLoading(false);
         });
+        
+        updateDoc(userDocRef, { lastSeen: serverTimestamp() });
+
         return () => unsubscribeSnapshot();
       } else {
+        // No user is signed in
         router.push("/login");
         setLoading(false);
       }
     });
     return () => unsubscribeAuth();
-  }, [router, toast, pathname]);
+  }, [router, toast]);
+
 
   const handleLogout = async () => {
       try {
