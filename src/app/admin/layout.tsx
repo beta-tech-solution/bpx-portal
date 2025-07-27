@@ -51,12 +51,12 @@ const navItems = [
     { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, countKey: null },
     { href: "/admin/deposits", label: "Deposits", icon: DollarSign, countKey: 'deposits' },
     { href: "/admin/withdrawals", label: "Withdrawals", icon: Landmark, countKey: 'withdrawals' },
+    { href: "/admin/users", label: "Users", icon: Users, countKey: null },
     { href: "/admin/profit-stats", label: "Profit Stats", icon: BarChart2, countKey: null },
-    { href: "/admin/bpexch-activity", label: "Login Activity", icon: Activity, countKey: null },
 ];
 
 const mobileHeaderItems = [
-    { href: "/admin/users", label: "Users", icon: Users, countKey: null },
+    { href: "/admin/bpexch-activity", label: "Login Activity", icon: Activity, countKey: null },
     { href: "/admin/settings", label: "Settings", icon: Settings, countKey: null },
 ]
 
@@ -80,7 +80,7 @@ export default function AdminLayout({
       chats: 0,
   });
 
-  const fullNavItems = [ ...navItems, { href: "/admin/chat", label: "Support Chat", icon: MessageSquare, countKey: 'chats' }, ...mobileHeaderItems ];
+  const fullNavItems = [ ...navItems, { href: "/admin/chat", label: "Support Chat", icon: MessageSquare, countKey: 'chats' }, { href: "/admin/bpexch-activity", label: "Login Activity", icon: Activity, countKey: null }, { href: "/admin/settings", label: "Settings", icon: Settings, countKey: null }];
   const getPageTitle = () => {
     const currentItem = fullNavItems.find(item => item.href === pathname);
     if (currentItem) return currentItem.label;
@@ -275,22 +275,13 @@ export default function AdminLayout({
             <h2 className="text-2xl font-bold font-headline text-center hidden md:block">
                 {getPageTitle()}
             </h2>
-            <div className="flex-1 justify-end items-center flex md:hidden">
-                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                            <MoreVertical />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        {mobileHeaderItems.map((item) => (
-                            <DropdownMenuItem key={item.href} onClick={() => handleNavigation(item.href)}>
-                                <item.icon className="mr-2 h-4 w-4" />
-                                {item.label}
-                            </DropdownMenuItem>
-                        ))}
-                    </DropdownMenuContent>
-                </DropdownMenu>
+            <div className="flex-1 justify-end items-center flex md:hidden gap-2">
+                 {mobileHeaderItems.map((item) => (
+                    <Button key={item.href} variant="ghost" size="icon" onClick={() => handleNavigation(item.href)}>
+                        <item.icon />
+                        <span className="sr-only">{item.label}</span>
+                    </Button>
+                ))}
             </div>
         </header>
         <main className="flex-1 p-4 md:p-6 mb-20 md:mb-0">
