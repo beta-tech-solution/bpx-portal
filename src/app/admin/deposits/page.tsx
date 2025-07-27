@@ -7,14 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { CheckCircle, XCircle, FileText, MoreHorizontal, ArrowDownLeft, Loader2 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { CheckCircle, XCircle, FileText, MoreHorizontal, ArrowDownLeft, Loader2, Eye } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog"
+import Image from 'next/image';
 import { useToast } from "@/hooks/use-toast";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from "recharts";
@@ -22,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { db } from '@/lib/firebase/config';
 import { collection, query, onSnapshot, doc, getDoc, updateDoc, increment, writeBatch } from 'firebase/firestore';
 import { format, subDays } from 'date-fns';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 type DepositStatus = 'Pending' | 'Approved' | 'Rejected';
 
@@ -52,6 +48,7 @@ export default function AdminDepositsPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<DepositStatus | 'All'>('Pending');
   const [timeRange, setTimeRange] = useState("7");
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   useEffect(() => {
     const q = query(collection(db, 'deposits'));
@@ -119,24 +116,13 @@ export default function AdminDepositsPage() {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as DepositStatus | 'All')}>
-            <TabsList className="grid w-full grid-cols-4 mb-4">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-4">
               <TabsTrigger value="Pending">Pending</TabsTrigger>
               <TabsTrigger value="Approved">Approved</TabsTrigger>
               <TabsTrigger value="Rejected">Rejected</TabsTrigger>
               <TabsTrigger value="All">All</TabsTrigger>
             </TabsList>
-            <TabsContent value="Pending">
-              <DepositTable data={filteredDeposits} loading={loading} />
-            </TabsContent>
-            <TabsContent value="Approved">
-              <DepositTable data={filteredDeposits} loading={loading} />
-            </TabsContent>
-            <TabsContent value="Rejected">
-              <DepositTable data={filteredDeposits} loading={loading} />
-            </TabsContent>
-            <TabsContent value="All">
-              <DepositTable data={filteredDeposits} loading={loading} />
-            </TabsContent>
+            <DepositContent data={filteredDeposits} loading={loading} isDesktop={isDesktop} />
           </Tabs>
         </CardContent>
       </Card>
@@ -181,7 +167,7 @@ export default function AdminDepositsPage() {
   );
 }
 
-function DepositTable({ data, loading }: { data: Deposit[], loading: boolean }) {
+function DepositContent({ data, loading, isDesktop }: { data: Deposit[], loading: boolean, isDesktop: boolean }) {
   const { toast } = useToast();
 
   const handleUpdateStatus = async (deposit: Deposit, newStatus: DepositStatus) => {
@@ -221,6 +207,33 @@ function DepositTable({ data, loading }: { data: Deposit[], loading: boolean }) 
     return <div className="text-center text-muted-foreground p-8">No deposits found.</div>;
   }
 
+  if (!isDesktop) {
+    return (
+      <div className="space-y-4">
+        {data.map((deposit) => (
+          <Card key={deposit.id}>
+            <CardContent className="p-4 flex flex-col gap-3">
+              <div className="flex justify-between items-start">
+                  <div>
+                      <p className="font-semibold">{deposit.userFullName}</p>
+                      <p className="text-sm text-muted-foreground">{deposit.date}</p>
+                  </div>
+                  <Badge variant={statusVariant[deposit.status]}>{deposit.status}</Badge>
+              </div>
+              <p className="font-mono text-xl font-bold">PKR {deposit.amount}</p>
+              <div className="flex items-center gap-2 mt-2">
+                 <ProofDialog proofUrl={deposit.proofUrl} />
+                {deposit.status === 'Pending' && (
+                  <ManageDepositDialog deposit={deposit} onUpdateStatus={handleUpdateStatus} />
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    )
+  }
+
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -244,11 +257,7 @@ function DepositTable({ data, loading }: { data: Deposit[], loading: boolean }) 
               </TableCell>
               <TableCell className="text-right">
                  <div className="flex items-center justify-end gap-2">
-                    <Button variant="outline" size="sm" asChild>
-                      <a href={deposit.proofUrl} target="_blank" rel="noopener noreferrer">
-                          <FileText className="mr-2 h-4 w-4" />View Proof
-                      </a>
-                    </Button>
+                    <ProofDialog proofUrl={deposit.proofUrl} />
                     {deposit.status === 'Pending' && (
                       <>
                         <Button variant="secondary" size="sm" onClick={() => handleUpdateStatus(deposit, 'Approved')}>
@@ -267,4 +276,63 @@ function DepositTable({ data, loading }: { data: Deposit[], loading: boolean }) 
       </Table>
     </div>
   );
+}
+
+function ProofDialog({ proofUrl }: { proofUrl: string }) {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm">
+          <Eye className="mr-2 h-4 w-4" />View Proof
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>Payment Proof</DialogTitle>
+          <DialogDescription>Review the payment proof uploaded by the user.</DialogDescription>
+        </DialogHeader>
+        <div className="relative mt-4 min-h-[50vh] w-full">
+            <Image src={proofUrl} alt="Payment Proof" layout="fill" objectFit="contain" />
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function ManageDepositDialog({ deposit, onUpdateStatus }: { deposit: Deposit, onUpdateStatus: (deposit: Deposit, status: DepositStatus) => void }) {
+  return (
+      <Dialog>
+          <DialogTrigger asChild>
+              <Button variant="default" size="sm" className="flex-1">Manage</Button>
+          </DialogTrigger>
+          <DialogContent>
+              <DialogHeader>
+                  <DialogTitle>Manage Deposit</DialogTitle>
+                  <DialogDescription>
+                      Approve or reject the deposit request from {deposit.userFullName}.
+                  </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                  <p><strong>User:</strong> {deposit.userFullName}</p>
+                  <p><strong>Amount:</strong> PKR {deposit.amount}</p>
+                  <p><strong>Date:</strong> {deposit.date}</p>
+              </div>
+              <DialogFooter>
+                  <DialogClose asChild>
+                      <Button variant="ghost">Cancel</Button>
+                  </DialogClose>
+                  <DialogClose asChild>
+                      <Button variant="destructive" onClick={() => onUpdateStatus(deposit, 'Rejected')}>
+                          <XCircle className="mr-2 h-4 w-4" />Reject
+                      </Button>
+                  </DialogClose>
+                  <DialogClose asChild>
+                      <Button variant="secondary" onClick={() => onUpdateStatus(deposit, 'Approved')}>
+                          <CheckCircle className="mr-2 h-4 w-4" />Approve
+                      </Button>
+                  </DialogClose>
+              </DialogFooter>
+          </DialogContent>
+      </Dialog>
+  )
 }
