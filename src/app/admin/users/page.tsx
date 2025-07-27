@@ -5,9 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, Edit, Trash2, PlusCircle, Users, Loader2 } from "lucide-react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { MoreHorizontal, Edit, Trash2, PlusCircle, Users, Loader2, Copy } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
@@ -34,6 +33,8 @@ interface User {
   id: string;
   fullName: string;
   email: string;
+  phone?: string;
+  gender?: string;
   balance: number;
   status: 'Active' | 'Suspended';
   role: 'Admin' | 'User';
@@ -45,7 +46,8 @@ interface User {
 }
 
 export default function AdminUsersPage() {
-  const [open, setOpen] = React.useState(false);
+  const [isFormOpen, setIsFormOpen] = React.useState(false);
+  const [isDetailsOpen, setIsDetailsOpen] = React.useState(false);
   const [users, setUsers] = React.useState<User[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
@@ -90,12 +92,22 @@ export default function AdminUsersPage() {
 
   const handleEdit = (user: User) => {
     setSelectedUser(user);
-    setOpen(true);
+    setIsFormOpen(true);
   }
   
   const handleAdd = () => {
       setSelectedUser(null);
-      setOpen(true);
+      setIsFormOpen(true);
+  }
+
+  const handleViewDetails = (user: User) => {
+      setSelectedUser(user);
+      setIsDetailsOpen(true);
+  }
+  
+  const handleDelete = (user: User) => {
+    // Implement delete functionality here
+    console.log("Delete user:", user.id)
   }
 
   const isUserOnline = (lastSeen: Timestamp | undefined) => {
@@ -147,7 +159,7 @@ export default function AdminUsersPage() {
             </TableHeader>
             <TableBody>
                 {users.map((user) => (
-                <TableRow key={user.id}>
+                <TableRow key={user.id} onClick={() => handleViewDetails(user)} className="cursor-pointer">
                     <TableCell>
                     <div className="font-medium">{user.fullName}</div>
                     <div className="text-sm text-muted-foreground">{user.email}</div>
@@ -168,19 +180,14 @@ export default function AdminUsersPage() {
                         {formatLastSeen(user.lastSeen)}
                     </TableCell>
                     <TableCell className="text-right">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleEdit(user)}><Edit className="mr-2 h-4 w-4"/>Edit User</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive"><Trash2 className="mr-2 h-4 w-4"/>Delete User</DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                        <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                           <Button variant="ghost" size="icon" onClick={() => handleEdit(user)}>
+                                <Edit className="h-4 w-4" />
+                           </Button>
+                           <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(user)}>
+                                <Trash2 className="h-4 w-4" />
+                           </Button>
+                        </div>
                     </TableCell>
                 </TableRow>
                 ))}
@@ -214,7 +221,8 @@ export default function AdminUsersPage() {
         </CardContent>
     </Card>
     </div>
-    <UserDialog open={open} setOpen={setOpen} user={selectedUser} />
+    <UserFormDialog open={isFormOpen} setOpen={setIsFormOpen} user={selectedUser} />
+    <UserDetailsDialog open={isDetailsOpen} setOpen={setIsDetailsOpen} user={selectedUser} />
     </>
   )
 }
@@ -233,7 +241,7 @@ const UserFormSchema = z.object({
 
 type UserFormValues = z.infer<typeof UserFormSchema>;
 
-function UserDialog({ open, setOpen, user }: { open: boolean, setOpen: (open: boolean) => void, user: User | null }) {
+function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open: boolean) => void, user: User | null }) {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = React.useState(false);
     
@@ -490,3 +498,78 @@ function UserDialog({ open, setOpen, user }: { open: boolean, setOpen: (open: bo
         </Dialog>
     )
 }
+
+const DetailRow = ({ label, value }: { label: string, value: string | undefined | null }) => {
+    const { toast } = useToast();
+    const handleCopy = () => {
+        if(value) {
+            navigator.clipboard.writeText(value);
+            toast({ title: `${label} Copied!`, description: value });
+        }
+    }
+    return (
+        <div className="flex justify-between items-center py-2 border-b">
+            <div>
+                <p className="text-sm text-muted-foreground">{label}</p>
+                <p className="font-medium">{value || 'N/A'}</p>
+            </div>
+            {value && (
+                <Button variant="ghost" size="icon" onClick={handleCopy}>
+                    <Copy className="h-4 w-4" />
+                </Button>
+            )}
+        </div>
+    )
+}
+
+function UserDetailsDialog({ open, setOpen, user }: { open: boolean, setOpen: (open: boolean) => void, user: User | null }) {
+    if (!user) return null;
+
+    const isUserOnline = (lastSeen: Timestamp | undefined) => {
+        if (!lastSeen) return false;
+        const fiveMinutesAgo = subMinutes(new Date(), 5);
+        return lastSeen.toDate() > fiveMinutesAgo;
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogContent className="max-w-md">
+                <DialogHeader>
+                    <DialogTitle className="font-headline">{user.fullName}</DialogTitle>
+                    <DialogDescription>
+                        Complete details for this user.
+                    </DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="max-h-[60vh] pr-4">
+                    <div className="space-y-2">
+                        <DetailRow label="Full Name" value={user.fullName} />
+                        <DetailRow label="Email" value={user.email} />
+                        <DetailRow label="Phone" value={user.phone} />
+                        <DetailRow label="Gender" value={user.gender} />
+                        <DetailRow label="Balance" value={`PKR ${user.balance.toFixed(2)}`} />
+                        <DetailRow label="Status" value={user.status} />
+                        <DetailRow label="Role" value={user.role} />
+                        <DetailRow label="Joined On" value={user.createdAt ? format(user.createdAt.toDate(), 'PPP') : 'N/A'} />
+                        <DetailRow label="Last Seen" value={user.lastSeen ? (isUserOnline(user.lastSeen) ? 'Online' : format(user.lastSeen.toDate(), 'PPpp')) : 'Never'} />
+                        
+                        <h3 className="font-headline text-lg pt-4">BPExch Details</h3>
+                        <DetailRow label="BPExch Username" value={user.bpexchUsername} />
+                        <DetailRow label="BPExch Password" value={user.bpexchPassword} />
+                        
+                        <h3 className="font-headline text-lg pt-4">Message for User</h3>
+                        <div className="text-sm p-3 bg-muted rounded-md min-h-[60px]">
+                           {user.adminMessage || <span className="text-muted-foreground">No message set.</span>}
+                        </div>
+                    </div>
+                </ScrollArea>
+                 <DialogFooter>
+                    <DialogClose asChild>
+                        <Button variant="outline">Close</Button>
+                    </DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+    

@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { CartesianGrid, Line, LineChart, XAxis, YAxis, Tooltip } from "recharts"
 import { ChartContainer, ChartTooltipContent, ChartTooltip } from "@/components/ui/chart"
-import { ExternalLink, Loader2, ShieldOff, ShieldCheck, User, Lock, MessageSquare } from "lucide-react"
+import { ExternalLink, Loader2, ShieldOff, ShieldCheck, User, Lock, MessageSquare, Copy } from "lucide-react"
 import { db, auth } from '@/lib/firebase/config';
 import { collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy, limit, doc, updateDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -42,6 +42,31 @@ const chartConfig = {
     label: "Logins",
     color: "hsl(var(--accent))",
   },
+}
+
+const CopyableDetail = ({ label, value }: { label: string; value?: string }) => {
+    const { toast } = useToast();
+    const handleCopy = () => {
+        if(value) {
+            navigator.clipboard.writeText(value);
+            toast({ title: `${label} Copied!`, description: value });
+        }
+    }
+
+    return (
+         <div className="flex items-center gap-4 p-3 rounded-md border bg-muted">
+            {label === 'Username/Email' ? <User className="h-5 w-5 text-muted-foreground" /> : <Lock className="h-5 w-5 text-muted-foreground" />}
+            <div className="flex-1">
+                <p className="text-xs font-semibold">{label}</p>
+                <p className="font-mono text-sm">{value || 'Not set'}</p>
+            </div>
+            {value && (
+                <Button variant="ghost" size="icon" onClick={handleCopy}>
+                    <Copy className="h-4 w-4" />
+                </Button>
+            )}
+        </div>
+    )
 }
 
 export default function BpexchLoginPage() {
@@ -206,20 +231,8 @@ export default function BpexchLoginPage() {
                     <CardDescription>These are your account details provided by the administrator.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="flex items-center gap-4 p-3 rounded-md border bg-muted">
-                        <User className="h-5 w-5 text-muted-foreground" />
-                        <div className="flex-1">
-                            <p className="text-xs font-semibold">Username/Email</p>
-                            <p className="font-mono text-sm">{userData?.bpexchUsername || 'Not set'}</p>
-                        </div>
-                    </div>
-                     <div className="flex items-center gap-4 p-3 rounded-md border bg-muted">
-                        <Lock className="h-5 w-5 text-muted-foreground" />
-                        <div className="flex-1">
-                             <p className="text-xs font-semibold">Password</p>
-                            <p className="font-mono text-sm">{userData?.bpexchPassword || 'Not set'}</p>
-                        </div>
-                    </div>
+                   <CopyableDetail label="Username/Email" value={userData?.bpexchUsername} />
+                   <CopyableDetail label="Password" value={userData?.bpexchPassword} />
                 </CardContent>
             </Card>
         </div>
@@ -292,3 +305,5 @@ export default function BpexchLoginPage() {
     </div>
   )
 }
+
+    
