@@ -23,6 +23,7 @@ import { useForm, Controller } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
+import { Textarea } from "@/components/ui/textarea"
 
 
 const userChartConfig = {
@@ -38,6 +39,9 @@ interface User {
   role: 'Admin' | 'User';
   lastSeen?: Timestamp;
   createdAt?: Timestamp;
+  bpexchUsername?: string;
+  bpexchPassword?: string;
+  adminMessage?: string;
 }
 
 export default function AdminUsersPage() {
@@ -222,6 +226,9 @@ const UserFormSchema = z.object({
     status: z.enum(['Active', 'Suspended']),
     role: z.enum(['User', 'Admin']),
     password: z.string().optional(),
+    bpexchUsername: z.string().optional(),
+    bpexchPassword: z.string().optional(),
+    adminMessage: z.string().optional(),
 });
 
 type UserFormValues = z.infer<typeof UserFormSchema>;
@@ -239,6 +246,9 @@ function UserDialog({ open, setOpen, user }: { open: boolean, setOpen: (open: bo
             status: 'Active',
             role: 'User',
             password: "",
+            bpexchUsername: "",
+            bpexchPassword: "",
+            adminMessage: "",
         },
     });
 
@@ -251,6 +261,9 @@ function UserDialog({ open, setOpen, user }: { open: boolean, setOpen: (open: bo
                 status: user?.status || 'Active',
                 role: user?.role || 'User',
                 password: "",
+                bpexchUsername: user?.bpexchUsername || "",
+                bpexchPassword: user?.bpexchPassword || "",
+                adminMessage: user?.adminMessage || "",
             })
         }
     }, [user, form, open]);
@@ -267,7 +280,10 @@ function UserDialog({ open, setOpen, user }: { open: boolean, setOpen: (open: bo
                     email: data.email, 
                     balance: data.balance, 
                     status: data.status, 
-                    role: data.role 
+                    role: data.role,
+                    bpexchUsername: data.bpexchUsername,
+                    bpexchPassword: data.bpexchPassword,
+                    adminMessage: data.adminMessage,
                 });
                 toast({ title: "User Updated", description: "User details have been saved successfully." });
             } else { // Adding new user
@@ -289,6 +305,9 @@ function UserDialog({ open, setOpen, user }: { open: boolean, setOpen: (open: bo
                     status: data.status,
                     role: data.role,
                     createdAt: new Date(),
+                    bpexchUsername: data.bpexchUsername,
+                    bpexchPassword: data.bpexchPassword,
+                    adminMessage: data.adminMessage,
                 });
                 toast({ title: "User Created", description: "New user has been added successfully." });
             }
@@ -408,6 +427,52 @@ function UserDialog({ open, setOpen, user }: { open: boolean, setOpen: (open: bo
                                         </Select>
                                         <FormMessage />
                                     </FormItem>
+                                    )}
+                                />
+                                <Card>
+                                    <CardHeader className="p-4">
+                                        <CardTitle className="text-base">BPExch Details</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="p-4 pt-0 space-y-4">
+                                         <FormField
+                                            control={form.control}
+                                            name="bpexchUsername"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>BPExch Username/Email</FormLabel>
+                                                    <FormControl>
+                                                        <Input placeholder="bpexch_user" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                         <FormField
+                                            control={form.control}
+                                            name="bpexchPassword"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>BPExch Password</FormLabel>
+                                                    <FormControl>
+                                                        <Input type="text" placeholder="••••••••" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </CardContent>
+                                </Card>
+                                 <FormField
+                                    control={form.control}
+                                    name="adminMessage"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Message for User</FormLabel>
+                                            <FormControl>
+                                                <Textarea placeholder="Enter a message to display to this user on their BPExch login page." {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
                                     )}
                                 />
                             </div>

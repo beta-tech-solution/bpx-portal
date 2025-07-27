@@ -9,12 +9,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { CartesianGrid, Line, LineChart, XAxis, YAxis, Tooltip } from "recharts"
 import { ChartContainer, ChartTooltipContent, ChartTooltip } from "@/components/ui/chart"
-import { ExternalLink, Loader2, ShieldOff, ShieldCheck } from "lucide-react"
+import { ExternalLink, Loader2, ShieldOff, ShieldCheck, User, Lock, MessageSquare } from "lucide-react"
 import { db, auth } from '@/lib/firebase/config';
 import { collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy, limit, doc, updateDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { format, subDays, eachDayOfInterval } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface LoginActivity {
     id: string;
@@ -22,6 +23,13 @@ interface LoginActivity {
     time: string;
     ip: string;
     status: "Success";
+}
+
+interface UserData {
+    blockedIps: string[];
+    bpexchUsername?: string;
+    bpexchPassword?: string;
+    adminMessage?: string;
 }
 
 interface ChartData {
@@ -41,7 +49,7 @@ export default function BpexchLoginPage() {
     const { toast } = useToast();
     const [loginActivity, setLoginActivity] = useState<LoginActivity[]>([]);
     const [chartData, setChartData] = useState<ChartData[]>([]);
-    const [blockedIps, setBlockedIps] = useState<string[]>([]);
+    const [userData, setUserData] = useState<UserData | null>(null);
     const [loading, setLoading] = useState(true);
     const [isLogging, setIsLogging] = useState(false);
 
@@ -51,7 +59,7 @@ export default function BpexchLoginPage() {
 
         const userDocRef = doc(db, 'users', user.uid);
         const unsubscribeUser = onSnapshot(userDocRef, (doc) => {
-            setBlockedIps(doc.data()?.blockedIps || []);
+            setUserData(doc.data() as UserData);
         });
 
         const q = query(
@@ -122,8 +130,7 @@ export default function BpexchLoginPage() {
             const ipData = await ipResponse.json();
             const ip = ipData.ip;
 
-            const userDoc = await getDoc(doc(db, 'users', user.uid));
-            const currentBlockedIps = userDoc.data()?.blockedIps || [];
+            const currentBlockedIps = userData?.blockedIps || [];
             if(currentBlockedIps.includes(ip)){
                 toast({ title: "Login Blocked", description: "This IP address has been blocked from accessing your account.", variant: "destructive" });
                 setIsLogging(false);
@@ -149,7 +156,7 @@ export default function BpexchLoginPage() {
     const toggleIpBlock = async (ip: string) => {
         if(!user) return;
         const userDocRef = doc(db, 'users', user.uid);
-        const isBlocked = blockedIps.includes(ip);
+        const isBlocked = userData?.blockedIps?.includes(ip);
 
         try {
              if (isBlocked) {
@@ -168,25 +175,62 @@ export default function BpexchLoginPage() {
 
   return (
     <div className="max-w-4xl mx-auto grid gap-8 animate-fade-in">
-        <Card>
-            <CardHeader>
-                <CardTitle className="font-headline">BPExch Account Access</CardTitle>
-                <CardDescription>Login to your BPExch account. Your access attempts will be logged for security.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Button onClick={handleLoginClick} className="bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isLogging}>
-                    {isLogging ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <ExternalLink className="mr-2 h-4 w-4"/>}
-                    Login to BPExch
-                </Button>
-            </CardContent>
-        </Card>
+        
+        {userData?.adminMessage && (
+            <Alert>
+                <MessageSquare className="h-4 w-4" />
+                <AlertTitle>A Message from Admin</AlertTitle>
+                <AlertDescription>
+                    {userData.adminMessage}
+                </AlertDescription>
+            </Alert>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline">BPExch Account Access</CardTitle>
+                    <CardDescription>Login to your BPExch account. Your access attempts will be logged for security.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Button onClick={handleLoginClick} className="bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isLogging}>
+                        {isLogging ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <ExternalLink className="mr-2 h-4 w-4"/>}
+                        Login to BPExch
+                    </Button>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline">Your BPExch Details</CardTitle>
+                    <CardDescription>These are your account details provided by the administrator.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex items-center gap-4 p-3 rounded-md border bg-muted">
+                        <User className="h-5 w-5 text-muted-foreground" />
+                        <div className="flex-1">
+                            <p className="text-xs font-semibold">Username/Email</p>
+                            <p className="font-mono text-sm">{userData?.bpexchUsername || 'Not set'}</p>
+                        </div>
+                    </div>
+                     <div className="flex items-center gap-4 p-3 rounded-md border bg-muted">
+                        <Lock className="h-5 w-5 text-muted-foreground" />
+                        <div className="flex-1">
+                             <p className="text-xs font-semibold">Password</p>
+                            <p className="font-mono text-sm">{userData?.bpexchPassword || 'Not set'}</p>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card>
           <CardHeader>
             <CardTitle className="font-headline">Recent Login Activity</CardTitle>
           </CardHeader>
           <CardContent>
-            {loading ? <Loader2 className="animate-spin" /> : (
+            {loading ? <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin" /></div> : (
             <div className="overflow-x-auto">
                 <Table>
                 <TableHeader>
@@ -198,7 +242,7 @@ export default function BpexchLoginPage() {
                 </TableHeader>
                 <TableBody>
                     {loginActivity.length > 0 ? loginActivity.map((activity) => {
-                    const isBlocked = blockedIps.includes(activity.ip);
+                    const isBlocked = userData?.blockedIps?.includes(activity.ip);
                     return (
                     <TableRow key={activity.id}>
                         <TableCell>
@@ -231,7 +275,7 @@ export default function BpexchLoginPage() {
             <CardDescription>Your BPExch account access over the last 7 days.</CardDescription>
           </CardHeader>
           <CardContent>
-            {loading ? <Loader2 className="animate-spin"/> : (
+            {loading ? <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin"/></div> : (
             <ChartContainer config={chartConfig} className="h-[200px] w-full">
               <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 0 }}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
