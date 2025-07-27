@@ -243,32 +243,23 @@ function DepositTable({ data, loading }: { data: Deposit[], loading: boolean }) 
                 <Badge variant={statusVariant[deposit.status]}>{deposit.status}</Badge>
               </TableCell>
               <TableCell className="text-right">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                      <span className="sr-only">Open menu</span>
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuItem asChild>
+                 <div className="flex items-center justify-end gap-2">
+                    <Button variant="outline" size="sm" asChild>
                       <a href={deposit.proofUrl} target="_blank" rel="noopener noreferrer">
                           <FileText className="mr-2 h-4 w-4" />View Proof
                       </a>
-                      </DropdownMenuItem>
+                    </Button>
                     {deposit.status === 'Pending' && (
                       <>
-                        <DropdownMenuItem className="text-green-600" onClick={() => handleUpdateStatus(deposit, 'Approved')}>
+                        <Button variant="secondary" size="sm" onClick={() => handleUpdateStatus(deposit, 'Approved')}>
                           <CheckCircle className="mr-2 h-4 w-4" />Approve
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive" onClick={() => handleUpdateStatus(deposit, 'Rejected')}>
+                        </Button>
+                        <Button variant="destructive" size="sm" onClick={() => handleUpdateStatus(deposit, 'Rejected')}>
                           <XCircle className="mr-2 h-4 w-4" />Reject
-                        </DropdownMenuItem>
+                        </Button>
                       </>
                     )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                 </div>
               </TableCell>
             </TableRow>
           ))}

@@ -297,7 +297,7 @@ export default function AdminLayout({
         </div>
 
         <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-10">
-            <div className="flex justify-around items-center h-16">
+            <div className="flex justify-center items-center h-16 gap-2">
                 {navItems.map((item) => {
                      const count = item.countKey ? pendingCounts[item.countKey as keyof typeof pendingCounts] : 0;
                      return (
