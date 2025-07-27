@@ -45,12 +45,12 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import Preloader from "@/components/preloader";
+import { Badge } from "@/components/ui/badge";
 
 const navItems = [
     { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, countKey: null },
     { href: "/admin/deposits", label: "Deposits", icon: DollarSign, countKey: 'deposits' },
     { href: "/admin/withdrawals", label: "Withdrawals", icon: Landmark, countKey: 'withdrawals' },
-    { href: "/admin/chat", label: "Support Chat", icon: MessageSquare, countKey: 'chats' },
     { href: "/admin/profit-stats", label: "Profit Stats", icon: BarChart2, countKey: null },
     { href: "/admin/bpexch-activity", label: "Login Activity", icon: Activity, countKey: null },
 ];
@@ -80,7 +80,7 @@ export default function AdminLayout({
       chats: 0,
   });
 
-  const fullNavItems = [ ...navItems, ...mobileHeaderItems ];
+  const fullNavItems = [ ...navItems, { href: "/admin/chat", label: "Support Chat", icon: MessageSquare, countKey: 'chats' }, ...mobileHeaderItems ];
   const getPageTitle = () => {
     const currentItem = fullNavItems.find(item => item.href === pathname);
     if (currentItem) return currentItem.label;
@@ -293,9 +293,18 @@ export default function AdminLayout({
                 </DropdownMenu>
             </div>
         </header>
-        <main className="flex-1 p-4 md:p-6 mb-20 md:mb-0 overflow-hidden">
+        <main className="flex-1 p-4 md:p-6 mb-20 md:mb-0">
             {children}
         </main>
+        
+        {/* Floating Chat Button for Mobile */}
+        <div className="md:hidden fixed bottom-20 right-4 z-50">
+            <Button onClick={() => handleNavigation('/admin/chat')} size="icon" className="rounded-full w-14 h-14 shadow-lg relative">
+                <MessageSquare />
+                {pendingCounts.chats > 0 && <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 justify-center p-0">{pendingCounts.chats}</Badge>}
+            </Button>
+        </div>
+
         <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-10">
             <div className="flex justify-around items-center h-16">
                 {navItems.map((item) => {
