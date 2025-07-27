@@ -119,11 +119,11 @@ export default function AdminDepositsPage() {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as DepositStatus | 'All')}>
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-4">
-              <TabsTrigger value="Pending">Pending</TabsTrigger>
-              <TabsTrigger value="Approved">Approved</TabsTrigger>
-              <TabsTrigger value="Rejected">Rejected</TabsTrigger>
-              <TabsTrigger value="All">All</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-4 h-auto sm:h-10">
+              <TabsTrigger value="Pending" className="text-xs sm:text-sm">Pending</TabsTrigger>
+              <TabsTrigger value="Approved" className="text-xs sm:text-sm">Approved</TabsTrigger>
+              <TabsTrigger value="Rejected" className="text-xs sm:text-sm">Rejected</TabsTrigger>
+              <TabsTrigger value="All" className="text-xs sm:text-sm">All</TabsTrigger>
             </TabsList>
             <DepositContent data={filteredDeposits} loading={loading} isDesktop={isDesktop} />
           </Tabs>
@@ -181,7 +181,6 @@ function DepositContent({ data, loading, isDesktop }: { data: Deposit[], loading
       batch.update(depositRef, { status: newStatus });
 
       if (newStatus === 'Approved') {
-          // Ensure userId exists before attempting to update balance
           if (!deposit.userId) {
               throw new Error(`Cannot approve deposit ${deposit.id}: No user ID associated.`);
           }
@@ -228,10 +227,19 @@ function DepositContent({ data, loading, isDesktop }: { data: Deposit[], loading
                   <Badge variant={statusVariant[deposit.status]}>{deposit.status}</Badge>
               </div>
               <p className="font-mono text-xl font-bold">PKR {deposit.amount}</p>
-              <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center justify-end gap-2 mt-2">
                  <ProofDialog proofUrl={deposit.proofUrl} />
                 {deposit.status === 'Pending' && (
-                  <ManageDepositDialog deposit={deposit} onUpdateStatus={handleUpdateStatus} />
+                  <>
+                    <Button variant="outline" size="icon" onClick={() => handleUpdateStatus(deposit, 'Approved')}>
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <span className="sr-only">Approve</span>
+                    </Button>
+                    <Button variant="outline" size="icon" onClick={() => handleUpdateStatus(deposit, 'Rejected')}>
+                        <XCircle className="h-4 w-4 text-red-600" />
+                        <span className="sr-only">Reject</span>
+                    </Button>
+                  </>
                 )}
               </div>
             </CardContent>
@@ -289,8 +297,9 @@ function ProofDialog({ proofUrl }: { proofUrl: string }) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Eye className="mr-2 h-4 w-4" />View Proof
+        <Button variant="outline" size={useMediaQuery("(min-width: 768px)") ? 'sm' : 'icon'}>
+          <Eye className="h-4 w-4" />
+          <span className="sr-only sm:not-sr-only sm:ml-2">View Proof</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-3xl">
@@ -303,43 +312,5 @@ function ProofDialog({ proofUrl }: { proofUrl: string }) {
         </div>
       </DialogContent>
     </Dialog>
-  )
-}
-
-function ManageDepositDialog({ deposit, onUpdateStatus }: { deposit: Deposit, onUpdateStatus: (deposit: Deposit, status: DepositStatus) => void }) {
-  return (
-      <Dialog>
-          <DialogTrigger asChild>
-              <Button variant="default" size="sm" className="flex-1">Manage</Button>
-          </DialogTrigger>
-          <DialogContent>
-              <DialogHeader>
-                  <DialogTitle>Manage Deposit</DialogTitle>
-                  <DialogDescription>
-                      Approve or reject the deposit request from {deposit.userFullName}.
-                  </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                  <p><strong>User:</strong> {deposit.userFullName}</p>
-                  <p><strong>Amount:</strong> PKR {deposit.amount}</p>
-                  <p><strong>Date:</strong> {deposit.date}</p>
-              </div>
-              <DialogFooter>
-                  <DialogClose asChild>
-                      <Button variant="ghost">Cancel</Button>
-                  </DialogClose>
-                  <DialogClose asChild>
-                      <Button variant="destructive" onClick={() => onUpdateStatus(deposit, 'Rejected')}>
-                          <XCircle className="mr-2 h-4 w-4" />Reject
-                      </Button>
-                  </DialogClose>
-                  <DialogClose asChild>
-                      <Button variant="secondary" onClick={() => onUpdateStatus(deposit, 'Approved')}>
-                          <CheckCircle className="mr-2 h-4 w-4" />Approve
-                      </Button>
-                  </DialogClose>
-              </DialogFooter>
-          </DialogContent>
-      </Dialog>
   )
 }
