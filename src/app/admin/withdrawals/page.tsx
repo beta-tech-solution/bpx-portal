@@ -145,7 +145,7 @@ export default function AdminWithdrawalsPage() {
         </CardContent>
       </Card>
 
-      <Card className={isMobile ? "max-w-[400px] mx-auto" : ""}>
+      <Card className={isMobile ? "max-w-[300px] mx-auto" : ""}>
           <CardHeader>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div>
@@ -314,3 +314,5 @@ function WithdrawalContent({ data, loading }: { data: Withdrawal[], loading: boo
         </div>
     )
 }
+
+    
