@@ -50,11 +50,6 @@ export default function AdminWithdrawalsPage() {
   const [activeTab, setActiveTab] = useState<WithdrawalStatus | 'All'>('Pending');
   const [timeRange, setTimeRange] = useState("7");
   const isDesktop = useMediaQuery("(min-width: 768px)");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     const q = query(collection(db, 'withdrawals'));
@@ -130,12 +125,8 @@ export default function AdminWithdrawalsPage() {
     return chartData.reverse();
   }, [withdrawals, timeRange]);
 
-  if (!mounted) {
-    return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
-  }
-
   return (
-    <div className="animate-fade-in grid gap-8 max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto grid gap-8 animate-fade-in">
       <Card>
         <CardHeader>
           <CardTitle className="font-headline">Withdrawal Management</CardTitle>
