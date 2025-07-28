@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CheckCircle, XCircle, ArrowDownLeft, Loader2, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import Image from 'next/image';
@@ -83,7 +83,7 @@ export default function AdminDepositsPage() {
         depositsData.push({
           id: docSnapshot.id,
           userFullName,
-          date: data.date ? format(new Date(data.date), 'PP') : 'No Date',
+          date: data.createdAt ? format(data.createdAt.toDate(), 'PP') : 'No Date',
           ...data
         } as Deposit);
       }
@@ -245,7 +245,7 @@ function DepositContent({ data, loading, isDesktop }: { data: Deposit[], loading
             <CardContent className="p-4 flex flex-col gap-3">
               <div className="flex justify-between items-start">
                   <div>
-                      <p className="font-semibold break-all">{deposit.userFullName}</p>
+                      <p className="font-semibold break-words">{deposit.userFullName}</p>
                       <p className="text-sm text-muted-foreground">{deposit.date}</p>
                   </div>
                   <Badge variant={statusVariant[deposit.status]}>{deposit.status}</Badge>
