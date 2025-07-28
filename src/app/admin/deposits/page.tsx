@@ -7,8 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { CheckCircle, XCircle, FileText, MoreHorizontal, ArrowDownLeft, Loader2, Eye } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog"
+import { CheckCircle, XCircle, ArrowDownLeft, Loader2, Eye } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import Image from 'next/image';
 import { useToast } from "@/hooks/use-toast";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart";
@@ -55,19 +55,35 @@ export default function AdminDepositsPage() {
     const unsubscribe = onSnapshot(q, async (querySnapshot) => {
       setLoading(true);
       const depositsData: Deposit[] = [];
-      const userPromises = querySnapshot.docs.map(docSnapshot => {
-        const data = docSnapshot.data();
-        if (!data.userId) {
-          depositsData.push({ id: docSnapshot.id, userFullName: 'Unknown User', ...data } as Deposit);
-          return null;
-        }
-        return getDoc(doc(db, 'users', data.userId)).then(userDoc => {
-          const userFullName = userDoc.exists() ? userDoc.data().fullName : 'Unknown User';
-          depositsData.push({ id: docSnapshot.id, userFullName, ...data } as Deposit);
-        });
-      });
+      const userCache = new Map();
       
-      await Promise.all(userPromises.filter(p => p !== null));
+      const userPromises = querySnapshot.docs.map(async (docSnapshot) => {
+        const data = docSnapshot.data();
+        let userFullName = 'Unknown User';
+
+        if(data.userId && userCache.has(data.userId)) {
+            userFullName = userCache.get(data.userId);
+        } else if (data.userId) {
+            try {
+                const userDoc = await getDoc(doc(db, 'users', data.userId));
+                if (userDoc.exists()) {
+                    userFullName = userDoc.data().fullName;
+                    userCache.set(data.userId, userFullName);
+                }
+            } catch (e) {
+                console.error("Error fetching user for deposit:", e);
+            }
+        }
+        
+        depositsData.push({
+          id: docSnapshot.id,
+          userFullName,
+          date: data.date ? format(new Date(data.date), 'PP') : 'No Date',
+          ...data
+        } as Deposit);
+      });
+
+      await Promise.all(userPromises);
       
       setDeposits(depositsData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
       setLoading(false);
@@ -95,12 +111,16 @@ export default function AdminDepositsPage() {
     }
 
     deposits.forEach(deposit => {
-        const depositDate = format(new Date(deposit.date), 'yyyy-MM-dd');
-        const entry = chartData.find(d => d.date === depositDate);
-        if (entry) {
-            if (deposit.status === 'Pending') entry.pending++;
-            else if (deposit.status === 'Approved') entry.approved++;
-            else if (deposit.status === 'Rejected') entry.rejected++;
+        try {
+            const depositDate = format(new Date(deposit.date), 'yyyy-MM-dd');
+            const entry = chartData.find(d => d.date === depositDate);
+            if (entry) {
+                if (deposit.status === 'Pending') entry.pending++;
+                else if (deposit.status === 'Approved') entry.approved++;
+                else if (deposit.status === 'Rejected') entry.rejected++;
+            }
+        } catch (e) {
+            // Ignore invalid date format errors for chart processing
         }
     });
 
