@@ -49,7 +49,6 @@ export default function AdminWithdrawalsPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<WithdrawalStatus | 'All'>('Pending');
   const [timeRange, setTimeRange] = useState("7");
-  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   useEffect(() => {
     const q = query(collection(db, 'withdrawals'));
@@ -140,7 +139,7 @@ export default function AdminWithdrawalsPage() {
                   <TabsTrigger value="Rejected" className="text-xs sm:text-sm">Rejected</TabsTrigger>
                   <TabsTrigger value="All" className="text-xs sm:text-sm">All</TabsTrigger>
               </TabsList>
-              <WithdrawalContent data={filteredWithdrawals} loading={loading} isDesktop={isDesktop} />
+              <WithdrawalContent data={filteredWithdrawals} loading={loading} />
           </Tabs>
         </CardContent>
       </Card>
@@ -185,8 +184,9 @@ export default function AdminWithdrawalsPage() {
   )
 }
 
-function WithdrawalContent({ data, loading, isDesktop }: { data: Withdrawal[], loading: boolean, isDesktop: boolean }) {
+function WithdrawalContent({ data, loading }: { data: Withdrawal[], loading: boolean }) {
     const { toast } = useToast()
+    const isDesktop = useMediaQuery("(min-width: 768px)");
 
     const handleUpdateStatus = async (withdrawal: Withdrawal, newStatus: WithdrawalStatus) => {
         try {

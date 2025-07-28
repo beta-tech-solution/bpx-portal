@@ -49,7 +49,6 @@ export default function AdminDepositsPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<DepositStatus | 'All'>('Pending');
   const [timeRange, setTimeRange] = useState("7");
-  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   useEffect(() => {
     const q = query(collection(db, 'deposits'));
@@ -141,7 +140,7 @@ export default function AdminDepositsPage() {
               <TabsTrigger value="Rejected" className="text-xs sm:text-sm">Rejected</TabsTrigger>
               <TabsTrigger value="All" className="text-xs sm:text-sm">All</TabsTrigger>
             </TabsList>
-            <DepositContent data={filteredDeposits} loading={loading} isDesktop={isDesktop} />
+            <DepositContent data={filteredDeposits} loading={loading} />
           </Tabs>
         </CardContent>
       </Card>
@@ -186,8 +185,9 @@ export default function AdminDepositsPage() {
   );
 }
 
-function DepositContent({ data, loading, isDesktop }: { data: Deposit[], loading: boolean, isDesktop: boolean }) {
+function DepositContent({ data, loading }: { data: Deposit[], loading: boolean }) {
   const { toast } = useToast();
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const handleUpdateStatus = async (deposit: Deposit, newStatus: DepositStatus) => {
     try {
