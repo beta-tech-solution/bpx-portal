@@ -115,7 +115,7 @@ export default function AdminWithdrawalsPage() {
 
     withdrawals.forEach(withdrawal => {
         try {
-            const withdrawalDate = format(new Date(withdrawal.date), 'yyyy-MM-dd');
+            const withdrawalDate = format(new Date(withdrawal.createdAt.toDate()), 'yyyy-MM-dd');
             const entry = chartData.find(d => d.date === withdrawalDate);
             if (entry) {
                 if (withdrawal.status === 'Pending') entry.pending++;
@@ -322,5 +322,3 @@ function WithdrawalContent({ data, loading, isDesktop }: { data: Withdrawal[], l
         </div>
     )
 }
-
-    

@@ -116,7 +116,7 @@ export default function AdminDepositsPage() {
 
     deposits.forEach(deposit => {
         try {
-            const depositDate = format(new Date(deposit.date), 'yyyy-MM-dd');
+            const depositDate = format(new Date(deposit.createdAt.toDate()), 'yyyy-MM-dd');
             const entry = chartData.find(d => d.date === depositDate);
             if (entry) {
                 if (deposit.status === 'Pending') entry.pending++;
@@ -203,7 +203,7 @@ function DepositContent({ data, loading, isDesktop }: { data: Deposit[], loading
       const batch = writeBatch(db);
       
       const depositRef = doc(db, 'deposits', deposit.id);
-      batch.update(depositRef, { status: newStatus, createdAt: new Date() });
+      batch.update(depositRef, { status: newStatus });
 
       if (newStatus === 'Approved') {
           if (!deposit.userId) {
@@ -343,5 +343,3 @@ function ProofDialog({ proofUrl }: { proofUrl: string }) {
     </Dialog>
   )
 }
-
-    
