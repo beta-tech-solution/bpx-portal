@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle, XCircle, ArrowDownLeft, Loader2, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import Image from 'next/image';
@@ -49,6 +49,11 @@ export default function AdminDepositsPage() {
   const [activeTab, setActiveTab] = useState<DepositStatus | 'All'>('Pending');
   const [timeRange, setTimeRange] = useState("7");
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const q = query(collection(db, 'deposits'));
@@ -57,7 +62,7 @@ export default function AdminDepositsPage() {
       const depositsData: Deposit[] = [];
       const userCache = new Map();
       
-      const userPromises = querySnapshot.docs.map(async (docSnapshot) => {
+      for (const docSnapshot of querySnapshot.docs) {
         const data = docSnapshot.data();
         let userFullName = 'Unknown User';
 
@@ -81,9 +86,7 @@ export default function AdminDepositsPage() {
           date: data.date ? format(new Date(data.date), 'PP') : 'No Date',
           ...data
         } as Deposit);
-      });
-
-      await Promise.all(userPromises);
+      }
       
       setDeposits(depositsData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
       setLoading(false);
@@ -126,6 +129,10 @@ export default function AdminDepositsPage() {
 
     return chartData.reverse();
   }, [deposits, timeRange]);
+
+  if (!mounted) {
+    return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+  }
 
   return (
     <div className="animate-fade-in grid gap-8 max-w-7xl mx-auto">
@@ -195,7 +202,7 @@ function DepositContent({ data, loading, isDesktop }: { data: Deposit[], loading
       const batch = writeBatch(db);
       
       const depositRef = doc(db, 'deposits', deposit.id);
-      batch.update(depositRef, { status: newStatus });
+      batch.update(depositRef, { status: newStatus, createdAt: new Date() });
 
       if (newStatus === 'Approved') {
           if (!deposit.userId) {
@@ -238,7 +245,7 @@ function DepositContent({ data, loading, isDesktop }: { data: Deposit[], loading
             <CardContent className="p-4 flex flex-col gap-3">
               <div className="flex justify-between items-start">
                   <div>
-                      <p className="font-semibold">{deposit.userFullName}</p>
+                      <p className="font-semibold break-all">{deposit.userFullName}</p>
                       <p className="text-sm text-muted-foreground">{deposit.date}</p>
                   </div>
                   <Badge variant={statusVariant[deposit.status]}>{deposit.status}</Badge>
@@ -325,7 +332,11 @@ function ProofDialog({ proofUrl }: { proofUrl: string }) {
           <DialogDescription>Review the payment proof uploaded by the user.</DialogDescription>
         </DialogHeader>
         <div className="relative mt-4 h-[60vh] w-full">
-            <Image src={proofUrl} alt="Payment Proof" fill style={{objectFit: 'contain'}} />
+            {proofUrl ? (
+                <Image src={proofUrl} alt="Payment Proof" fill style={{objectFit: 'contain'}} />
+            ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">No proof available</div>
+            )}
         </div>
       </DialogContent>
     </Dialog>
