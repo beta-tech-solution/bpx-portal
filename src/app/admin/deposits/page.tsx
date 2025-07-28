@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle, XCircle, ArrowDownLeft, Loader2, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import Image from 'next/image';
@@ -29,6 +29,7 @@ interface Deposit {
   date: string;
   status: DepositStatus;
   proofUrl: string;
+  createdAt: any;
 }
 
 const statusVariant = {
@@ -88,7 +89,7 @@ export default function AdminDepositsPage() {
         } as Deposit);
       }
       
-      setDeposits(depositsData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+      setDeposits(depositsData.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime()));
       setLoading(false);
     }, (error) => {
         console.error("Error fetching deposits:", error);
