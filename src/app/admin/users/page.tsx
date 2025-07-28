@@ -23,6 +23,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Textarea } from "@/components/ui/textarea"
+import { useMediaQuery } from "@/hooks/use-media-query"
 
 
 const userChartConfig = {
@@ -52,6 +53,7 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = React.useState(true);
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
   const [userChartData, setUserChartData] = React.useState<{ date: string; count: number }[]>([]);
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   React.useEffect(() => {
     setLoading(true);
@@ -122,30 +124,63 @@ export default function AdminUsersPage() {
       return format(lastSeen.toDate(), 'PPpp');
   }
 
-  if (loading) {
+  const renderContent = () => {
+    if (loading) {
       return (
-          <div className="flex justify-center items-center h-full">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-      )
-  }
-
-  return (
-    <>
-    <div className="animate-fade-in grid gap-8 max-w-7xl mx-auto">
-    <Card>
-      <CardHeader className="flex flex-col md:flex-row items-center justify-between gap-4">
-        <div>
-            <CardTitle className="font-headline">User Management</CardTitle>
-            <CardDescription>View, edit, or delete user accounts.</CardDescription>
+        <div className="flex justify-center items-center p-8">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-         <Button onClick={handleAdd}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Add User
-        </Button>
-      </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
+      );
+    }
+
+    if (users.length === 0) {
+      return <div className="text-center text-muted-foreground p-8">No users found.</div>;
+    }
+
+    if (isMobile) {
+      return (
+        <div className="space-y-4">
+          {users.map((user) => (
+            <Card key={user.id} onClick={() => handleViewDetails(user)}>
+              <CardContent className="p-4 flex flex-col gap-3">
+                 <div>
+                    <p className="font-semibold break-words">{user.fullName}</p>
+                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Balance:</span>
+                    <span className="font-mono">PKR {user.balance.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Role:</span>
+                    <Badge variant={user.role === 'Admin' ? 'default' : 'outline'}>{user.role}</Badge>
+                </div>
+                 <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Status:</span>
+                     <div className="flex items-center gap-2">
+                         <Badge variant={user.status === 'Active' ? 'secondary' : 'destructive'}>{user.status}</Badge>
+                         {isUserOnline(user.lastSeen) && (
+                            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" title="Online"></div>
+                         )}
+                      </div>
+                </div>
+                <div className="flex items-center justify-end gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
+                    <Button variant="ghost" size="icon" onClick={() => handleEdit(user)}>
+                        <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(user)}>
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      );
+    }
+
+    return (
+       <div className="overflow-x-auto">
             <Table>
             <TableHeader>
                 <TableRow>
@@ -194,6 +229,26 @@ export default function AdminUsersPage() {
             </TableBody>
             </Table>
         </div>
+    );
+  }
+
+
+  return (
+    <>
+    <div className="animate-fade-in grid gap-8 max-w-7xl mx-auto">
+    <Card>
+      <CardHeader className="flex flex-col md:flex-row items-center justify-between gap-4">
+        <div>
+            <CardTitle className="font-headline">User Management</CardTitle>
+            <CardDescription>View, edit, or delete user accounts.</CardDescription>
+        </div>
+         <Button onClick={handleAdd}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add User
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {renderContent()}
       </CardContent>
     </Card>
     
@@ -571,5 +626,3 @@ function UserDetailsDialog({ open, setOpen, user }: { open: boolean, setOpen: (o
         </Dialog>
     )
 }
-
-    

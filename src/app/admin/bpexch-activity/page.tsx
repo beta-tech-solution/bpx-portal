@@ -9,6 +9,7 @@ import { Loader2, Search } from "lucide-react";
 import { db } from '@/lib/firebase/config';
 import { collection, query, onSnapshot, getDoc, doc, orderBy } from 'firebase/firestore';
 import { format } from 'date-fns';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 interface LoginActivity {
   id: string;
@@ -23,6 +24,7 @@ export default function AdminBpexchActivityPage() {
   const [activity, setActivity] = useState<LoginActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
     setLoading(true);
@@ -80,12 +82,78 @@ export default function AdminBpexchActivityPage() {
     return activity.filter(item => 
       item.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.userEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.ip.includes(searchTerm)
+      (item.ip && item.ip.includes(searchTerm))
     );
   }, [activity, searchTerm]);
 
+  const renderContent = () => {
+    if (loading) {
+       return (
+          <div className="flex justify-center items-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+       )
+    }
+    
+    if (filteredActivity.length === 0) {
+        return (
+             <TableRow>
+                <TableCell colSpan={isMobile ? 1 : 3} className="text-center text-muted-foreground">No activity found.</TableCell>
+            </TableRow>
+        )
+    }
+
+    if (isMobile) {
+        return (
+             <div className="space-y-4">
+                {filteredActivity.map(item => (
+                    <Card key={item.id}>
+                        <CardContent className="p-4 flex flex-col gap-3">
+                             <div>
+                                <p className="font-semibold break-words">{item.userName}</p>
+                                <p className="text-sm text-muted-foreground">{item.userEmail}</p>
+                            </div>
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-muted-foreground">IP Address:</span>
+                                <span className="font-mono">{item.ip}</span>
+                            </div>
+                            <div className="text-xs text-muted-foreground text-right mt-2">{item.timestamp}</div>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        )
+    }
+
+    return (
+         <div className="overflow-x-auto">
+            <Table>
+                <TableHeader>
+                <TableRow>
+                    <TableHead>User</TableHead>
+                    <TableHead>IP Address</TableHead>
+                    <TableHead>Timestamp</TableHead>
+                </TableRow>
+                </TableHeader>
+                <TableBody>
+                {filteredActivity.map(item => (
+                    <TableRow key={item.id}>
+                    <TableCell>
+                        <div className="font-medium">{item.userName}</div>
+                        <div className="text-sm text-muted-foreground">{item.userEmail}</div>
+                    </TableCell>
+                    <TableCell className="font-mono">{item.ip}</TableCell>
+                    <TableCell>{item.timestamp}</TableCell>
+                    </TableRow>
+                ))}
+                </TableBody>
+            </Table>
+          </div>
+    )
+  }
+
   return (
-    <Card className="animate-fade-in">
+    <Card className="animate-fade-in max-w-7xl mx-auto">
       <CardHeader>
         <CardTitle className="font-headline">BPExch Login Activity</CardTitle>
         <CardDescription>Review all user login attempts to the BPExch platform.</CardDescription>
@@ -100,39 +168,7 @@ export default function AdminBpexchActivityPage() {
         </div>
       </CardHeader>
       <CardContent>
-        {loading ? (
-          <div className="flex justify-center items-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-                <TableHeader>
-                <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>IP Address</TableHead>
-                    <TableHead>Timestamp</TableHead>
-                </TableRow>
-                </TableHeader>
-                <TableBody>
-                {filteredActivity.length > 0 ? filteredActivity.map(item => (
-                    <TableRow key={item.id}>
-                    <TableCell>
-                        <div className="font-medium">{item.userName}</div>
-                        <div className="text-sm text-muted-foreground">{item.userEmail}</div>
-                    </TableCell>
-                    <TableCell className="font-mono">{item.ip}</TableCell>
-                    <TableCell>{item.timestamp}</TableCell>
-                    </TableRow>
-                )) : (
-                    <TableRow>
-                        <TableCell colSpan={3} className="text-center text-muted-foreground">No activity found.</TableCell>
-                    </TableRow>
-                )}
-                </TableBody>
-            </Table>
-          </div>
-        )}
+        {renderContent()}
       </CardContent>
     </Card>
   );

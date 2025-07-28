@@ -16,6 +16,8 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from "recharts"
 import { db } from "@/lib/firebase/config"
 import { collection, query, where, getDocs, Timestamp, doc } from "firebase/firestore"
+import { useMediaQuery } from "@/hooks/use-media-query"
+import { cn } from "@/lib/utils"
 
 interface Transaction {
   id: string
@@ -40,6 +42,7 @@ export default function ProfitStatsPage() {
     profit: 0,
   })
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const isMobile = useMediaQuery("(max-width: 768px)");
   
   const fetchStats = async () => {
     if (!date?.from || !date?.to) return
@@ -149,6 +152,60 @@ export default function ProfitStatsPage() {
     })
     return Object.entries(dataByDate).map(([date, values]) => ({ date, ...values })).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [transactions]);
+  
+  const renderTransactionHistory = () => {
+     if (transactions.length === 0 && !loading) {
+       return <div className="text-center text-muted-foreground p-8">No transactions found for this period.</div>
+     }
+
+     if (isMobile) {
+        return (
+            <div className="space-y-4">
+                {transactions.map(tx => (
+                    <Card key={tx.id}>
+                        <CardContent className="p-4 flex flex-col gap-3">
+                            <div>
+                                <p className="font-semibold break-words">{tx.userName}</p>
+                                <p className="text-sm text-muted-foreground">{tx.date}</p>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <Badge variant={tx.type === 'Deposit' ? 'secondary' : 'destructive'}>{tx.type}</Badge>
+                                <p className="font-mono text-lg font-bold">PKR {tx.amount.toFixed(2)}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        )
+     }
+
+     return (
+        <div className="overflow-x-auto">
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>User</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead className="text-right">Amount (PKR)</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {transactions.map(tx => (
+                        <TableRow key={tx.id}>
+                            <TableCell>{tx.date}</TableCell>
+                            <TableCell>{tx.userName}</TableCell>
+                            <TableCell>
+                                <Badge variant={tx.type === 'Deposit' ? 'secondary' : 'destructive'}>{tx.type}</Badge>
+                            </TableCell>
+                            <TableCell className="text-right font-mono">{tx.amount.toFixed(2)}</TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        </div>
+     )
+  }
 
   return (
     <div className="animate-fade-in grid gap-8 max-w-7xl mx-auto">
@@ -166,7 +223,7 @@ export default function ProfitStatsPage() {
                 <Button
                   id="date"
                   variant={"outline"}
-                  className="w-[300px] justify-start text-left font-normal"
+                  className={cn("w-full md:w-[300px] justify-start text-left font-normal")}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {date?.from ? (
@@ -190,7 +247,7 @@ export default function ProfitStatsPage() {
                   defaultMonth={date?.from}
                   selected={date}
                   onSelect={setDate}
-                  numberOfMonths={2}
+                  numberOfMonths={isMobile ? 1 : 2}
                 />
               </PopoverContent>
             </Popover>
@@ -255,35 +312,7 @@ export default function ProfitStatsPage() {
 
             <div>
                 <h3 className="text-lg font-headline mb-4">Transaction History</h3>
-                <div className="overflow-x-auto">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Date</TableHead>
-                                <TableHead>User</TableHead>
-                                <TableHead>Type</TableHead>
-                                <TableHead className="text-right">Amount (PKR)</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {transactions.map(tx => (
-                                <TableRow key={tx.id}>
-                                    <TableCell>{tx.date}</TableCell>
-                                    <TableCell>{tx.userName}</TableCell>
-                                    <TableCell>
-                                        <Badge variant={tx.type === 'Deposit' ? 'secondary' : 'destructive'}>{tx.type}</Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right font-mono">{tx.amount.toFixed(2)}</TableCell>
-                                </TableRow>
-                            ))}
-                              {transactions.length === 0 && (
-                                <TableRow>
-                                    <TableCell colSpan={4} className="text-center text-muted-foreground">No transactions found for the selected period.</TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
+                {renderTransactionHistory()}
             </div>
           </>
           )}
