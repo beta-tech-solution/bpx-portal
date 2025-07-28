@@ -325,7 +325,7 @@ function ProofDialog({ proofUrl }: { proofUrl: string }) {
         </DialogHeader>
         <div className="relative mt-4 h-[60vh] w-full">
             {proofUrl ? (
-                <Image src={proofUrl} alt="Payment Proof" fill style={{objectFit: 'contain'}} />
+                <Image src={proofUrl} alt="Payment Proof" layout="fill" objectFit="contain" />
             ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground">No proof available</div>
             )}
