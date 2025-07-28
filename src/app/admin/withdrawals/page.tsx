@@ -127,7 +127,7 @@ export default function AdminWithdrawalsPage() {
 
   return (
     <div className="max-w-7xl mx-auto grid gap-8 animate-fade-in">
-      <Card className={isMobile ? "max-w-[300px] mx-auto" : ""}>
+      <Card className={isMobile ? "max-w-[400px] mx-auto" : ""}>
         <CardHeader>
           <CardTitle className="font-headline">Withdrawal Management</CardTitle>
           <CardDescription>Review and manage user withdrawal requests.</CardDescription>
@@ -145,7 +145,7 @@ export default function AdminWithdrawalsPage() {
         </CardContent>
       </Card>
 
-      <Card className={isMobile ? "max-w-[300px] mx-auto" : ""}>
+      <Card className={isMobile ? "max-w-[400px] mx-auto" : ""}>
           <CardHeader>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div>

@@ -128,7 +128,7 @@ export default function AdminDepositsPage() {
 
   return (
     <div className="max-w-7xl mx-auto grid gap-8 animate-fade-in">
-      <Card className={isMobile ? "max-w-[300px] mx-auto" : ""}>
+      <Card className={isMobile ? "max-w-[400px] mx-auto" : ""}>
         <CardHeader>
           <CardTitle className="font-headline">Deposit Management</CardTitle>
           <CardDescription>Review and manage user deposit requests.</CardDescription>
@@ -146,7 +146,7 @@ export default function AdminDepositsPage() {
         </CardContent>
       </Card>
       
-      <Card className={isMobile ? "max-w-[300px] mx-auto" : ""}>
+      <Card className={isMobile ? "max-w-[400px] mx-auto" : ""}>
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
