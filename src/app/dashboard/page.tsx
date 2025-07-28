@@ -7,11 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { ArrowDownLeft, ArrowUpRight, Wallet, TrendingUp, TrendingDown, Loader2, Activity } from "lucide-react"
+import { ArrowDownLeft, ArrowUpRight, Wallet, TrendingUp, TrendingDown, Loader2, Activity, CalendarCheck } from "lucide-react"
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
 import { ChartContainer, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
 import { auth, db } from "@/lib/firebase/config"
-import { collection, query, where, getDocs, onSnapshot, doc, orderBy, limit } from "firebase/firestore"
+import { collection, query, where, getDocs, onSnapshot, doc, orderBy, limit, Timestamp } from "firebase/firestore"
 import { onAuthStateChanged, User } from "firebase/auth"
 import { format } from 'date-fns';
 
@@ -48,6 +48,7 @@ export default function DashboardPage() {
         balance: "0.00",
         totalDeposits: "0.00",
         totalWithdrawals: "0.00",
+        memberSince: ""
     });
     const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
     const [recentLogins, setRecentLogins] = useState<LoginActivity[]>([]);
@@ -73,12 +74,16 @@ export default function DashboardPage() {
 
         const unsubscribes: (() => void)[] = [];
 
-        // Fetch user balance
+        // Fetch user balance and join date
         const userDocRef = doc(db, "users", user.uid);
         const unsubscribeUser = onSnapshot(userDocRef, (doc) => {
             if (doc.exists()) {
                 const userData = doc.data();
-                setAccountSummary(prev => ({ ...prev, balance: (userData.balance ?? 0).toFixed(2) }));
+                setAccountSummary(prev => ({ 
+                    ...prev, 
+                    balance: (userData.balance ?? 0).toFixed(2),
+                    memberSince: userData.createdAt ? format((userData.createdAt as Timestamp).toDate(), 'PPP') : 'N/A'
+                }));
             }
         });
         unsubscribes.push(unsubscribeUser);
@@ -199,12 +204,12 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium font-headline">Wallet Balance</CardTitle>
-            <Wallet className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium font-headline">Member Since</CardTitle>
+            <CalendarCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl lg:text-3xl font-bold">PKR {accountSummary.balance}</div>
-            <p className="text-xs text-muted-foreground">Your current available balance</p>
+            <div className="text-2xl lg:text-3xl font-bold">{accountSummary.memberSince}</div>
+            <p className="text-xs text-muted-foreground">Your journey with us</p>
           </CardContent>
         </Card>
         <Card>
