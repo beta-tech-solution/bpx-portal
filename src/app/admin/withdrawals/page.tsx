@@ -49,6 +49,7 @@ export default function AdminWithdrawalsPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<WithdrawalStatus | 'All'>('Pending');
   const [timeRange, setTimeRange] = useState("7");
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
     const q = query(collection(db, 'withdrawals'));
@@ -126,7 +127,7 @@ export default function AdminWithdrawalsPage() {
 
   return (
     <div className="max-w-7xl mx-auto grid gap-8 animate-fade-in">
-      <Card>
+      <Card className={isMobile ? "max-w-[300px] mx-auto" : ""}>
         <CardHeader>
           <CardTitle className="font-headline">Withdrawal Management</CardTitle>
           <CardDescription>Review and manage user withdrawal requests.</CardDescription>
@@ -144,7 +145,7 @@ export default function AdminWithdrawalsPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className={isMobile ? "max-w-[300px] mx-auto" : ""}>
           <CardHeader>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div>
@@ -235,12 +236,9 @@ function WithdrawalContent({ data, loading }: { data: Withdrawal[], loading: boo
             {data.map((item) => (
               <Card key={item.id}>
                 <CardContent className="p-4 flex flex-col gap-3">
-                  <div className="flex justify-between items-start">
-                      <div>
-                          <p className="font-semibold break-words">{item.userFullName}</p>
-                          <p className="text-sm text-muted-foreground">{item.date}</p>
-                      </div>
-                      <Badge variant={statusVariant[item.status]}>{item.status}</Badge>
+                  <div>
+                      <p className="font-semibold break-words">{item.userFullName}</p>
+                      <p className="text-sm text-muted-foreground">{item.date}</p>
                   </div>
                   <p className="font-mono text-xl font-bold">PKR {item.amount}</p>
                    <div className="text-xs text-muted-foreground border-l-2 border-primary pl-2">
@@ -248,18 +246,21 @@ function WithdrawalContent({ data, loading }: { data: Withdrawal[], loading: boo
                         <p>{item.accountNumber}</p>
                         <p>{item.accountHolder}</p>
                     </div>
-                  {item.status === 'Pending' && (
-                  <div className="flex items-center justify-end gap-2 mt-2">
-                    <Button variant="outline" size="icon" onClick={() => handleUpdateStatus(item, 'Approved')}>
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                        <span className="sr-only">Approve</span>
-                    </Button>
-                    <Button variant="outline" size="icon" onClick={() => handleUpdateStatus(item, 'Rejected')}>
-                        <XCircle className="h-4 w-4 text-red-600" />
-                        <span className="sr-only">Reject</span>
-                    </Button>
+                  <div className="flex items-center justify-between gap-2 mt-2">
+                    <Badge variant={statusVariant[item.status]}>{item.status}</Badge>
+                    {item.status === 'Pending' && (
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="icon" onClick={() => handleUpdateStatus(item, 'Approved')}>
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            <span className="sr-only">Approve</span>
+                        </Button>
+                        <Button variant="outline" size="icon" onClick={() => handleUpdateStatus(item, 'Rejected')}>
+                            <XCircle className="h-4 w-4 text-red-600" />
+                            <span className="sr-only">Reject</span>
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                )}
                 </CardContent>
               </Card>
             ))}

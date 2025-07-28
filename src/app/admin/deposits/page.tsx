@@ -49,6 +49,7 @@ export default function AdminDepositsPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<DepositStatus | 'All'>('Pending');
   const [timeRange, setTimeRange] = useState("7");
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
     const q = query(collection(db, 'deposits'));
@@ -127,7 +128,7 @@ export default function AdminDepositsPage() {
 
   return (
     <div className="max-w-7xl mx-auto grid gap-8 animate-fade-in">
-      <Card>
+      <Card className={isMobile ? "max-w-[300px] mx-auto" : ""}>
         <CardHeader>
           <CardTitle className="font-headline">Deposit Management</CardTitle>
           <CardDescription>Review and manage user deposit requests.</CardDescription>
@@ -145,7 +146,7 @@ export default function AdminDepositsPage() {
         </CardContent>
       </Card>
       
-      <Card>
+      <Card className={isMobile ? "max-w-[300px] mx-auto" : ""}>
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
@@ -235,28 +236,28 @@ function DepositContent({ data, loading }: { data: Deposit[], loading: boolean }
         {data.map((deposit) => (
           <Card key={deposit.id}>
             <CardContent className="p-4 flex flex-col gap-3">
-              <div className="flex justify-between items-start">
-                  <div>
-                      <p className="font-semibold break-words">{deposit.userFullName}</p>
-                      <p className="text-sm text-muted-foreground">{deposit.date}</p>
-                  </div>
-                  <Badge variant={statusVariant[deposit.status]}>{deposit.status}</Badge>
+              <div>
+                  <p className="font-semibold break-words">{deposit.userFullName}</p>
+                  <p className="text-sm text-muted-foreground">{deposit.date}</p>
               </div>
               <p className="font-mono text-xl font-bold">PKR {deposit.amount}</p>
-              <div className="flex items-center justify-end gap-2 mt-2">
-                 <ProofDialog proofUrl={deposit.proofUrl} />
-                {deposit.status === 'Pending' && (
-                  <>
-                    <Button variant="outline" size="icon" onClick={() => handleUpdateStatus(deposit, 'Approved')}>
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                        <span className="sr-only">Approve</span>
-                    </Button>
-                    <Button variant="outline" size="icon" onClick={() => handleUpdateStatus(deposit, 'Rejected')}>
-                        <XCircle className="h-4 w-4 text-red-600" />
-                        <span className="sr-only">Reject</span>
-                    </Button>
-                  </>
-                )}
+              <div className="flex items-center justify-between gap-2 mt-2">
+                 <Badge variant={statusVariant[deposit.status]}>{deposit.status}</Badge>
+                 <div className="flex items-center gap-2">
+                    <ProofDialog proofUrl={deposit.proofUrl} />
+                    {deposit.status === 'Pending' && (
+                      <>
+                        <Button variant="outline" size="icon" onClick={() => handleUpdateStatus(deposit, 'Approved')}>
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            <span className="sr-only">Approve</span>
+                        </Button>
+                        <Button variant="outline" size="icon" onClick={() => handleUpdateStatus(deposit, 'Rejected')}>
+                            <XCircle className="h-4 w-4 text-red-600" />
+                            <span className="sr-only">Reject</span>
+                        </Button>
+                      </>
+                    )}
+                 </div>
               </div>
             </CardContent>
           </Card>
