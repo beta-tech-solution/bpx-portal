@@ -322,3 +322,5 @@ function WithdrawalContent({ data, loading, isDesktop }: { data: Withdrawal[], l
         </div>
     )
 }
+
+    
