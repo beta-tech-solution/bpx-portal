@@ -57,19 +57,16 @@ export default function AdminDepositsPage() {
       const depositsData: Deposit[] = [];
       const userPromises = querySnapshot.docs.map(docSnapshot => {
         const data = docSnapshot.data();
-        // Fallback for deposits without a userId
         if (!data.userId) {
           depositsData.push({ id: docSnapshot.id, userFullName: 'Unknown User', ...data } as Deposit);
           return null;
         }
-        // Fetch user data for each deposit
         return getDoc(doc(db, 'users', data.userId)).then(userDoc => {
           const userFullName = userDoc.exists() ? userDoc.data().fullName : 'Unknown User';
           depositsData.push({ id: docSnapshot.id, userFullName, ...data } as Deposit);
         });
       });
       
-      // Wait for all user data fetches to complete
       await Promise.all(userPromises.filter(p => p !== null));
       
       setDeposits(depositsData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
@@ -302,17 +299,15 @@ function ProofDialog({ proofUrl }: { proofUrl: string }) {
           <span className="sr-only sm:not-sr-only sm:ml-2">View Proof</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-md w-[90vw]">
         <DialogHeader>
           <DialogTitle>Payment Proof</DialogTitle>
           <DialogDescription>Review the payment proof uploaded by the user.</DialogDescription>
         </DialogHeader>
-        <div className="relative mt-4 min-h-[50vh] w-full">
+        <div className="relative mt-4 h-[60vh] w-full">
             <Image src={proofUrl} alt="Payment Proof" fill style={{objectFit: 'contain'}} />
         </div>
       </DialogContent>
     </Dialog>
   )
 }
-
-    
