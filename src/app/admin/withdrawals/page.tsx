@@ -20,8 +20,9 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { db } from '@/lib/firebase/config';
-import { collection, query, onSnapshot, doc, getDoc, updateDoc, increment } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, getDoc, updateDoc, increment, writeBatch } from 'firebase/firestore';
 import { format, subDays } from 'date-fns';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 type WithdrawalStatus = 'Pending' | 'Approved' | 'Rejected';
 
@@ -35,6 +36,7 @@ interface Withdrawal {
   bankName: string;
   accountNumber: string;
   accountHolder: string;
+  createdAt: any;
 }
 
 const statusVariant = {
@@ -54,29 +56,50 @@ export default function AdminWithdrawalsPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<WithdrawalStatus | 'All'>('Pending');
   const [timeRange, setTimeRange] = useState("7");
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const q = query(collection(db, 'withdrawals'));
     const unsubscribe = onSnapshot(q, async (querySnapshot) => {
       setLoading(true);
       const withdrawalsData: Withdrawal[] = [];
+      const userCache = new Map();
+      
       for (const docSnapshot of querySnapshot.docs) {
         const data = docSnapshot.data();
         let userFullName = 'Unknown User';
         if (data.userId) {
-          const userDoc = await getDoc(doc(db, 'users', data.userId));
-          if (userDoc.exists()) {
-            userFullName = userDoc.data().fullName;
-          }
+            if(userCache.has(data.userId)) {
+                userFullName = userCache.get(data.userId);
+            } else {
+                try {
+                    const userDoc = await getDoc(doc(db, 'users', data.userId));
+                    if (userDoc.exists()) {
+                        userFullName = userDoc.data().fullName;
+                        userCache.set(data.userId, userFullName);
+                    }
+                } catch(e) {
+                    console.error("Error fetching user for withdrawal:", e);
+                }
+            }
         }
         withdrawalsData.push({
           id: docSnapshot.id,
           userFullName,
+          date: data.createdAt ? format(data.createdAt.toDate(), 'PP') : 'No Date',
           ...data
         } as Withdrawal);
       }
-      setWithdrawals(withdrawalsData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+      setWithdrawals(withdrawalsData.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime()));
       setLoading(false);
+    }, (error) => {
+        console.error("Error fetching withdrawals:", error);
+        setLoading(false);
     });
     return () => unsubscribe();
   }, []);
@@ -98,18 +121,25 @@ export default function AdminWithdrawalsPage() {
     }
 
     withdrawals.forEach(withdrawal => {
-        const withdrawalDate = format(new Date(withdrawal.date), 'yyyy-MM-dd');
-        const entry = chartData.find(d => d.date === withdrawalDate);
-        if (entry) {
-            if (withdrawal.status === 'Pending') entry.pending++;
-            else if (withdrawal.status === 'Approved') entry.approved++;
-            else if (withdrawal.status === 'Rejected') entry.rejected++;
+        try {
+            const withdrawalDate = format(new Date(withdrawal.date), 'yyyy-MM-dd');
+            const entry = chartData.find(d => d.date === withdrawalDate);
+            if (entry) {
+                if (withdrawal.status === 'Pending') entry.pending++;
+                else if (withdrawal.status === 'Approved') entry.approved++;
+                else if (withdrawal.status === 'Rejected') entry.rejected++;
+            }
+        } catch(e) {
+             // Ignore invalid date format errors for chart processing
         }
     });
 
     return chartData.reverse();
   }, [withdrawals, timeRange]);
 
+  if (!mounted) {
+    return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+  }
 
   return (
     <div className="animate-fade-in grid gap-8 max-w-7xl mx-auto">
@@ -120,24 +150,13 @@ export default function AdminWithdrawalsPage() {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as WithdrawalStatus | 'All')}>
-              <TabsList className="grid w-full grid-cols-4 mb-4">
-                  <TabsTrigger value="Pending">Pending</TabsTrigger>
-                  <TabsTrigger value="Approved">Approved</TabsTrigger>
-                  <TabsTrigger value="Rejected">Rejected</TabsTrigger>
-                  <TabsTrigger value="All">All</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-4 h-auto sm:h-10">
+                  <TabsTrigger value="Pending" className="text-xs sm:text-sm">Pending</TabsTrigger>
+                  <TabsTrigger value="Approved" className="text-xs sm:text-sm">Approved</TabsTrigger>
+                  <TabsTrigger value="Rejected" className="text-xs sm:text-sm">Rejected</TabsTrigger>
+                  <TabsTrigger value="All" className="text-xs sm:text-sm">All</TabsTrigger>
               </TabsList>
-              <TabsContent value="Pending">
-                  <WithdrawalTable data={filteredWithdrawals} loading={loading} />
-              </TabsContent>
-              <TabsContent value="Approved">
-                  <WithdrawalTable data={filteredWithdrawals} loading={loading} />
-              </TabsContent>
-              <TabsContent value="Rejected">
-                  <WithdrawalTable data={filteredWithdrawals} loading={loading} />
-              </TabsContent>
-              <TabsContent value="All">
-                  <WithdrawalTable data={filteredWithdrawals} loading={loading} />
-              </TabsContent>
+              <WithdrawalContent data={filteredWithdrawals} loading={loading} isDesktop={isDesktop} />
           </Tabs>
         </CardContent>
       </Card>
@@ -182,27 +201,35 @@ export default function AdminWithdrawalsPage() {
   )
 }
 
-function WithdrawalTable({ data, loading }: { data: Withdrawal[], loading: boolean }) {
+function WithdrawalContent({ data, loading, isDesktop }: { data: Withdrawal[], loading: boolean, isDesktop: boolean }) {
     const { toast } = useToast()
 
     const handleUpdateStatus = async (withdrawal: Withdrawal, newStatus: WithdrawalStatus) => {
         try {
+            const batch = writeBatch(db);
             const withdrawalRef = doc(db, 'withdrawals', withdrawal.id);
-            await updateDoc(withdrawalRef, { status: newStatus });
+            batch.update(withdrawalRef, { status: newStatus });
             
             // If rejected, refund the amount to the user's balance.
             // The amount was already deducted upon request. If approved, no balance change needed.
             if (newStatus === 'Rejected') {
+                if (!withdrawal.userId) {
+                    throw new Error(`Cannot reject withdrawal ${withdrawal.id}: No user ID associated.`);
+                }
                 const userRef = doc(db, 'users', withdrawal.userId);
-                await updateDoc(userRef, {
-                    balance: increment(parseFloat(withdrawal.amount))
-                });
+                const userDoc = await getDoc(userRef);
+                if (!userDoc.exists()) {
+                    throw new Error(`User document with ID ${withdrawal.userId} not found.`);
+                }
+                batch.update(userRef, { balance: increment(parseFloat(withdrawal.amount)) });
             }
+
+            await batch.commit();
 
             toast({ title: `Withdrawal ${newStatus}`, description: `Withdrawal from ${withdrawal.userFullName} for PKR ${withdrawal.amount} has been ${newStatus.toLowerCase()}.` });
         } catch (error) {
             console.error("Error updating withdrawal status: ", error);
-            toast({ title: "Error", description: "Could not update withdrawal status.", variant: "destructive" });
+            toast({ title: "Error", description: "Could not update withdrawal status. The user may not exist in the database.", variant: "destructive" });
         }
     };
     
@@ -217,6 +244,45 @@ function WithdrawalTable({ data, loading }: { data: Withdrawal[], loading: boole
     if (data.length === 0) {
         return <div className="text-center text-muted-foreground p-8">No withdrawals found.</div>
     }
+
+    if (!isDesktop) {
+        return (
+          <div className="space-y-4">
+            {data.map((item) => (
+              <Card key={item.id}>
+                <CardContent className="p-4 flex flex-col gap-3">
+                  <div className="flex justify-between items-start">
+                      <div>
+                          <p className="font-semibold break-words">{item.userFullName}</p>
+                          <p className="text-sm text-muted-foreground">{item.date}</p>
+                      </div>
+                      <Badge variant={statusVariant[item.status]}>{item.status}</Badge>
+                  </div>
+                  <p className="font-mono text-xl font-bold">PKR {item.amount}</p>
+                   <div className="text-xs text-muted-foreground border-l-2 border-primary pl-2">
+                        <p>{item.bankName}</p>
+                        <p>{item.accountNumber}</p>
+                        <p>{item.accountHolder}</p>
+                    </div>
+                  {item.status === 'Pending' && (
+                  <div className="flex items-center justify-end gap-2 mt-2">
+                    <Button variant="outline" size="icon" onClick={() => handleUpdateStatus(item, 'Approved')}>
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <span className="sr-only">Approve</span>
+                    </Button>
+                    <Button variant="outline" size="icon" onClick={() => handleUpdateStatus(item, 'Rejected')}>
+                        <XCircle className="h-4 w-4 text-red-600" />
+                        <span className="sr-only">Reject</span>
+                    </Button>
+                  </div>
+                )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )
+    }
+    
     return (
         <div className="overflow-x-auto">
          <Table>
@@ -224,6 +290,7 @@ function WithdrawalTable({ data, loading }: { data: Withdrawal[], loading: boole
             <TableRow>
               <TableHead>User</TableHead>
               <TableHead>Details</TableHead>
+              <TableHead>Amount</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -236,32 +303,24 @@ function WithdrawalTable({ data, loading }: { data: Withdrawal[], loading: boole
                     <div className="text-sm text-muted-foreground">{item.date}</div>
                 </TableCell>
                 <TableCell>
-                    <div className="font-mono font-bold">PKR {item.amount}</div>
-                    <div className="text-xs text-muted-foreground">{item.bankName} - {item.accountNumber} ({item.accountHolder})</div>
+                    <div className="font-semibold">{item.bankName}</div>
+                    <div className="text-xs text-muted-foreground">{item.accountNumber} ({item.accountHolder})</div>
                 </TableCell>
+                <TableCell className="font-mono">PKR {item.amount}</TableCell>
                 <TableCell>
                   <Badge variant={statusVariant[item.status]}>{item.status}</Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                    <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Open menu</span>
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
                     {item.status === 'Pending' && (
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem className="text-green-600" onClick={() => handleUpdateStatus(item, 'Approved')}>
+                        <div className="flex items-center justify-end gap-2">
+                            <Button variant="secondary" size="sm" onClick={() => handleUpdateStatus(item, 'Approved')}>
                                 <CheckCircle className="mr-2 h-4 w-4"/>Approve
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive" onClick={() => handleUpdateStatus(item, 'Rejected')}>
+                            </Button>
+                            <Button variant="destructive" size="sm" onClick={() => handleUpdateStatus(item, 'Rejected')}>
                                 <XCircle className="mr-2 h-4 w-4"/>Reject
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
+                            </Button>
+                        </div>
                     )}
-                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))}
