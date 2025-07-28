@@ -95,15 +95,18 @@ export default function AdminBpexchActivityPage() {
        )
     }
     
-    if (filteredActivity.length === 0) {
+    if (filteredActivity.length === 0 && !isMobile) {
         return (
              <TableRow>
-                <TableCell colSpan={isMobile ? 1 : 3} className="text-center text-muted-foreground">No activity found.</TableCell>
+                <TableCell colSpan={3} className="text-center text-muted-foreground">No activity found.</TableCell>
             </TableRow>
         )
     }
 
     if (isMobile) {
+        if (filteredActivity.length === 0) {
+            return <div className="text-center text-muted-foreground p-8">No activity found.</div>;
+        }
         return (
              <div className="space-y-4">
                 {filteredActivity.map(item => (
@@ -117,7 +120,10 @@ export default function AdminBpexchActivityPage() {
                                 <span className="text-muted-foreground">IP Address:</span>
                                 <span className="font-mono">{item.ip}</span>
                             </div>
-                            <div className="text-xs text-muted-foreground text-right mt-2">{item.timestamp}</div>
+                             <div className="flex justify-between items-center text-sm">
+                                <span className="text-muted-foreground">Timestamp:</span>
+                                <span className="text-xs text-right">{item.timestamp}</span>
+                            </div>
                         </CardContent>
                     </Card>
                 ))}
@@ -146,6 +152,11 @@ export default function AdminBpexchActivityPage() {
                     <TableCell>{item.timestamp}</TableCell>
                     </TableRow>
                 ))}
+                {filteredActivity.length === 0 && (
+                     <TableRow>
+                        <TableCell colSpan={3} className="text-center text-muted-foreground">No activity found.</TableCell>
+                    </TableRow>
+                )}
                 </TableBody>
             </Table>
           </div>
@@ -153,7 +164,7 @@ export default function AdminBpexchActivityPage() {
   }
 
   return (
-    <Card className="animate-fade-in max-w-7xl mx-auto">
+    <Card className={`animate-fade-in max-w-7xl mx-auto ${isMobile ? "max-w-[400px]" : ""}`}>
       <CardHeader>
         <CardTitle className="font-headline">BPExch Login Activity</CardTitle>
         <CardDescription>Review all user login attempts to the BPExch platform.</CardDescription>

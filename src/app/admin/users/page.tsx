@@ -158,10 +158,10 @@ export default function AdminUsersPage() {
                  <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">Status:</span>
                      <div className="flex items-center gap-2">
-                         <Badge variant={user.status === 'Active' ? 'secondary' : 'destructive'}>{user.status}</Badge>
                          {isUserOnline(user.lastSeen) && (
                             <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" title="Online"></div>
                          )}
+                         <Badge variant={user.status === 'Active' ? 'secondary' : 'destructive'}>{user.status}</Badge>
                       </div>
                 </div>
                 <div className="flex items-center justify-end gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
@@ -236,45 +236,45 @@ export default function AdminUsersPage() {
   return (
     <>
     <div className="animate-fade-in grid gap-8 max-w-7xl mx-auto">
-    <Card>
-      <CardHeader className="flex flex-col md:flex-row items-center justify-between gap-4">
-        <div>
-            <CardTitle className="font-headline">User Management</CardTitle>
-            <CardDescription>View, edit, or delete user accounts.</CardDescription>
-        </div>
-         <Button onClick={handleAdd}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Add User
-        </Button>
-      </CardHeader>
-      <CardContent>
-        {renderContent()}
-      </CardContent>
-    </Card>
-    
-    <Card>
-        <CardHeader>
-            <div className="flex items-center justify-between">
-                <div>
-                    <CardTitle className="font-headline flex items-center gap-2"><Users className="h-5 w-5 text-primary" />New User Registrations</CardTitle>
-                    <CardDescription>New user sign-ups over the last 30 days.</CardDescription>
-                </div>
-            </div>
+      <Card className={isMobile ? "max-w-[400px] mx-auto" : ""}>
+        <CardHeader className="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div>
+              <CardTitle className="font-headline">User Management</CardTitle>
+              <CardDescription>View, edit, or delete user accounts.</CardDescription>
+          </div>
+          <Button onClick={handleAdd}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Add User
+          </Button>
         </CardHeader>
         <CardContent>
-          <div className="w-full overflow-x-auto">
-            <ChartContainer config={userChartConfig} className="h-[250px] min-w-[600px] w-full">
-                <BarChart data={userChartData}>
-                    <CartesianGrid vertical={false} />
-                    <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} />
-                    <YAxis allowDecimals={false} />
-                    <Tooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="count" fill="var(--color-count)" radius={[4, 4, 0, 0]} />
-                </BarChart>
-            </ChartContainer>
-          </div>
+          {renderContent()}
         </CardContent>
-    </Card>
+      </Card>
+    
+      <Card className={isMobile ? "max-w-[300px] mx-auto" : ""}>
+          <CardHeader>
+              <div className="flex items-center justify-between">
+                  <div>
+                      <CardTitle className="font-headline flex items-center gap-2"><Users className="h-5 w-5 text-primary" />New User Registrations</CardTitle>
+                      <CardDescription>New user sign-ups over the last 30 days.</CardDescription>
+                  </div>
+              </div>
+          </CardHeader>
+          <CardContent>
+            <div className="w-full overflow-x-auto">
+              <ChartContainer config={userChartConfig} className="h-[250px] min-w-[600px] w-full">
+                  <BarChart data={userChartData}>
+                      <CartesianGrid vertical={false} />
+                      <XAxis dataKey="date" tickLine={false} tickMargin={10} axisLine={false} />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip content={<ChartTooltipContent />} />
+                      <Bar dataKey="count" fill="var(--color-count)" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+              </ChartContainer>
+            </div>
+          </CardContent>
+      </Card>
     </div>
     <UserFormDialog open={isFormOpen} setOpen={setIsFormOpen} user={selectedUser} />
     <UserDetailsDialog open={isDetailsOpen} setOpen={setIsDetailsOpen} user={selectedUser} />

@@ -209,7 +209,7 @@ export default function ProfitStatsPage() {
 
   return (
     <div className="animate-fade-in grid gap-8 max-w-7xl mx-auto">
-      <Card>
+      <Card className={isMobile ? "max-w-[400px] mx-auto" : ""}>
         <CardHeader>
           <CardTitle className="font-headline">Profit Statistics</CardTitle>
           <CardDescription>
@@ -289,7 +289,7 @@ export default function ProfitStatsPage() {
               </Card>
             </div>
 
-            <Card className="mb-8">
+            <Card className={isMobile ? "max-w-[300px] mx-auto" : ""}>
                 <CardHeader>
                     <CardTitle>Daily Trends</CardTitle>
                 </CardHeader>
@@ -310,7 +310,7 @@ export default function ProfitStatsPage() {
                 </CardContent>
             </Card>
 
-            <div>
+            <div className="mt-8">
                 <h3 className="text-lg font-headline mb-4">Transaction History</h3>
                 {renderTransactionHistory()}
             </div>
