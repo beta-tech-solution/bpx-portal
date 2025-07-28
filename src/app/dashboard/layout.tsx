@@ -181,12 +181,6 @@ export default function DashboardLayout({
             </div>
         </SidebarHeader>
         <SidebarContent>
-            <SidebarGroup>
-                <SidebarGroupLabel>Wallet Balance</SidebarGroupLabel>
-                <div className="p-2 font-bold text-2xl font-mono text-sidebar-foreground">
-                    PKR {userData?.balance?.toFixed(2) ?? '0.00'}
-                </div>
-            </SidebarGroup>
           <SidebarMenu>
             {mainNavItems.map((item) => (
                  <SidebarMenuItem key={item.href}>

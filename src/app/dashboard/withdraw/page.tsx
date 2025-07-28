@@ -15,6 +15,7 @@ import { auth, db } from '@/lib/firebase/config';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { collection, addDoc, serverTimestamp, query, where, onSnapshot, doc, updateDoc, increment } from 'firebase/firestore';
 import { format } from 'date-fns';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 interface WithdrawalChartData {
   month: string;
@@ -34,6 +35,7 @@ export default function WithdrawPage() {
   const [balance, setBalance] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [chartData, setChartData] = useState<WithdrawalChartData[]>([]);
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
     if (!user) return;
@@ -124,7 +126,7 @@ export default function WithdrawPage() {
 
   return (
     <div className="animate-fade-in grid gap-8">
-      <Card className="w-full max-w-2xl mx-auto">
+      <Card className={`w-full max-w-2xl mx-auto ${isMobile ? "max-w-[420px]" : ""}`}>
         <form onSubmit={handleWithdraw}>
         <CardHeader>
           <CardTitle className="font-headline">Request Withdrawal</CardTitle>
@@ -188,7 +190,7 @@ export default function WithdrawPage() {
         </form>
       </Card>
 
-       <Card className="w-full max-w-2xl mx-auto">
+       <Card className={`w-full max-w-2xl mx-auto ${isMobile ? "max-w-[320px]" : ""}`}>
         <CardHeader className="items-center">
             <TrendingDown className="w-8 h-8 text-destructive" />
             <CardTitle className="font-headline">Your Withdrawal History</CardTitle>

@@ -17,6 +17,7 @@ import { auth, db } from '@/lib/firebase/config';
 import { collection, addDoc, serverTimestamp, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { format } from 'date-fns';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 interface DepositChartData {
   month: string;
@@ -49,6 +50,7 @@ export default function DepositPage() {
   const [chartData, setChartData] = useState<DepositChartData[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loadingAccounts, setLoadingAccounts] = useState(true);
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
     if (!user) return;
@@ -202,7 +204,7 @@ export default function DepositPage() {
 
   return (
     <div className="animate-fade-in grid gap-8">
-        <Card className="w-full max-w-2xl mx-auto">
+        <Card className={`w-full max-w-2xl mx-auto ${isMobile ? "max-w-[420px]" : ""}`}>
             <CardHeader>
                 <CardTitle className="font-headline">Deposit Funds</CardTitle>
                 <CardDescription>Follow the instructions below to add funds to your account.</CardDescription>
@@ -260,7 +262,7 @@ export default function DepositPage() {
                 </CardFooter>
             </form>
         </Card>
-         <Card className="w-full max-w-2xl mx-auto">
+         <Card className={`w-full max-w-2xl mx-auto ${isMobile ? "max-w-[320px]" : ""}`}>
             <CardHeader className="items-center">
               <TrendingUp className="w-8 h-8 text-primary" />
               <CardTitle className="font-headline">Your Deposit Trends</CardTitle>
