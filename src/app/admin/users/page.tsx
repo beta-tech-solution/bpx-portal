@@ -1,4 +1,3 @@
-
 "use client"
 import * as React from "react"
 import { Button } from "@/components/ui/button"
@@ -252,7 +251,7 @@ export default function AdminUsersPage() {
         </CardContent>
       </Card>
     
-      <Card className={isMobile ? "max-w-[300px] mx-auto" : ""}>
+      <Card className={isMobile ? "max-w-[320px] mx-auto" : ""}>
           <CardHeader>
               <div className="flex items-center justify-between">
                   <div>
