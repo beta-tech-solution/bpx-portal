@@ -32,7 +32,7 @@ const chartConfig = {
 export default function WithdrawPage() {
   const { toast } = useToast();
   const [user] = useAuthState(auth);
-  const [balance, setBalance] = useState(0);
+  const [totalWithdrawals, setTotalWithdrawals] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [chartData, setChartData] = useState<WithdrawalChartData[]>([]);
   const isMobile = useMediaQuery("(max-width: 768px)");
@@ -40,30 +40,26 @@ export default function WithdrawPage() {
   useEffect(() => {
     if (!user) return;
 
-    const userDocRef = doc(db, 'users', user.uid);
-    const unsubscribeBalance = onSnapshot(userDocRef, (doc) => {
-        if(doc.exists()) {
-            setBalance(doc.data().balance ?? 0);
-        }
-    });
-
     const q = query(collection(db, 'withdrawals'), where('userId', '==', user.uid), where('status', '==', 'Approved'));
-    const unsubscribeChart = onSnapshot(q, (snapshot) => {
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        let total = 0;
         const monthlyData: { [key: string]: number } = {};
         snapshot.forEach(doc => {
             const data = doc.data();
+            const amount = parseFloat(data.amount);
+            total += amount;
+
             const date = new Date(data.date);
             const month = format(date, 'MMM');
-            monthlyData[month] = (monthlyData[month] || 0) + parseFloat(data.amount);
+            monthlyData[month] = (monthlyData[month] || 0) + amount;
         });
+
+        setTotalWithdrawals(total);
         const formattedChartData = Object.entries(monthlyData).map(([month, amount]) => ({ month, amount }));
         setChartData(formattedChartData);
     });
 
-    return () => {
-        unsubscribeBalance();
-        unsubscribeChart();
-    };
+    return () => unsubscribe();
   }, [user]);
 
   const handleWithdraw = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -82,12 +78,6 @@ export default function WithdrawPage() {
 
     if (isNaN(amount) || amount <= 0) {
         toast({ title: "Invalid Amount", description: "Please enter a valid withdrawal amount.", variant: "destructive" });
-        setIsLoading(false);
-        return;
-    }
-
-    if (amount > balance) {
-        toast({ title: "Insufficient Funds", description: "You do not have enough balance for this withdrawal.", variant: "destructive" });
         setIsLoading(false);
         return;
     }
@@ -135,8 +125,8 @@ export default function WithdrawPage() {
         <CardContent className="flex flex-col gap-8">
           <div className="space-y-6">
             <div className="p-4 rounded-lg border bg-muted/50">
-                <Label>Current Wallet Balance</Label>
-                <p className="text-3xl font-bold text-primary">PKR {balance.toFixed(2)}</p>
+                <Label>Total Withdrawn (All Time)</Label>
+                <p className="text-3xl font-bold text-primary">PKR {totalWithdrawals.toFixed(2)}</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="amount" className="font-headline">Amount (PKR)</Label>
