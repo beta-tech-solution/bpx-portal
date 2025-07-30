@@ -1,7 +1,7 @@
 
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firestore';
+import { getFirestore } from 'firebase/firestore';
 
 // The configuration is now read from secure environment variables
 const firebaseConfig = {
