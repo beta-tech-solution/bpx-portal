@@ -1,17 +1,17 @@
 
-// IMPORTANT: DO NOT COMMIT THIS FILE TO GITHUB.
-// This file contains sensitive API keys. It has been added to .gitignore to prevent accidental exposure.
+// This file is git-ignored. Do not remove from .gitignore
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-// Hardcoded Firebase configuration for the development environment.
 const firebaseConfig = {
-  apiKey: "AlzaSyCwGvOnK1C_SXurmFeyetXfKt9nX7MfN5Q",
+  apiKey: "AIzaSyBbuTawc-_136hVH4R1GNOLPtQR7WAviZ0",
   authDomain: "bpx-portal.firebaseapp.com",
   projectId: "bpx-portal",
-  storageBucket: "bpx-portal.appspot.com",
+  storageBucket: "bpx-portal.firebasestorage.app",
   messagingSenderId: "196941778357",
   appId: "1:196941778357:web:c19a592fe9a11c1688ddfc"
 };
@@ -21,8 +21,4 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// NOTE: Firebase Storage is not used in this project.
-// We are using Cloudinary for image uploads.
-const storage = {};
-
-export { app, auth, db, storage };
+export { app, auth, db };
