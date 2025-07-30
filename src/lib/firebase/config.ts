@@ -1,19 +1,21 @@
 
-// This file is git-ignored. Do not remove from .gitignore
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+'use client';
+// IMPORTANT: Do not push this file to your public repository.
+// This configuration is for local development only.
+// For production, use environment variables.
 
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
+// The configuration is now read from secure environment variables
 const firebaseConfig = {
-  apiKey: "AIzaSyBbuTawc-_136hVH4R1GNOLPtQR7WAviZ0",
-  authDomain: "bpx-portal.firebaseapp.com",
-  projectId: "bpx-portal",
-  storageBucket: "bpx-portal.firebasestorage.app",
-  messagingSenderId: "196941778357",
-  appId: "1:196941778357:web:c19a592fe9a11c1688ddfc"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
 // Initialize Firebase
