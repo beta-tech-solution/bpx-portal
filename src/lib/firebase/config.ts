@@ -1,16 +1,19 @@
 
+// IMPORTANT: DO NOT COMMIT THIS FILE TO GITHUB.
+// This file contains sensitive API keys. It has been added to .gitignore to prevent accidental exposure.
+
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-// The configuration is now read from secure environment variables
+// Hardcoded Firebase configuration for the development environment.
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  apiKey: "AlzaSyCwGvOnK1C_SXurmFeyetXfKt9nX7MfN5Q",
+  authDomain: "bpx-portal.firebaseapp.com",
+  projectId: "bpx-portal",
+  storageBucket: "bpx-portal.appspot.com",
+  messagingSenderId: "196941778357",
+  appId: "1:196941778357:web:c19a592fe9a11c1688ddfc"
 };
 
 // Initialize Firebase
