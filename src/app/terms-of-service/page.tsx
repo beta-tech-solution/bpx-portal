@@ -2,57 +2,83 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { AppLogo } from "@/components/app-logo";
-import { Search, Globe } from "lucide-react";
+import { Home, Users, Phone, HelpCircle, LogIn, UserPlus } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 
-const SiteHeader = () => (
-     <header className="absolute top-0 z-50 w-full animate-fade-in">
-        <div className="container mx-auto flex items-center justify-between p-4 bg-black/20 text-white rounded-b-lg">
-            <Link href="/" className="flex items-center gap-2" prefetch={false}>
-                <AppLogo className="h-12 w-auto" />
-            </Link>
-            <nav className="hidden md:flex items-center gap-8">
-                    <Link href="/" className="text-center group" prefetch={false}>
-                        <span className="text-sm font-semibold tracking-wider group-hover:text-primary transition-colors">HOME</span>
-                        <p className="text-xs text-white/70">Showcase</p>
+const navLinks = [
+    { href: "/", name: "Home", icon: Home },
+    { href: "/about-us", name: "About Us", icon: Users },
+    { href: "/contact-us", name: "Contact", icon: Phone },
+    { href: "/#faq", name: "FAQs", icon: HelpCircle },
+];
+
+const SiteHeader = () => {
+    const pathname = usePathname();
+    const activeLink = navLinks.find(link => pathname.startsWith(link.href)) || navLinks[0];
+
+    return (
+        <header className="absolute top-0 left-0 w-full z-50 animate-fade-in">
+            <div className="h-1.5 bg-primary" />
+            <div className="bg-black/80 backdrop-blur-sm">
+                <div className="container mx-auto flex items-center justify-between h-20">
+                    <Link href="/" aria-label="Back to homepage">
+                        <AppLogo className="h-10 w-auto" />
                     </Link>
-                    <Link href="/#features" className="text-center group" prefetch={false}>
-                        <span className="text-sm font-semibold tracking-wider group-hover:text-primary transition-colors">FEATURES</span>
-                        <p className="text-xs text-white/70">Our Best</p>
-                    </Link>
-                    <Link href="/about-us" className="text-center group" prefetch={false}>
-                        <span className="text-sm font-semibold tracking-wider group-hover:text-primary transition-colors">ABOUT US</span>
-                        <p className="text-xs text-white/70">Our Story</p>
-                    </Link>
-                    <Link href="/contact-us" className="text-center group" prefetch={false}>
-                        <span className="text-sm font-semibold tracking-wider group-hover:text-primary transition-colors">CONTACT</span>
-                        <p className="text-xs text-white/70">Get in Touch</p>
-                    </Link>
-            </nav>
-            <div className="hidden md:flex items-center gap-4">
-                 <button className="group">
-                    <Globe className="h-5 w-5 text-white/80 group-hover:text-white transition-colors" />
-                </button>
-                <button className="group">
-                    <Search className="h-5 w-5 text-white/80 group-hover:text-white transition-colors" />
-                </button>
-                <Link href="/login" className="px-6 py-2 text-sm font-semibold text-white bg-primary rounded-full hover:bg-primary/90 transition-colors">
-                    Login
-                </Link>
+
+                    <nav className="hidden md:flex items-end h-full">
+                        <ul className="flex items-center h-full relative">
+                            {navLinks.map((link) => {
+                                const isActive = link.href === activeLink.href;
+                                return (
+                                    <li key={link.name} className="h-full">
+                                        <Link href={link.href} className={cn("relative flex flex-col items-center justify-center gap-1.5 h-full px-5 text-sm font-medium transition-colors text-white/70 hover:text-white", { "text-white": isActive })}>
+                                            <link.icon className="h-5 w-5" />
+                                            <span>{link.name}</span>
+                                            {isActive && (
+                                                <div className="absolute top-0 w-full h-full">
+                                                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[120%] h-16 bg-primary"
+                                                        style={{
+                                                            clipPath: 'path("M0,0 C3,12 15,12 20,12 L calc(100% - 20px),12 C calc(100% - 15px),12 calc(100% - 3px),0 100%,0 Z")'
+                                                        }}
+                                                    />
+                                                </div>
+                                            )}
+                                            <div className="relative z-10 flex flex-col items-center justify-center gap-1.5">
+                                                <link.icon className="h-5 w-5" />
+                                                <span>{link.name}</span>
+                                            </div>
+                                        </Link>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </nav>
+                     <div className="hidden md:flex items-center gap-2">
+                        <Link href="/login" className="flex items-center gap-2 px-4 py-2 text-sm text-white hover:bg-white/10 rounded-md transition-colors">
+                           <LogIn className="h-4 w-4" /> Login
+                        </Link>
+                        <Link href="/signup" className="flex items-center gap-2 px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
+                           <UserPlus className="h-4 w-4" /> Register
+                        </Link>
+                    </div>
+
+                    <div className="md:hidden">
+                       <Link href="/login" className="px-4 py-2 text-sm font-semibold text-white bg-primary rounded-full hover:bg-primary/90 transition-colors">
+                           Login
+                       </Link>
+                   </div>
+                </div>
             </div>
-             <div className="md:hidden">
-                <Link href="/login" className="px-6 py-2 text-sm font-semibold text-white bg-primary rounded-full hover:bg-primary/90 transition-colors">
-                    Login
-                </Link>
-            </div>
-        </div>
-    </header>
-)
+        </header>
+    );
+};
 
 export default function TermsOfServicePage() {
   return (
     <div className="flex flex-col min-h-dvh bg-background text-foreground font-body">
       <SiteHeader />
-      <main className="flex-1 pt-20">
+      <main className="flex-1 pt-24">
         <div className="container mx-auto px-4 md:px-6 py-12 md:py-20">
           <article className="prose prose-gray dark:prose-invert max-w-3xl mx-auto">
             <h1 className="font-headline text-4xl font-bold">Terms of Service</h1>
