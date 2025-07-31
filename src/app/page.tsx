@@ -4,33 +4,76 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ArrowRight, DollarSign, Landmark } from 'lucide-react';
+import { ArrowRight, DollarSign, Landmark, Download } from 'lucide-react';
 import Image from "next/image";
 import AppLogo from "@/components/app-logo";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  type CarouselApi,
+} from "@/components/ui/carousel"
+import React from "react";
+import { PhoneMockup, FeatureHotspot } from "@/components/phone-mockup";
 
-function AnimatedScreen({ src, alt }: { src: string; alt: string; }) {
-  return (
-    <div className="relative aspect-[9/16] w-full h-full rounded-2xl overflow-hidden bg-gray-800 shadow-2xl">
-      <video
-        className="absolute top-0 left-0 w-full h-full object-cover"
-        autoPlay
-        loop
-        muted
-        playsInline
-        src={src}
-      >
-        Your browser does not support the video tag.
-      </video>
-      <div className="absolute inset-0 bg-black/10"></div>
-    </div>
-  );
-}
+const sliderItems = [
+  {
+    image: "/images/dashboard.png",
+    alt: "Dashboard Screenshot",
+    title: "All-in-One Dashboard",
+    description: "Get a complete overview of your finances at a glance. Track deposits, withdrawals, and performance with our intuitive dashboard.",
+    hotspots: [
+      { top: "15%", left: "80%", title: "Real-time Balance" },
+      { top: "35%", left: "10%", title: "Total Deposits" },
+      { top: "70%", left: "85%", title: "Deposit History" },
+    ]
+  },
+  {
+    image: "https://placehold.co/380x823.png",
+    alt: "Deposit Page Screenshot",
+    title: "Effortless Deposits",
+    description: "Fund your account in just a few simple steps. Our secure process ensures your money is safe and credited quickly.",
+     hotspots: [
+      { top: "20%", left: "10%", title: "Enter Amount" },
+      { top: "45%", left: "88%", title: "Bank Details" },
+      { top: "75%", left: "5%", title: "Upload Proof" },
+    ]
+  },
+   {
+    image: "https://placehold.co/380x823.png",
+    alt: "Withdrawal Page Screenshot",
+    title: "Secure Withdrawals",
+    description: "Access your funds when you need them. Request withdrawals directly to your bank account with complete peace of mind.",
+     hotspots: [
+      { top: "25%", left: "88%", title: "Request Amount" },
+      { top: "50%", left: "10%", title: "Enter Bank Info" },
+      { top: "80%", left: "90%", title: "Submit Request" },
+    ]
+  }
+];
+
 
 export default function LandingPage() {
+   const [api, setApi] = React.useState<CarouselApi>()
+  const [current, setCurrent] = React.useState(0)
+
+  React.useEffect(() => {
+    if (!api) {
+      return
+    }
+ 
+    setCurrent(api.selectedScrollSnap())
+ 
+    api.on("select", () => {
+      setCurrent(api.selectedScrollSnap())
+    })
+  }, [api])
+
+
   return (
     <div className="flex flex-col min-h-dvh bg-background text-foreground font-body">
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 max-w-screen-2xl items-center">
+        <div className="container flex h-16 items-center">
           <Link href="/" className="flex items-center gap-2 font-bold" prefetch={false}>
             <AppLogo className="w-8 h-8 text-primary" />
             <span className="font-headline text-lg">BPX Master</span>
@@ -50,7 +93,7 @@ export default function LandingPage() {
             </Link>
             <Button asChild>
               <Link href="/signup" prefetch={false}>
-                Get Started
+                <Download className="mr-2 h-4 w-4" /> Get Started
               </Link>
             </Button>
           </nav>
@@ -64,45 +107,57 @@ export default function LandingPage() {
         </div>
       </header>
       <main className="flex-1">
-        <section className="relative w-full py-20 md:py-32 lg:py-40 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent -z-10"></div>
-           <div aria-hidden="true" className="absolute inset-0 -z-10 grid-bg-neutral-200/40 [mask-image:radial-gradient(ellipse_at_50%_50%,_white_20%,_transparent_75%)]"></div>
+        <section className="relative w-full h-[calc(100vh-4rem)] lg:h-auto lg:aspect-[16/8] overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-background" />
+             <Carousel setApi={setApi} className="w-full h-full" loop>
+                <CarouselContent>
+                    {sliderItems.map((slide, index) => (
+                        <CarouselItem key={index}>
+                           <div className="w-full h-full lg:h-auto lg:aspect-[16/8] pt-12 pb-24 md:py-20 lg:py-24">
+                             <div className="container h-full">
+                                <div className="grid lg:grid-cols-2 gap-8 items-center h-full">
+                                    <div className="flex flex-col items-center lg:items-start text-center lg:text-left space-y-6 animate-fade-in-up">
+                                        <h1 className="text-4xl lg:text-6xl font-headline font-bold text-foreground tracking-tighter">
+                                            {slide.title}
+                                        </h1>
+                                        <p className="text-lg text-muted-foreground max-w-md">
+                                            {slide.description}
+                                        </p>
+                                        <div className="flex flex-col sm:flex-row gap-4">
+                                            <Button size="lg" asChild>
+                                                <Link href="/signup">Download App</Link>
+                                            </Button>
+                                             <Button size="lg" variant="outline" asChild>
+                                                <Link href="#features">Learn More</Link>
+                                            </Button>
+                                        </div>
+                                    </div>
 
-          <div className="container px-4 md:px-6">
-            <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
-              <div className="flex flex-col justify-center space-y-6">
-                <div className="space-y-4">
-                  <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl font-headline bg-gradient-to-br from-foreground to-muted-foreground bg-clip-text text-transparent">
-                    Your Portal to Effortless Finance.
-                  </h1>
-                  <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    Experience seamless financial management with BPX Master. A secure, intuitive platform for your deposits, withdrawals, and BPExch account interactions.
-                  </p>
-                </div>
-                <div className="flex flex-col gap-4 min-[400px]:flex-row">
-                  <Button asChild size="lg">
-                    <Link href="/signup" prefetch={false}>
-                      Get Started Now <ArrowRight className="ml-2 h-5 w-5" />
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-              <div className="relative flex items-center justify-center">
-                  <div className="relative w-full max-w-md">
-                     <div className="absolute -top-10 -left-10 w-48 h-48 bg-primary/20 rounded-full filter blur-3xl opacity-50 animate-blob"></div>
-                     <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-accent/20 rounded-full filter blur-3xl opacity-50 animate-blob animation-delay-2000"></div>
-                    <Image
-                      src="https://placehold.co/600x600.png"
-                      width="600"
-                      height="600"
-                      data-ai-hint="futuristic finance app dashboard"
-                      alt="Hero Image"
-                      className="relative mx-auto aspect-square overflow-hidden rounded-2xl object-cover shadow-2xl"
+                                    <div className="relative flex justify-center items-center h-[50vh] md:h-[60vh] lg:h-full">
+                                        <PhoneMockup>
+                                            <Image src={slide.image} alt={slide.alt} width={380} height={823} data-ai-hint="app screenshot" className="w-full h-full object-cover" />
+                                            {slide.hotspots.map((hotspot, i) => (
+                                                <FeatureHotspot key={i} top={hotspot.top} left={hotspot.left} title={hotspot.title} />
+                                            ))}
+                                        </PhoneMockup>
+                                    </div>
+                                </div>
+                            </div>
+                           </div>
+                        </CarouselItem>
+                    ))}
+                </CarouselContent>
+                 <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2">
+                    {sliderItems.map((_, index) => (
+                    <button
+                        key={index}
+                        onClick={() => api?.scrollTo(index)}
+                        className={`w-2 h-2 rounded-full transition-all ${current === index ? 'w-6 bg-primary' : 'bg-muted-foreground/50'}`}
+                        aria-label={`Go to slide ${index + 1}`}
                     />
-                  </div>
-              </div>
-            </div>
-          </div>
+                    ))}
+                </div>
+            </Carousel>
         </section>
 
         <section id="features" className="w-full py-12 md:py-24 lg:py-32">
@@ -128,13 +183,13 @@ export default function LandingPage() {
                 </div>
               </div>
                <div className="relative w-full max-w-[280px] mx-auto">
-                  <AnimatedScreen src="https://cdn.dribbble.com/users/412235/screenshots/4737248/crypto-wallet-app.mp4" alt="Deposit screen animation" />
+                   <Image src="/images/deposit_guide.png" data-ai-hint="app deposit screen" alt="Deposit Screen" width={280} height={500} className="rounded-2xl shadow-lg" />
                </div>
             </div>
             
              <div className="mx-auto grid max-w-5xl items-center gap-12 py-12 lg:grid-cols-2 lg:gap-16">
                <div className="relative w-full max-w-[280px] mx-auto lg:order-last">
-                  <AnimatedScreen src="https://cdn.dribbble.com/users/412235/screenshots/4819717/crypto-wallet-app-2.mp4" alt="Withdrawal screen animation" />
+                  <Image src="/images/withdraw_guide.png" data-ai-hint="app withdraw screen" alt="Withdraw Screen" width={280} height={500} className="rounded-2xl shadow-lg" />
                </div>
               <div className="flex flex-col justify-center space-y-4">
                  <div className="flex items-start gap-4">
@@ -246,3 +301,5 @@ export default function LandingPage() {
     </div>
   );
 }
+
+    
