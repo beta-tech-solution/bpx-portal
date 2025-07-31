@@ -5,9 +5,9 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Bar, BarChart, CartesianGrid, Legend, Tooltip, XAxis, YAxis, AreaChart, Area } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
-import { DollarSign, Users, Landmark, Send, Loader2, ArrowDownLeft, ArrowUpRight, TrendingUp, Database } from "lucide-react"
+import { DollarSign, Users, Landmark, Send, Loader2, ArrowDownLeft, ArrowUpRight, TrendingUp, Database, UserCheck } from "lucide-react"
 import { db, auth } from "@/lib/firebase/config"
-import { collection, getDocs, query, where, Timestamp, onSnapshot, DocumentData, orderBy, limit, addDoc, serverTimestamp } from "firebase/firestore"
+import { collection, getDocs, query, where, Timestamp, onSnapshot, DocumentData, orderBy, limit, addDoc, serverTimestamp, doc, updateDoc } from "firebase/firestore"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { subMonths, format, addMonths, startOfDay, subDays, endOfDay } from 'date-fns'
 import { Table, TableBody, TableCell, TableRow, TableHead, TableHeader } from "@/components/ui/table"
@@ -50,6 +50,7 @@ export default function AdminDashboardPage() {
     const { toast } = useToast();
     const [loading, setLoading] = useState(true);
     const [seeding, setSeeding] = useState(false);
+    const [updating, setUpdating] = useState(false);
     const [overviewData, setOverviewData] = useState({
         totalUsers: 0,
         pendingDeposits: 0,
@@ -60,6 +61,10 @@ export default function AdminDashboardPage() {
     const [profitTransactions, setProfitTransactions] = useState<Transaction[]>([]);
     const [dailyProfitData, setDailyProfitData] = useState<DailyProfit[]>([]);
 
+    const randomDate = (start: Date, end: Date) => {
+        return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+    }
+
     const handleSeedData = async () => {
         if (!user) {
             toast({ title: "Error", description: "You must be logged in to seed data.", variant: "destructive"});
@@ -69,21 +74,26 @@ export default function AdminDashboardPage() {
         try {
             const depositsCollection = collection(db, 'deposits');
             const withdrawalsCollection = collection(db, 'withdrawals');
+            
+            const startDate = new Date(new Date().getFullYear(), 5, 1); // June 1st of current year
+            const endDate = new Date();
 
             // Seed 5 deposits totaling 50000
             for (let i = 0; i < 5; i++) {
+                const randomTimestamp = randomDate(startDate, endDate);
                 await addDoc(depositsCollection, {
                     userId: user.uid,
                     amount: "10000",
                     proofUrl: "https://placehold.co/600x400.png",
                     status: 'Approved',
-                    date: subDays(new Date(), Math.floor(Math.random() * 30)).toISOString().split('T')[0],
-                    createdAt: serverTimestamp()
+                    date: randomTimestamp.toISOString().split('T')[0],
+                    createdAt: Timestamp.fromDate(randomTimestamp)
                 });
             }
 
             // Seed 4 withdrawals totaling 80000
             for (let i = 0; i < 4; i++) {
+                 const randomTimestamp = randomDate(startDate, endDate);
                 await addDoc(withdrawalsCollection, {
                     userId: user.uid,
                     amount: "20000",
@@ -91,8 +101,8 @@ export default function AdminDashboardPage() {
                     accountNumber: "0000-0000-0000",
                     accountHolder: "Seeded Holder",
                     status: 'Approved',
-                    date: subDays(new Date(), Math.floor(Math.random() * 30)).toISOString().split('T')[0],
-                    createdAt: serverTimestamp()
+                    date: randomTimestamp.toISOString().split('T')[0],
+                    createdAt: Timestamp.fromDate(randomTimestamp)
                 });
             }
 
@@ -103,6 +113,28 @@ export default function AdminDashboardPage() {
             toast({ title: "Seeding Failed", description: "Could not create sample data.", variant: "destructive" });
         } finally {
             setSeeding(false);
+        }
+    }
+    
+    const handleUpdateJoinDate = async () => {
+        if (!user) {
+            toast({ title: "Error", description: "You must be logged in.", variant: "destructive"});
+            return;
+        }
+        setUpdating(true);
+        try {
+            const userDocRef = doc(db, 'users', user.uid);
+            // Note: The year is 2025 as requested.
+            const joinDate = new Date(2025, 4, 28); // Month is 0-indexed, so 4 is May
+            await updateDoc(userDocRef, {
+                createdAt: Timestamp.fromDate(joinDate)
+            });
+            toast({ title: "User Updated", description: `Your join date has been set to ${format(joinDate, 'PP')}.` });
+        } catch (error) {
+            console.error("Error updating join date:", error);
+            toast({ title: "Update Failed", description: "Could not update your join date.", variant: "destructive" });
+        } finally {
+            setUpdating(false);
         }
     }
 
@@ -343,15 +375,19 @@ export default function AdminDashboardPage() {
             </Card>
              <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium font-headline">Seed Data</CardTitle>
+                    <CardTitle className="text-sm font-medium font-headline">Test Data</CardTitle>
                     <Database className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
-                <CardContent>
+                <CardContent className="flex flex-col gap-2 items-start">
                     <Button size="sm" onClick={handleSeedData} disabled={seeding}>
                         {seeding ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Database className="mr-2 h-4 w-4"/>}
-                         Seed Data
+                         Seed Transactions
                     </Button>
-                    <p className="text-xs text-muted-foreground mt-2">Add sample data for testing.</p>
+                    <Button size="sm" variant="outline" onClick={handleUpdateJoinDate} disabled={updating}>
+                        {updating ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UserCheck className="mr-2 h-4 w-4"/>}
+                        Update Join Date
+                    </Button>
+                    <p className="text-xs text-muted-foreground mt-1">Add sample data for testing.</p>
                 </CardContent>
             </Card>
         </div>
