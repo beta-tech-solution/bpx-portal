@@ -67,7 +67,7 @@ const SiteHeader = () => {
 
     return (
         <header className="absolute top-0 left-0 w-full z-50 animate-fade-in">
-            <div className="h-[20px] bg-primary" />
+            <div className="h-[20px] bg-primary animate-shine" />
             <div className="bg-black/80 backdrop-blur-sm">
                 <div className="container mx-auto flex items-center justify-between h-20 px-[5%]">
                     <Link href="/" aria-label="Back to homepage">
@@ -75,7 +75,7 @@ const SiteHeader = () => {
                     </Link>
 
                     <nav className="hidden md:flex items-center h-full">
-                        <ul className="flex items-center h-full">
+                        <ul className="flex items-center h-full gap-5">
                             {navLinks.map((link) => {
                                 const isActive = link.href === activeLink?.href;
                                 return (
@@ -86,7 +86,7 @@ const SiteHeader = () => {
                                                     <div
                                                         className="absolute -top-7 w-20 h-16 bg-primary"
                                                         style={{
-                                                            borderRadius: '0 0 40px 40px',
+                                                            clipPath: 'path("M0 0 H80 V40 C65 60, 15 60, 0 40Z")'
                                                         }}
                                                     />
                                                 )}
@@ -103,7 +103,7 @@ const SiteHeader = () => {
                     </nav>
 
                     <div className="hidden md:flex items-center gap-2">
-                        <Link href="/login" className="flex items-center gap-2 px-4 py-2 text-sm text-white hover:bg-white/10 rounded-md transition-colors">
+                        <Link href="/login" className="flex items-center gap-2 px-4 py-2 text-sm text-white rounded-md transition-colors border border-white hover:border-transparent hover:bg-gradient-to-r from-primary to-blue-400">
                            <LogIn className="h-4 w-4" /> Login
                         </Link>
                         <Link href="/signup" className="flex items-center gap-2 px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
