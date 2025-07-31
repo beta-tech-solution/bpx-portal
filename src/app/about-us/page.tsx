@@ -3,8 +3,52 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import AppLogo from "@/components/app-logo";
-import { Users, Target, Eye, Rocket } from 'lucide-react';
+import { AppLogo } from "@/components/app-logo";
+import { Users, Target, Eye, Rocket, Search, Globe } from 'lucide-react';
+
+const SiteHeader = () => (
+     <header className="absolute top-0 z-50 w-full animate-fade-in">
+        <div className="container mx-auto flex items-center justify-between p-4 bg-black/20 text-white rounded-b-lg">
+            <Link href="/" className="flex items-center gap-2" prefetch={false}>
+                <AppLogo className="h-12 w-auto" />
+            </Link>
+            <nav className="hidden md:flex items-center gap-8">
+                    <Link href="/" className="text-center group" prefetch={false}>
+                        <span className="text-sm font-semibold tracking-wider group-hover:text-primary transition-colors">HOME</span>
+                        <p className="text-xs text-white/70">Showcase</p>
+                    </Link>
+                    <Link href="/#features" className="text-center group" prefetch={false}>
+                        <span className="text-sm font-semibold tracking-wider group-hover:text-primary transition-colors">FEATURES</span>
+                        <p className="text-xs text-white/70">Our Best</p>
+                    </Link>
+                    <Link href="/about-us" className="text-center group" prefetch={false}>
+                        <span className="text-sm font-semibold tracking-wider text-primary transition-colors">ABOUT US</span>
+                        <p className="text-xs text-white/70">Our Story</p>
+                    </Link>
+                    <Link href="/contact-us" className="text-center group" prefetch={false}>
+                        <span className="text-sm font-semibold tracking-wider group-hover:text-primary transition-colors">CONTACT</span>
+                        <p className="text-xs text-white/70">Get in Touch</p>
+                    </Link>
+            </nav>
+            <div className="hidden md:flex items-center gap-4">
+                 <button className="group">
+                    <Globe className="h-5 w-5 text-white/80 group-hover:text-white transition-colors" />
+                </button>
+                <button className="group">
+                    <Search className="h-5 w-5 text-white/80 group-hover:text-white transition-colors" />
+                </button>
+                <Link href="/login" className="px-6 py-2 text-sm font-semibold text-white bg-primary rounded-full hover:bg-primary/90 transition-colors">
+                    Login
+                </Link>
+            </div>
+             <div className="md:hidden">
+                <Link href="/login" className="px-6 py-2 text-sm font-semibold text-white bg-primary rounded-full hover:bg-primary/90 transition-colors">
+                    Login
+                </Link>
+            </div>
+        </div>
+    </header>
+)
 
 export default function AboutUsPage() {
   const timelineEvents = [
@@ -36,31 +80,8 @@ export default function AboutUsPage() {
 
   return (
     <div className="flex flex-col min-h-dvh bg-background text-foreground font-body">
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 items-center">
-          <Link href="/" className="flex items-center gap-2 font-bold" prefetch={false}>
-            <AppLogo className="w-8 h-8 text-primary" />
-            <span className="font-headline text-lg">BPX Master</span>
-          </Link>
-          <nav className="ml-auto flex items-center gap-4">
-            <Link href="/#faq" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary" prefetch={false}>
-                FAQs
-            </Link>
-             <Link href="/about-us" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary" prefetch={false}>
-                About Us
-            </Link>
-             <Link href="/contact-us" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary" prefetch={false}>
-                Contact Us
-            </Link>
-            <Button asChild>
-              <Link href="/signup" prefetch={false}>
-                Sign Up
-              </Link>
-            </Button>
-          </nav>
-        </div>
-      </header>
-      <main className="flex-1 animate-fade-in">
+      <SiteHeader />
+      <main className="flex-1 animate-fade-in pt-20">
         <section className="relative w-full py-20 md:py-32 lg:py-40 overflow-hidden">
             <div aria-hidden="true" className="absolute inset-0 -z-10 grid-bg-neutral-200/40 [mask-image:radial-gradient(ellipse_at_center,white,transparent_80%)]"></div>
              <div className="container px-4 md:px-6">
@@ -107,8 +128,8 @@ export default function AboutUsPage() {
             <div className="grid gap-8 md:grid-cols-4">
                 <div className="flex flex-col gap-2">
                     <Link href="/" className="flex items-center gap-2 font-bold" prefetch={false}>
-                        <AppLogo className="w-8 h-8 text-primary" />
-                        <span className="font-headline text-lg">BPX Master</span>
+                        <AppLogo className="h-10 w-auto" />
+                        
                     </Link>
                     <p className="text-sm text-muted-foreground">Your Portal to Effortless Finance.</p>
                 </div>

@@ -1,11 +1,13 @@
-
 import * as React from "react"
-import { GitCommitHorizontal } from "lucide-react"
+import Image from "next/image";
 
-const AppLogo = (props: React.SVGProps<SVGSVGElement>) => (
-    <GitCommitHorizontal {...props} />
+export const AppLogo = (props: React.ComponentProps<typeof Image>) => (
+    <Image 
+      src="/images/logo.png" 
+      alt="BPX Master Logo"
+      width={150}
+      height={40}
+      priority
+      {...props}
+    />
 )
-
-export default AppLogo
-
-    
