@@ -102,6 +102,10 @@ export default {
           "33%": { transform: "translate(30px, -50px) scale(1.1)" },
           "66%": { transform: "translate(-20px, 20px) scale(0.9)" },
           "100%": { transform: "translate(0px, 0px) scale(1)" },
+        },
+        shine: {
+          "0%": { backgroundPosition: "200% center" },
+          "100%": { backgroundPosition: "-200% center" },
         }
       },
       animation: {
@@ -110,6 +114,7 @@ export default {
         'fade-in': 'fade-in 0.5s ease-out forwards',
         'spin-slow': 'spin-slow 3s linear infinite',
         'blob': 'blob 7s infinite',
+        shine: "shine 4s linear infinite",
       },
     },
   },

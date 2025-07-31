@@ -56,7 +56,7 @@ export const SiteHeader = () => {
         }
     }, [user]);
 
-    const activeLink = navLinks.find(link => link.href === pathname) || navLinks.find(link => pathname.startsWith(link.href) && link.href !== "/") || navLinks[0];
+    const activeLink = navLinks.find(link => link.href === pathname) || navLinks.find(link => pathname.startsWith(link.href) && link.href !== "/") || null;
 
     const getInitials = (name: string | undefined | null): string => {
         if (!name) return 'U';
@@ -78,7 +78,7 @@ export const SiteHeader = () => {
 
     return (
         <header className="absolute top-0 left-0 w-full z-50 animate-fade-in">
-            <div className="h-[20px] bg-primary animate-shine" />
+            <div className="h-[20px] bg-gradient-to-r from-blue-500 via-blue-400 to-cyan-400 animate-shine" />
             <div className="bg-black/80 backdrop-blur-sm">
                 <div className="container mx-auto flex items-center justify-between h-20 px-[5%]">
                     <Link href="/" aria-label="Back to homepage">
@@ -88,7 +88,7 @@ export const SiteHeader = () => {
                     <nav className="hidden md:flex items-center h-full">
                         <ul className="flex items-center h-full gap-8">
                             {navLinks.map((link) => {
-                                const isActive = link.href === activeLink?.href;
+                                const isActive = activeLink?.href === link.href;
                                 return (
                                     <li key={link.name} className="h-full">
                                         <Link href={link.href} className="group relative flex flex-col items-center justify-center h-full px-2 text-sm font-medium transition-colors text-white/70 hover:text-white">
@@ -97,7 +97,7 @@ export const SiteHeader = () => {
                                                     <div
                                                         className="absolute -top-7 w-20 h-16 bg-primary"
                                                         style={{
-                                                            clipPath: 'path("M0 0 H80 V30 C65 45, 15 45, 0 30Z")'
+                                                            clipPath: 'path("M0 0 H80 V30 C65 55, 15 55, 0 30Z")'
                                                         }}
                                                     />
                                                 )}
@@ -118,7 +118,7 @@ export const SiteHeader = () => {
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                                        <Avatar className="h-10 w-10">
+                                        <Avatar className="h-10 w-10 drop-shadow-[0_0_8px_hsl(var(--primary))]">
                                             <AvatarImage src={userData?.photoURL} alt={userData?.fullName} />
                                             <AvatarFallback>{getInitials(userData?.fullName)}</AvatarFallback>
                                         </Avatar>
@@ -127,9 +127,9 @@ export const SiteHeader = () => {
                                 <DropdownMenuContent className="w-64" align="end" forceMount>
                                     <div className="p-2 overflow-hidden">
                                         <div className="relative p-4 rounded-md flex flex-col items-center justify-center text-center bg-primary text-primary-foreground overflow-hidden">
-                                            <div className="absolute inset-0 w-full h-full bg-primary animate-shine -z-10" />
-                                            <DropdownMenuLabel className="text-base font-bold p-0">{userData?.fullName}</DropdownMenuLabel>
-                                            <p className="text-xs text-primary-foreground/80">Welcome Back!</p>
+                                            <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-blue-500 via-blue-400 to-cyan-400 animate-shine -z-10" />
+                                            <DropdownMenuLabel className="text-base font-bold p-0 text-white">{userData?.fullName}</DropdownMenuLabel>
+                                            <p className="text-xs text-white/80">Welcome Back!</p>
                                         </div>
                                     </div>
                                     <DropdownMenuSeparator />
