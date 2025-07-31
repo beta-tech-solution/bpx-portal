@@ -169,14 +169,14 @@ export default function ChatWidget() {
 
   return (
     <>
-      <div className={cn("fixed bottom-4 right-4 z-50 transition-all duration-300", isOpen ? "opacity-0 scale-95 pointer-events-none" : "opacity-100")}>
+      <div className={cn("fixed bottom-20 right-4 z-50 transition-all duration-300 md:bottom-4", isOpen ? "opacity-0 scale-95 pointer-events-none" : "opacity-100")}>
         <Button onClick={toggleOpen} size="icon" className="rounded-full w-14 h-14 shadow-lg">
           <MessageSquare />
           {unreadCount > 0 && <Badge className="absolute -top-1 -right-1 h-5 w-5 justify-center p-0">{unreadCount}</Badge>}
         </Button>
       </div>
 
-      <Card className={cn("fixed bottom-4 right-4 z-50 w-[calc(100vw-2rem)] max-w-sm h-[70vh] flex flex-col transition-all duration-300 origin-bottom-right", isOpen ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none")}>
+      <Card className={cn("fixed bottom-20 right-4 z-50 w-[calc(100vw-2rem)] max-w-sm h-[70vh] flex flex-col transition-all duration-300 origin-bottom-right md:bottom-4", isOpen ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none")}>
         <CardHeader className="flex-row items-center justify-between border-b">
           <div className="flex items-center gap-2">
             <MessageSquare className="h-6 w-6 text-primary" />
