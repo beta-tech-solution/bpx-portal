@@ -1,7 +1,8 @@
 import * as React from "react"
+import Image from "next/image"
 
-export const AppLogo = (props: React.ComponentProps<"img">) => (
-    <img 
+export const AppLogo = (props: Omit<React.ComponentProps<typeof Image>, "src" | "alt" | "width" | "height">) => (
+    <Image
       src="/logo.png" 
       alt="BPX Master Logo"
       width={150}
@@ -9,3 +10,5 @@ export const AppLogo = (props: React.ComponentProps<"img">) => (
       {...props}
     />
 )
+
+    

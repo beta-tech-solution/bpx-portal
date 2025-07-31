@@ -10,7 +10,7 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
-import { Wallet, HardDrive, Smartphone, Apple, Star, Send, Headphones, DollarSign, Landmark, ShieldCheck, TrendingUp, UploadCloud, Eye, Activity, TrendingDown } from 'lucide-react';
+import { Wallet, Landmark, Smartphone, Apple, Star, Send, Headphones, DollarSign, ShieldCheck, TrendingUp, UploadCloud, Eye, Activity, TrendingDown } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { IPhoneMockup } from "@/components/iphone-mockup";
 import { SiteHeader } from "@/components/site-header";
@@ -205,7 +205,7 @@ export default function LandingPage() {
   return (
     <div className="w-full min-h-screen bg-[#0c0a18] text-white overflow-x-hidden">
         <SiteHeader />
-        <main className="relative z-10 flex flex-col items-center justify-center min-h-screen text-center pt-24">
+        <main className="relative z-10 flex flex-col items-center justify-center min-h-screen text-center pt-32 md:pt-24">
             <Image 
                 src="/images/sliderhero.jpg"
                 alt="Mountain background"
@@ -224,10 +224,10 @@ export default function LandingPage() {
                                     <h1 className="text-4xl md:text-5xl font-bold tracking-tight animate-fade-in-up">{slide.title}</h1>
                                     <p className="mt-4 text-white/70 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>{slide.description}</p>
                                     <div className="mt-8 flex gap-4 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-                                        <Button variant="outline" className="bg-white/10 border-white/20 hover:bg-white/20 text-white">
+                                        <Button variant="outline" className="bg-white/10 border-white/20 hover:bg-white/20 text-white w-36">
                                             <Apple className="mr-2 h-5 w-5"/> AppStore
                                         </Button>
-                                         <Button variant="outline" className="bg-white/10 border-white/20 hover:bg-white/20 text-white">
+                                         <Button variant="outline" className="bg-white/10 border-white/20 hover:bg-white/20 text-white w-36">
                                             <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
                                                 <path d="M3 20.5V3.5C3 2.67 3.67 2 4.5 2H19.5C20.33 2 21 2.67 21 3.5V20.5C21 21.33 20.33 22 19.5 22H4.5C3.67 22 3 21.33 3 20.5ZM8.56 12L15.44 8.03L12 12L15.44 15.97L8.56 12Z" />
                                             </svg>
@@ -262,3 +262,5 @@ export default function LandingPage() {
     </div>
   );
 }
+
+    
