@@ -5,14 +5,16 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Bar, BarChart, CartesianGrid, Legend, Tooltip, XAxis, YAxis, AreaChart, Area } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
-import { DollarSign, Users, Landmark, Send, Loader2, ArrowDownLeft, ArrowUpRight, TrendingUp } from "lucide-react"
-import { db } from "@/lib/firebase/config"
-import { collection, getDocs, query, where, Timestamp, onSnapshot, DocumentData, orderBy, limit } from "firebase/firestore"
+import { DollarSign, Users, Landmark, Send, Loader2, ArrowDownLeft, ArrowUpRight, TrendingUp, Database } from "lucide-react"
+import { db, auth } from "@/lib/firebase/config"
+import { collection, getDocs, query, where, Timestamp, onSnapshot, DocumentData, orderBy, limit, addDoc, serverTimestamp } from "firebase/firestore"
+import { useAuthState } from "react-firebase-hooks/auth"
 import { subMonths, format, addMonths, startOfDay, subDays, endOfDay } from 'date-fns'
 import { Table, TableBody, TableCell, TableRow, TableHead, TableHeader } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { useToast } from "@/hooks/use-toast"
 
 
 const depositsChartConfig = {
@@ -44,7 +46,10 @@ interface DailyProfit {
 }
 
 export default function AdminDashboardPage() {
+    const [user] = useAuthState(auth);
+    const { toast } = useToast();
     const [loading, setLoading] = useState(true);
+    const [seeding, setSeeding] = useState(false);
     const [overviewData, setOverviewData] = useState({
         totalUsers: 0,
         pendingDeposits: 0,
@@ -54,6 +59,52 @@ export default function AdminDashboardPage() {
     const [withdrawalsData, setWithdrawalsData] = useState<MonthlyData[]>([]);
     const [profitTransactions, setProfitTransactions] = useState<Transaction[]>([]);
     const [dailyProfitData, setDailyProfitData] = useState<DailyProfit[]>([]);
+
+    const handleSeedData = async () => {
+        if (!user) {
+            toast({ title: "Error", description: "You must be logged in to seed data.", variant: "destructive"});
+            return;
+        }
+        setSeeding(true);
+        try {
+            const depositsCollection = collection(db, 'deposits');
+            const withdrawalsCollection = collection(db, 'withdrawals');
+
+            // Seed 5 deposits totaling 50000
+            for (let i = 0; i < 5; i++) {
+                await addDoc(depositsCollection, {
+                    userId: user.uid,
+                    amount: "10000",
+                    proofUrl: "https://placehold.co/600x400.png",
+                    status: 'Approved',
+                    date: subDays(new Date(), Math.floor(Math.random() * 30)).toISOString().split('T')[0],
+                    createdAt: serverTimestamp()
+                });
+            }
+
+            // Seed 4 withdrawals totaling 80000
+            for (let i = 0; i < 4; i++) {
+                await addDoc(withdrawalsCollection, {
+                    userId: user.uid,
+                    amount: "20000",
+                    bankName: "Seeded Bank",
+                    accountNumber: "0000-0000-0000",
+                    accountHolder: "Seeded Holder",
+                    status: 'Approved',
+                    date: subDays(new Date(), Math.floor(Math.random() * 30)).toISOString().split('T')[0],
+                    createdAt: serverTimestamp()
+                });
+            }
+
+            toast({ title: "Data Seeded", description: "Sample deposits and withdrawals have been created." });
+
+        } catch (error) {
+            console.error("Error seeding data:", error);
+            toast({ title: "Seeding Failed", description: "Could not create sample data.", variant: "destructive" });
+        } finally {
+            setSeeding(false);
+        }
+    }
 
      useEffect(() => {
         setLoading(true);
@@ -259,7 +310,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="max-w-7xl mx-auto grid gap-8 animate-fade-in">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium font-headline">Total Users</CardTitle>
@@ -288,6 +339,19 @@ export default function AdminDashboardPage() {
                 <CardContent>
                     <div className="text-3xl font-bold">{overviewData.pendingWithdrawals}</div>
                     <p className="text-xs text-muted-foreground">Require approval</p>
+                </CardContent>
+            </Card>
+             <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium font-headline">Seed Data</CardTitle>
+                    <Database className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <Button size="sm" onClick={handleSeedData} disabled={seeding}>
+                        {seeding ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Database className="mr-2 h-4 w-4"/>}
+                         Seed Data
+                    </Button>
+                    <p className="text-xs text-muted-foreground mt-2">Add sample data for testing.</p>
                 </CardContent>
             </Card>
         </div>
@@ -397,3 +461,5 @@ export default function AdminDashboardPage() {
     </div>
   )
 }
+
+    
