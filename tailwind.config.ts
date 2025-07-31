@@ -106,7 +106,11 @@ export default {
         shine: {
           "0%": { backgroundPosition: "200% center" },
           "100%": { backgroundPosition: "-200% center" },
-        }
+        },
+        'circular-shine': {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -114,7 +118,8 @@ export default {
         'fade-in': 'fade-in 0.5s ease-out forwards',
         'spin-slow': 'spin-slow 3s linear infinite',
         'blob': 'blob 7s infinite',
-        shine: "shine 4s linear infinite",
+        shine: "shine 2s linear infinite",
+        'circular-shine': 'circular-shine 4s linear infinite',
       },
     },
   },

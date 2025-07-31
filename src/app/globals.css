@@ -83,9 +83,22 @@
   body {
     @apply bg-background text-foreground;
   }
+  .animate-circular-shine::before {
+    content: "";
+    position: absolute;
+    inset: -200%;
+    z-index: -1;
+    background: conic-gradient(from var(--angle), transparent 50%, hsl(var(--primary)) 100%);
+    animation: circular-shine 4s linear infinite;
+  }
 }
 
 @layer utilities {
+    @property --angle {
+      syntax: '<angle>';
+      initial-value: 0deg;
+      inherits: false;
+    }
     @keyframes pulse-slow {
         50% {
             opacity: .7;
@@ -136,6 +149,6 @@
         hsl(var(--primary) / 0.9)
       );
       background-size: 200% auto;
-      animation: shine 5s linear infinite;
+      animation: shine 2s linear infinite;
     }
 }

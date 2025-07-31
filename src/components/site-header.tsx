@@ -97,7 +97,7 @@ export const SiteHeader = () => {
                                                     <div
                                                         className="absolute -top-7 w-20 h-16 bg-primary"
                                                         style={{
-                                                            clipPath: 'path("M0 0 H80 V30 C65 55, 15 55, 0 30Z")'
+                                                            clipPath: 'path("M0 0 H80 V40 C60 65, 20 65, 0 40Z")'
                                                         }}
                                                     />
                                                 )}
@@ -117,11 +117,13 @@ export const SiteHeader = () => {
                          {user ? (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                                        <Avatar className="h-10 w-10 drop-shadow-[0_0_8px_hsl(var(--primary))]">
-                                            <AvatarImage src={userData?.photoURL} alt={userData?.fullName} />
-                                            <AvatarFallback>{getInitials(userData?.fullName)}</AvatarFallback>
-                                        </Avatar>
+                                    <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
+                                        <div className="relative h-10 w-10 rounded-full animate-circular-shine p-0.5">
+                                            <Avatar className="h-full w-full">
+                                                <AvatarImage src={userData?.photoURL} alt={userData?.fullName} />
+                                                <AvatarFallback>{getInitials(userData?.fullName)}</AvatarFallback>
+                                            </Avatar>
+                                        </div>
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent className="w-64" align="end" forceMount>
