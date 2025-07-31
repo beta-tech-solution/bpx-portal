@@ -10,9 +10,16 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
-import { Wallet, Landmark, Smartphone, Apple, Star, Send, Headphones, DollarSign, ShieldCheck, TrendingUp, UploadCloud, Eye, Activity, TrendingDown, MessageSquare, Shield, KeyRound, User, FileText } from 'lucide-react';
+import { Wallet, Landmark, Smartphone, Apple, Star, Send, Headphones, DollarSign, ShieldCheck, TrendingUp, UploadCloud, Eye, Activity, TrendingDown, MessageSquare, Shield, KeyRound, User, FileText, BarChart2 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { SiteHeader } from "@/components/site-header";
+
+const PlayStoreIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+        <path d="M3 20.5V3.5C3 2.67 3.67 2 4.5 2H19.5C20.33 2 21 2.67 21 3.5V20.5C21 21.33 20.33 22 19.5 22H4.5C3.67 22 3 21.33 3 20.5ZM8.56 12L15.44 8.03L12 12L15.44 15.97L8.56 12Z" />
+    </svg>
+);
+
 
 const sliderItems = [
   {
@@ -36,15 +43,8 @@ const sliderItems = [
         align: "right"
       },
       {
-        Icon: Activity,
-        title: "Recent Activity",
-        description: "Keep an eye on recent transactions and logins for security.",
-        position: { top: "45%", right: "15%" },
-        align: "left"
-      },
-      {
-        Icon: ShieldCheck,
-        title: "Secure Access",
+        Icon: BarChart2,
+        title: "Realtime Deposit History",
         description: "Your financial data is protected with robust security measures.",
         position: { top: "65%", right: "15%" },
         align: "left"
@@ -180,7 +180,7 @@ const FeatureHotspot = ({
 
     return (
         <div
-            className={cn("absolute hidden lg:flex items-center group transition-opacity duration-700", isActive ? 'opacity-100' : 'opacity-0 pointer-events-none')}
+            className={cn("absolute hidden lg:flex items-center group transition-opacity duration-700", isActive ? "opacity-100" : "opacity-0 pointer-events-none")}
             style={{ ...position, transitionDelay: isActive ? '1.2s' : '0s' }}
         >
             <div className={cn("relative flex items-center", align === 'left' ? 'flex-row' : 'flex-row-reverse')}>
@@ -225,7 +225,7 @@ export default function LandingPage() {
         } else {
             api.scrollTo(0);
         }
-    }, 5000); // 5-second auto-slide interval
+    }, 7000); 
 
     return () => {
         api.off("select", onSelect);
@@ -235,45 +235,44 @@ export default function LandingPage() {
   }, [api]);
 
   return (
-    <div className="w-full min-h-screen bg-[#0c0a18] text-white overflow-hidden">
-        <SiteHeader />
-        <main className="relative z-10 flex flex-col items-center justify-center text-center pt-32 md:pt-40">
+    <div className="w-full min-h-screen bg-[#0c0a18] text-white overflow-x-hidden">
+        <div className="fixed inset-0 -z-10">
             <Image 
                 src="/images/sliderhero.jpg"
                 alt="Mountain background"
                 layout="fill"
                 objectFit="cover"
-                className="opacity-20 -z-10"
+                className="opacity-20"
                 priority
             />
-            
+        </div>
+        <SiteHeader />
+        <main className="relative z-10 flex flex-col items-center justify-center text-center pt-32 md:pt-40">
             <div className="w-full flex-1 flex flex-col items-center justify-center">
-                <Carousel setApi={setApi} className="w-full max-w-7xl">
-                    <CarouselContent>
+                 <Carousel setApi={setApi} className="w-full max-w-7xl">
+                    <div className="px-4">
                         {sliderItems.map((slide, index) => (
-                             <CarouselItem key={index} className="opacity-0 transition-opacity duration-1000" style={{ ...(current === index && { opacity: 1 })}}>
-                                <div className="flex flex-col items-center justify-center h-full py-8">
-                                    <h1 className={cn("text-4xl md:text-5xl font-bold tracking-tight transition-all duration-700", current === index ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0')}>{slide.title}</h1>
+                             <div key={index} className={cn("transition-opacity duration-700", current === index ? 'opacity-100' : 'opacity-0 absolute inset-0 pointer-events-none')}>
+                                <div className="flex flex-col items-center justify-center h-full">
+                                    <h1 className={cn("text-4xl md:text-5xl font-bold tracking-tight transition-all duration-700 delay-100", current === index ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0')}>{slide.title}</h1>
                                     <p className={cn("mt-4 text-white/70 transition-all duration-700 delay-200", current === index ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0')}>{slide.description}</p>
                                     <div className="mt-8 flex flex-col sm:flex-row gap-4">
                                         <Button variant="outline" className="bg-white/10 border-white/20 hover:bg-white/20 text-white w-full sm:w-[320px] transition-all duration-700 delay-300">
                                             <Apple className="mr-2 h-5 w-5"/> AppStore
                                         </Button>
-                                         <Button variant="outline" className="bg-white/10 border-white/20 hover:bg-white/20 text-white w-full sm:w-[320px] transition-all duration-700 delay-300">
-                                            <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M3 20.5V3.5C3 2.67 3.67 2 4.5 2H19.5C20.33 2 21 2.67 21 3.5V20.5C21 21.33 20.33 22 19.5 22H4.5C3.67 22 3 21.33 3 20.5ZM8.56 12L15.44 8.03L12 12L15.44 15.97L8.56 12Z" />
-                                            </svg>
-                                            Google Play
+                                         <Button variant="outline" className="bg-white/10 border-white/20 hover:bg-white/20 text-white w-full sm:w-[320px] transition-all duration-700 delay-400">
+                                            <PlayStoreIcon className="mr-2 h-5 w-5" />
+                                            Play Store
                                         </Button>
                                     </div>
                                 </div>
-                            </CarouselItem>
+                            </div>
                         ))}
-                    </CarouselContent>
-                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3 w-full h-full flex items-center justify-center mt-24 lg:mt-32">
-                        <div className="relative w-full flex items-center justify-center h-[500px] lg:h-[600px]">
-                            {sliderItems.map((slide, index) => (
-                                <div key={index} className={cn("absolute w-full h-full flex items-center justify-center transition-opacity duration-1000", current === index ? 'opacity-100' : 'opacity-0')}>
+                    </div>
+                     <CarouselContent className="mt-24 lg:mt-32">
+                        {sliderItems.map((slide, index) => (
+                            <CarouselItem key={index}>
+                                <div className="relative w-full flex items-center justify-center h-[500px] lg:h-[600px]">
                                     <Image
                                         src={slide.screen}
                                         alt={slide.alt}
@@ -286,12 +285,14 @@ export default function LandingPage() {
                                         <FeatureHotspot key={i} feature={feature} isActive={current === index} />
                                     ))}
                                 </div>
-                            ))}
-                        </div>
-                    </div>
+                             </CarouselItem>
+                        ))}
+                    </CarouselContent>
                 </Carousel>
             </div>
         </main>
+         {/* Dummy content to demonstrate parallax */}
+        <div className="h-[100vh] bg-transparent relative z-10"></div>
     </div>
   );
 }
