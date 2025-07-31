@@ -30,18 +30,18 @@ const SiteHeader = () => {
                     </Link>
 
                     <nav className="hidden md:flex items-center h-full">
-                        <ul className="flex items-center h-full gap-5">
+                        <ul className="flex items-center h-full gap-8">
                             {navLinks.map((link) => {
                                 const isActive = link.href === activeLink?.href;
                                 return (
                                     <li key={link.name} className="h-full">
-                                        <Link href={link.href} className="relative flex flex-col items-center justify-center h-full px-5 text-sm font-medium transition-colors text-white/70 hover:text-white">
+                                        <Link href={link.href} className="group relative flex flex-col items-center justify-center h-full px-2 text-sm font-medium transition-colors text-white/70 hover:text-white">
                                             <div className="relative flex flex-col items-center justify-center gap-1.5 pb-2">
                                                 {isActive && (
                                                     <div
                                                         className="absolute -top-7 w-20 h-16 bg-primary"
                                                         style={{
-                                                            clipPath: 'path("M0 0 H80 V40 C65 60, 15 60, 0 40Z")'
+                                                            clipPath: 'path("M0 0 H80 V40 C65 55, 15 55, 0 40Z")'
                                                         }}
                                                     />
                                                 )}
