@@ -10,79 +10,77 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
-import { HardDrive, Smartphone, Apple, Star, Send, Headphones } from 'lucide-react';
+import { Wallet, HardDrive, Smartphone, Apple, Star, Send, Headphones, DollarSign, Landmark, ShieldCheck, TrendingUp, UploadCloud, Eye, Activity, TrendingDown } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { IPhoneMockup } from "@/components/iphone-mockup";
+import { SiteHeader } from "@/components/site-header";
 
 const sliderItems = [
   {
+    title: "All-in-One Dashboard",
+    description: "Your complete financial overview in one place.",
     screen: "/images/dashboard.png",
     alt: "Dashboard Screenshot",
     features: [
       {
-        Icon: HardDrive,
-        title: "Pure CSS Devices",
-        description: "All showcase devices are made by pure CSS and 100% Retina ready.",
+        Icon: Wallet,
+        title: "Live Balance",
+        description: "See your current account balance updated in real-time.",
         position: { top: "35%", left: "15%" },
         align: "right"
       },
       {
-        Icon: Smartphone,
-        title: "Full Responsive",
-        description: "Build on Bootstrap with powerful Responsiveness.",
+        Icon: TrendingUp,
+        title: "Deposit Trends",
+        description: "Track your deposit history with our intuitive charts.",
         position: { top: "55%", left: "15%" },
         align: "right"
       },
       {
-        Icon: Apple,
-        title: "Retina Ready",
-        description: "Retina ready with Pure CSS devices and Font icons.",
+        Icon: TrendingDown,
+        title: "Withdrawal History",
+        description: "Monitor your withdrawal patterns and history.",
         position: { top: "75%", left: "15%" },
         align: "right"
       },
       {
-        Icon: Star,
-        title: "Many Showcase Styles",
-        description: "4 Awesome Showcase styles, you can do unlimited showcase.",
-        position: { top: "35%", right: "15%" },
+        Icon: Activity,
+        title: "Recent Activity",
+        description: "Keep an eye on recent transactions and logins for security.",
+        position: { top: "45%", right: "15%" },
         align: "left"
       },
       {
-        Icon: Send,
-        title: "Unlimited Purposes",
-        description: "Show your apps, your team, your store... It's unlimited.",
-        position: { top: "55%", right: "15%" },
-        align: "left"
-      },
-      {
-        Icon: Headphones,
-        title: "Premium Support",
-        description: "Ask us everything and you will get the best answers.",
-        position: { top: "75%", right: "15%" },
+        Icon: ShieldCheck,
+        title: "Secure Access",
+        description: "Your financial data is protected with robust security measures.",
+        position: { top: "65%", right: "15%" },
         align: "left"
       },
     ],
   },
   {
+    title: "Effortless Deposits",
+    description: "Fund your account quickly and securely.",
     screen: "/images/deposit_guide.png",
     alt: "Deposit Page Screenshot",
     features: [
        {
-        Icon: HardDrive,
-        title: "Secure Deposits",
-        description: "Fund your account with confidence using our secure system.",
+        Icon: Landmark,
+        title: "Multiple Banks",
+        description: "Deposit using various trusted local bank accounts.",
         position: { top: "35%", left: "15%" },
         align: "right"
       },
       {
-        Icon: Smartphone,
+        Icon: UploadCloud,
         title: "Easy Proof Upload",
         description: "Upload your payment proof with a single tap.",
         position: { top: "55%", left: "15%" },
         align: "right"
       },
        {
-        Icon: Star,
+        Icon: Eye,
         title: "Track Your Status",
         description: "Know exactly when your funds are approved and available.",
         position: { top: "45%", right: "15%" },
@@ -98,12 +96,14 @@ const sliderItems = [
     ],
   },
   {
+    title: "Simple Withdrawals",
+    description: "Access your funds whenever you need them.",
     screen: "/images/withdraw_guide.png",
     alt: "Withdrawal Page Screenshot",
     features: [
       {
-        Icon: Apple,
-        title: "Simple Withdrawal Form",
+        Icon: DollarSign,
+        title: "Quick Request Form",
         description: "Easily request funds to be sent to your bank account.",
         position: { top: "35%", left: "15%" },
         align: "right"
@@ -123,7 +123,7 @@ const sliderItems = [
         align: "left"
       },
        {
-        Icon: Star,
+        Icon: ShieldCheck,
         title: "Reliable & Secure",
         description: "All withdrawal requests are handled with security as a priority.",
         position: { top: "65%", right: "15%" },
@@ -181,61 +181,84 @@ export default function LandingPage() {
   React.useEffect(() => {
     if (!api) return;
     setCurrent(api.selectedScrollSnap());
-    api.on("select", () => setCurrent(api.selectedScrollSnap()));
+    const onSelect = () => {
+        setCurrent(api.selectedScrollSnap());
+    };
+    api.on("select", onSelect);
+    
+    // Autoplay functionality
+    const interval = setInterval(() => {
+        if (api.canScrollNext()) {
+            api.scrollNext();
+        } else {
+            api.scrollTo(0);
+        }
+    }, 5000); // Change slide every 5 seconds
+
+    return () => {
+        api.off("select", onSelect);
+        clearInterval(interval);
+    };
+
   }, [api]);
 
   return (
-     <main className="w-full min-h-screen bg-[#0c0a18] text-white overflow-hidden">
-        <Image 
-            src="/images/sliderhero.jpg"
-            alt="Mountain background"
-            layout="fill"
-            objectFit="cover"
-            className="opacity-20"
-            priority
-        />
-        <div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-center py-16">
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight animate-fade-in-up">AWESOME MOBILE APP</h1>
-            <p className="mt-4 text-white/70 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>An awesome theme for App landing and App Store site</p>
-            <div className="mt-8 flex gap-4 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-                <Button variant="outline" className="bg-white/10 border-white/20 hover:bg-white/20 text-white">
-                    <Apple className="mr-2 h-5 w-5"/> AppStore
-                </Button>
-                <Button variant="outline" className="bg-white/10 border-white/20 hover:bg-white/20 text-white">
-                    <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M3 20.5V3.5C3 2.67 3.67 2 4.5 2H19.5C20.33 2 21 2.67 21 3.5V20.5C21 21.33 20.33 22 19.5 22H4.5C3.67 22 3 21.33 3 20.5ZM8.56 12L15.44 8.03L12 12L15.44 15.97L8.56 12Z" />
-                    </svg>
-                    Google Play
-                </Button>
-            </div>
+    <div className="w-full min-h-screen bg-[#0c0a18] text-white overflow-x-hidden">
+        <SiteHeader />
+        <main className="relative z-10 flex flex-col items-center justify-center min-h-screen text-center pt-24">
+            <Image 
+                src="/images/sliderhero.jpg"
+                alt="Mountain background"
+                layout="fill"
+                objectFit="cover"
+                className="opacity-20 -z-10"
+                priority
+            />
             
-            <div className="relative w-full flex-1 flex items-center justify-center mt-8">
+            <div className="w-full flex-1 flex flex-col items-center justify-center">
                 <Carousel setApi={setApi} className="w-full max-w-7xl">
                     <CarouselContent>
                         {sliderItems.map((slide, index) => (
-                            <CarouselItem key={index}>
-                                <div className="relative flex justify-center items-center h-[500px] lg:h-[600px]">
-                                    <IPhoneMockup>
-                                        <Image
-                                            src={slide.screen}
-                                            alt={slide.alt}
-                                            width={380}
-                                            height={823}
-                                            className={cn("w-full h-full object-cover transition-opacity duration-700", current === index ? 'opacity-100' : 'opacity-20')}
-                                        />
-                                    </IPhoneMockup>
-                                    
-                                    {/* Feature Hotspots */}
-                                    {slide.features.map((feature, i) => (
-                                        <FeatureHotspot key={i} feature={feature} isActive={current === index} />
-                                    ))}
+                             <CarouselItem key={index}>
+                                <div className="flex flex-col items-center justify-center h-full py-8">
+                                    <h1 className="text-4xl md:text-5xl font-bold tracking-tight animate-fade-in-up">{slide.title}</h1>
+                                    <p className="mt-4 text-white/70 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>{slide.description}</p>
+                                    <div className="mt-8 flex gap-4 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+                                        <Button variant="outline" className="bg-white/10 border-white/20 hover:bg-white/20 text-white">
+                                            <Apple className="mr-2 h-5 w-5"/> AppStore
+                                        </Button>
+                                         <Button variant="outline" className="bg-white/10 border-white/20 hover:bg-white/20 text-white">
+                                            <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M3 20.5V3.5C3 2.67 3.67 2 4.5 2H19.5C20.33 2 21 2.67 21 3.5V20.5C21 21.33 20.33 22 19.5 22H4.5C3.67 22 3 21.33 3 20.5ZM8.56 12L15.44 8.03L12 12L15.44 15.97L8.56 12Z" />
+                                            </svg>
+                                            Google Play
+                                        </Button>
+                                    </div>
+
+                                     <div className="relative w-full flex items-center justify-center mt-8 h-[500px] lg:h-[600px]">
+                                        <IPhoneMockup>
+                                            <Image
+                                                src={slide.screen}
+                                                alt={slide.alt}
+                                                width={380}
+                                                height={823}
+                                                className={cn("w-full h-full object-cover transition-opacity duration-700", current === index ? 'opacity-100' : 'opacity-0')}
+                                                priority={index === 0}
+                                            />
+                                        </IPhoneMockup>
+                                        
+                                        {/* Feature Hotspots */}
+                                        {slide.features.map((feature, i) => (
+                                            <FeatureHotspot key={i} feature={feature} isActive={current === index} />
+                                        ))}
+                                    </div>
                                 </div>
                             </CarouselItem>
                         ))}
                     </CarouselContent>
                 </Carousel>
             </div>
-        </div>
-     </main>
+        </main>
+    </div>
   );
 }

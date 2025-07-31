@@ -13,6 +13,7 @@ export const IPhoneMockup = ({ children, className }: { children: React.ReactNod
                 layout="fill"
                 objectFit="contain"
                 className="z-20"
+                priority
             />
             <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center z-10">
                 <div className="w-[91.5%] h-[97%] mt-[1px] rounded-[48px] overflow-hidden">
