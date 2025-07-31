@@ -18,37 +18,37 @@ const navLinks = [
 
 const SiteHeader = () => {
     const pathname = usePathname();
-    const activeLink = navLinks.find(link => link.href === pathname) || navLinks[1];
+    const activeLink = navLinks.find(link => link.href === pathname) || navLinks.find(link => pathname.startsWith(link.href)) || navLinks[1];
 
     return (
         <header className="absolute top-0 left-0 w-full z-50 animate-fade-in">
-            <div className="h-1.5 bg-primary" />
+            <div className="h-[20px] bg-primary" />
             <div className="bg-black/80 backdrop-blur-sm">
-                <div className="container mx-auto flex items-center justify-between h-20">
+                <div className="container mx-auto flex items-center justify-between h-20 px-[5%]">
                     <Link href="/" aria-label="Back to homepage">
                         <AppLogo className="h-10 w-auto" />
                     </Link>
 
-                    <nav className="hidden md:flex items-end h-full">
-                        <ul className="flex items-center h-full relative">
+                    <nav className="hidden md:flex items-center h-full">
+                        <ul className="flex items-center h-full">
                             {navLinks.map((link) => {
-                                const isActive = link.href === activeLink.href;
+                                const isActive = link.href === activeLink?.href;
                                 return (
                                     <li key={link.name} className="h-full">
-                                        <Link href={link.href} className={cn("relative flex items-center justify-end flex-col h-full px-5 text-sm font-medium transition-colors text-white/70 hover:text-white", { "text-white": isActive })}>
-                                            
-                                            {isActive && (
-                                                <div className="absolute top-0 w-full h-full">
-                                                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[120%] h-16 bg-primary"
+                                        <Link href={link.href} className="relative flex flex-col items-center justify-center h-full px-5 text-sm font-medium transition-colors text-white/70 hover:text-white">
+                                            <div className="relative flex flex-col items-center justify-center gap-1.5 pb-2">
+                                                {isActive && (
+                                                    <div
+                                                        className="absolute -top-7 w-20 h-16 bg-primary"
                                                         style={{
-                                                            clipPath: 'path("M0,0 C3,12 15,12 20,12 L calc(100% - 20px),12 C calc(100% - 15px),12 calc(100% - 3px),0 100%,0 Z")'
+                                                            borderRadius: '0 0 40px 40px',
                                                         }}
                                                     />
+                                                )}
+                                                <div className="relative z-10">
+                                                    <link.icon className={cn("h-5 w-5", isActive ? "text-white" : "text-white/70 group-hover:text-white")} />
                                                 </div>
-                                            )}
-                                            <div className="relative z-10 flex flex-col items-center justify-center gap-1.5 pb-2">
-                                                <link.icon className="h-5 w-5" />
-                                                <span>{link.name}</span>
+                                                <span className={cn("relative z-10", { "text-white": isActive })}>{link.name}</span>
                                             </div>
                                         </Link>
                                     </li>
