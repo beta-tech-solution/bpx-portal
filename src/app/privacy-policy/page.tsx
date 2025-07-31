@@ -32,9 +32,8 @@ const SiteHeader = () => {
                                 const isActive = link.href === activeLink.href;
                                 return (
                                     <li key={link.name} className="h-full">
-                                        <Link href={link.href} className={cn("relative flex flex-col items-center justify-center gap-1.5 h-full px-5 text-sm font-medium transition-colors text-white/70 hover:text-white", { "text-white": isActive })}>
-                                            <link.icon className="h-5 w-5" />
-                                            <span>{link.name}</span>
+                                        <Link href={link.href} className={cn("relative flex items-center justify-end flex-col h-full px-5 text-sm font-medium transition-colors text-white/70 hover:text-white", { "text-white": isActive })}>
+                                            
                                             {isActive && (
                                                 <div className="absolute top-0 w-full h-full">
                                                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[120%] h-16 bg-primary"
@@ -44,7 +43,7 @@ const SiteHeader = () => {
                                                     />
                                                 </div>
                                             )}
-                                            <div className="relative z-10 flex flex-col items-center justify-center gap-1.5">
+                                            <div className="relative z-10 flex flex-col items-center justify-center gap-1.5 pb-2">
                                                 <link.icon className="h-5 w-5" />
                                                 <span>{link.name}</span>
                                             </div>
