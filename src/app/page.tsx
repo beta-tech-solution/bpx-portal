@@ -205,7 +205,7 @@ export default function LandingPage() {
   return (
     <div className="w-full min-h-screen bg-[#0c0a18] text-white overflow-x-hidden">
         <SiteHeader />
-        <main className="relative z-10 flex flex-col items-center justify-center min-h-screen text-center pt-32 md:pt-24">
+        <main className="relative z-10 flex flex-col items-center justify-center min-h-screen text-center pt-32 md:pt-40">
             <Image 
                 src="/images/sliderhero.jpg"
                 alt="Mountain background"
@@ -262,5 +262,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
-    

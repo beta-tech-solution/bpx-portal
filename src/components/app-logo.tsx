@@ -8,7 +8,6 @@ export const AppLogo = (props: Omit<React.ComponentProps<typeof Image>, "src" | 
       width={150}
       height={40}
       {...props}
+      unoptimized
     />
 )
-
-    
