@@ -13,11 +13,15 @@ export default function TermsOfServicePage() {
             <span className="font-headline text-lg">BPX Master</span>
           </Link>
           <nav className="ml-auto flex items-center gap-4">
-            <Button asChild variant="ghost">
-              <Link href="/login" prefetch={false}>
-                Login
-              </Link>
-            </Button>
+             <Link href="/#faq" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary" prefetch={false}>
+                FAQs
+            </Link>
+             <Link href="/about-us" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary" prefetch={false}>
+                About Us
+            </Link>
+             <Link href="/contact-us" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary" prefetch={false}>
+                Contact Us
+            </Link>
             <Button asChild>
               <Link href="/signup" prefetch={false}>
                 Sign Up
@@ -90,25 +94,40 @@ export default function TermsOfServicePage() {
           </article>
         </div>
       </main>
-      <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
-        <p className="text-xs text-muted-foreground">&copy; 2024 BPX Master. All rights reserved.</p>
-        <nav className="sm:ml-auto flex gap-4 sm:gap-6">
-          <Link href="/about-us" className="text-xs hover:underline underline-offset-4" prefetch={false}>
-            About Us
-          </Link>
-          <Link href="/contact-us" className="text-xs hover:underline underline-offset-4" prefetch={false}>
-            Contact Us
-          </Link>
-          <Link href="/terms-of-service" className="text-xs hover:underline underline-offset-4" prefetch={false}>
-            Terms of Service
-          </Link>
-          <Link href="/privacy-policy" className="text-xs hover:underline underline-offset-4" prefetch={false}>
-            Privacy Policy
-          </Link>
-           <Link href="/refund-policy" className="text-xs hover:underline underline-offset-4" prefetch={false}>
-            Refund Policy
-          </Link>
-        </nav>
+      <footer className="border-t">
+        <div className="container py-8">
+            <div className="grid gap-8 md:grid-cols-4">
+                <div className="flex flex-col gap-2">
+                    <Link href="/" className="flex items-center gap-2 font-bold" prefetch={false}>
+                        <AppLogo className="w-8 h-8 text-primary" />
+                        <span className="font-headline text-lg">BPX Master</span>
+                    </Link>
+                    <p className="text-sm text-muted-foreground">Your Portal to Effortless Finance.</p>
+                </div>
+                <div className="flex flex-col gap-2">
+                    <h4 className="font-semibold font-headline">Company</h4>
+                    <Link href="/about-us" className="text-sm text-muted-foreground hover:text-primary" prefetch={false}>About Us</Link>
+                    <Link href="/contact-us" className="text-sm text-muted-foreground hover:text-primary" prefetch={false}>Contact Us</Link>
+                </div>
+                <div className="flex flex-col gap-2">
+                    <h4 className="font-semibold font-headline">Legal</h4>
+                    <Link href="/terms-of-service" className="text-sm text-muted-foreground hover:text-primary" prefetch={false}>Terms of Service</Link>
+                    <Link href="/privacy-policy" className="text-sm text-muted-foreground hover:text-primary" prefetch={false}>Privacy Policy</Link>
+                    <Link href="/refund-policy" className="text-sm text-muted-foreground hover:text-primary" prefetch={false}>Refund Policy</Link>
+                </div>
+                 <div className="flex flex-col gap-2">
+                    <h4 className="font-semibold font-headline">Support</h4>
+                    <Link href="/#faq" className="text-sm text-muted-foreground hover:text-primary" prefetch={false}>FAQ</Link>
+                    <Link href="/login" className="text-sm text-muted-foreground hover:text-primary" prefetch={false}>My Account</Link>
+                </div>
+            </div>
+             <div className="mt-8 flex flex-col md:flex-row justify-between items-center border-t pt-6">
+                <p className="text-xs text-muted-foreground">&copy; 2024 BPX Master. All rights reserved.</p>
+                <p className="text-xs text-muted-foreground mt-2 md:mt-0">
+                    Developed by <a href="https://beta-tech.solutions" target="_blank" rel="noopener noreferrer" className="font-medium hover:text-primary underline underline-offset-4">Beta Tech Solutions</a>.
+                </p>
+            </div>
+        </div>
       </footer>
     </div>
   );
