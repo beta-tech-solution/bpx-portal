@@ -13,12 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Wallet, Landmark, DollarSign, Shield, TrendingUp, UploadCloud, Activity, TrendingDown, MessageSquare, KeyRound, User, FileText, BarChart2, Send } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { SiteHeader } from "@/components/site-header";
-
-const PlayStoreIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
-        <path d="M3 20.5V3.5C3 2.67 3.67 2 4.5 2H19.5C20.33 2 21 2.67 21 3.5V20.5C21 21.33 20.33 22 19.5 22H4.5C3.67 22 3 21.33 3 20.5ZM8.56 12L15.44 8.03L12 12L15.44 15.97L8.56 12Z" />
-    </svg>
-);
+import Link from "next/link";
 
 
 const sliderItems = [
@@ -119,21 +114,21 @@ const sliderItems = [
             Icon: KeyRound,
             title: "Your Credentials",
             description: "Admin-provided username and password for BPExch.",
-            position: { top: "45%", right: "10%" },
+            position: { top: "45%", right: "5%" },
             align: "left"
         },
         {
             Icon: Shield,
             title: "Block Suspicious IPs",
             description: "Instantly block any unrecognized IP address from your history.",
-            position: { top: "70%", right: "10%" },
+            position: { top: "70%", right: "5%" },
             align: "left"
         },
         {
             Icon: Activity,
             title: "Login History",
             description: "Review all login attempts to your account for enhanced security.",
-            position: { top: "60%", left: "10%" },
+            position: { top: "60%", left: "5%" },
             align: "right"
         }
     ]
@@ -148,21 +143,21 @@ const sliderItems = [
             Icon: User,
             title: "Admin Support",
             description: "Chat directly with our support staff for assistance.",
-            position: { top: "25%", left: "10%" },
+            position: { top: "25%", left: "5%" },
             align: "right"
         },
         {
             Icon: FileText,
             title: "File Sharing",
             description: "Easily share images and documents for clearer communication.",
-            position: { top: "75%", left: "10%" },
+            position: { top: "75%", left: "5%" },
             align: "right"
         },
         {
             Icon: Send,
             title: "Real-time Messaging",
             description: "Instant message delivery for a seamless conversation flow.",
-            position: { top: "85%", right: "10%" },
+            position: { top: "85%", right: "5%" },
             align: "left"
         }
     ]
@@ -236,70 +231,68 @@ export default function LandingPage() {
 
   return (
     <div className="w-full min-h-screen bg-[#0c0a18] text-white overflow-x-hidden">
-        <div className="fixed inset-0 -z-10">
-            <Image 
-                src="/images/sliderhero.jpg"
-                alt="Mountain background"
-                layout="fill"
-                objectFit="cover"
-                className="opacity-20"
-                priority
-            />
-        </div>
-        <SiteHeader />
-        <main className="relative z-10 flex flex-col items-center justify-center text-center pt-24 min-h-[calc(100vh-100px)]">
-            <div className="w-full max-w-7xl mx-auto px-[5%]">
-                 <div className="w-full">
-                    <div className="flex flex-col items-center text-center pt-10">
-                         {sliderItems.map((slide, index) => (
-                             <div key={index} className={cn("transition-opacity duration-700 w-full", current === index ? 'opacity-100' : 'opacity-0 absolute pointer-events-none')}>
-                                <div className="flex flex-col items-center">
-                                    <h1 className={cn("text-4xl md:text-5xl font-bold tracking-tight transition-all duration-700 delay-100", current === index ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0')}>{slide.title}</h1>
-                                    <p className={cn("mt-4 text-white/70 transition-all duration-700 delay-200 max-w-md", current === index ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0')}>{slide.description}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                    <div className="flex flex-col items-center mt-8">
-                        <Carousel setApi={setApi} className="w-full">
-                             <CarouselContent>
-                                {sliderItems.map((slide, index) => (
-                                    <CarouselItem key={index}>
-                                         <div className={cn("transition-opacity duration-700", current === index ? 'opacity-100' : 'opacity-0')}>
-                                            <div className="relative w-full flex items-center justify-center h-[500px] lg:h-[600px]">
-                                                <Image
-                                                    src={slide.screen}
-                                                    alt={slide.alt}
-                                                    width={800}
-                                                    height={600}
-                                                    className={cn("w-auto h-full object-contain transition-all duration-700 delay-500", current === index ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0')}
-                                                    priority={index === 0}
-                                                    unoptimized
-                                                />
-                                                {slide.features.map((feature, i) => (
-                                                    <FeatureHotspot key={i} feature={feature} isActive={current === index} />
-                                                ))}
-                                            </div>
-                                        </div>
-                                     </CarouselItem>
-                                ))}
-                            </CarouselContent>
-                        </Carousel>
-
-                         <div className="flex flex-col sm:flex-row gap-4 mt-[30px]">
-                            <Button variant="outline" className="bg-white/10 border-white/20 hover:bg-white/20 text-white w-full sm:w-[200px]">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M17.435 12.001c-.01.01-.01.02-.02.03l-2.8 2.809c-.18.18-.47.18-.65.01l-1.42-1.41c-.19-.18-.2-.47-.02-.65l1.64-1.631-1.64-1.64c-.18-.18-.17-.47.02-.65l1.42-1.42c.18-.18.47-.18.65-.01l2.8 2.81c.01.01.01.02.02.03a.473.473 0 0 1 0 .66Zm-10.87-5.43c.01-.01.01-.02.02-.03l5.6-5.61c.18-.18.47-.18.65 0l1.41 1.41c.18.18.18.47 0 .65l-4.17 4.18-2.07 2.06c-.18.18-.47.18-.65.01l-1.42-1.41c-.18-.18-.18-.47 0-.65Zm10.87 5.43-.02.03.02-.03Zm-9.45 6.84a.46.46 0 0 1-.02.65l-1.42 1.42c-.18.18-.47.18-.65 0L.435 14.1c-.18-.18-.18-.47 0-.65l1.41-1.42c.18-.18.47-.18.65 0l2.07 2.07 4.17 4.18Z" /></svg>
-                                AppStore
-                            </Button>
-                            <Button variant="outline" className="bg-white/10 border-white/20 hover:bg-white/20 text-white w-full sm:w-[200px]">
-                                <PlayStoreIcon className="mr-2 h-5 w-5" />
-                                Play Store
-                            </Button>
-                        </div>
-                    </div>
+      <div className="fixed inset-0 -z-10">
+        <Image
+          src="/images/sliderhero.jpg"
+          alt="Mountain background"
+          layout="fill"
+          objectFit="cover"
+          className="opacity-20"
+          priority
+          unoptimized
+        />
+      </div>
+      <SiteHeader />
+      <main className="relative z-10 flex flex-col items-center justify-center text-center pt-24 min-h-[calc(100vh-100px)]">
+        <div className="w-full max-w-7xl mx-auto px-[5%]">
+          <div className="flex flex-col items-center pt-10">
+            {sliderItems.map((slide, index) => (
+              <div key={index} className={cn("transition-opacity duration-700 w-full", current === index ? 'opacity-100' : 'opacity-0 absolute pointer-events-none')}>
+                <div className="flex flex-col items-center">
+                  <h1 className={cn("text-4xl md:text-5xl font-bold tracking-tight transition-all duration-700 delay-100", current === index ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0')}>{slide.title}</h1>
+                  <p className={cn("mt-4 text-white/70 transition-all duration-700 delay-200 max-w-md", current === index ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0')}>{slide.description}</p>
                 </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-col items-center mt-8">
+            <Carousel setApi={setApi} className="w-full">
+              <CarouselContent>
+                {sliderItems.map((slide, index) => (
+                  <CarouselItem key={index}>
+                    <div className={cn("transition-opacity duration-700", current === index ? 'opacity-100' : 'opacity-0')}>
+                      <div className="relative w-full flex items-center justify-center h-[500px] lg:h-[600px]">
+                        <Image
+                          src={slide.screen}
+                          alt={slide.alt}
+                          width={800}
+                          height={600}
+                          className={cn("w-auto h-full object-contain transition-all duration-700 delay-500", current === index ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0')}
+                          priority={index === 0}
+                          unoptimized
+                        />
+                        {slide.features.map((feature, i) => (
+                          <FeatureHotspot key={i} feature={feature} isActive={current === index} />
+                        ))}
+                      </div>
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+            </Carousel>
+            <div className="flex flex-col sm:flex-row gap-4 mt-[30px]">
+              <Link href="#" passHref>
+                <Image src="/images/appstore.png" alt="Download on the App Store" width={180} height={60} className="object-contain" unoptimized />
+              </Link>
+              <Link href="#" passHref>
+                 <Image src="/images/play.png" alt="Get it on Google Play" width={180} height={60} className="object-contain" unoptimized />
+              </Link>
             </div>
-        </main>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
+
+    
