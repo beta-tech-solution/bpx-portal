@@ -278,20 +278,20 @@ const DepositFeatureHotspot = ({
 const depositFeatures = [
     {
         Icon: DollarSign,
-        title: "Exact Amount",
-        position: { top: '23%', left: '8%' },
+        title: "Enter Amount",
+        position: { top: '23%', left: '15%' },
         align: 'right'
     },
     {
         Icon: Landmark,
         title: "Bank Details",
-        position: { top: '48%', left: '12%' },
+        position: { top: '48%', left: '15%' },
         align: 'right'
     },
     {
         Icon: UploadCloud,
         title: "Upload Proof",
-        position: { top: '78%', right: '10%' },
+        position: { top: '65%', right: '15%' },
         align: 'left'
     }
 ];
@@ -426,14 +426,21 @@ export default function LandingPage() {
                 </div>
             </div>
              <div className="lg:col-span-7 relative flex justify-center items-center">
-                <div className="absolute w-[80%] h-[80%] bg-blue-100/50 rounded-full blur-3xl -z-0 animate-blob" />
-                <div className="absolute w-[60%] h-[60%] bg-teal-100/50 rounded-full blur-3xl -z-0 animate-blob" style={{ animationDelay: '2s' }}/>
-                
+                <Image
+                    src="/images/circle-art.png"
+                    alt="Decorative circle art"
+                    width={800}
+                    height={800}
+                    className="absolute -z-10 opacity-70 animate-spin-slow"
+                    unoptimized
+                />
                 <Image 
                     src="/images/deposec.png"
                     alt="Deposit Section Mockup"
                     width={600}
                     height={600}
+                    style={{ width: "auto" }}
+                    unoptimized
                     className="relative z-10 animate-fade-in object-contain"
                 />
 
