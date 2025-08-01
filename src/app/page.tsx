@@ -9,7 +9,7 @@ import {
   CarouselItem,
   type CarouselApi,
 } from "@/components/ui/carousel";
-import { Wallet, Landmark, DollarSign, Shield, TrendingUp, UploadCloud, Activity, TrendingDown, MessageSquare, KeyRound, User, FileText, Lock, Zap, MessageCircle, Send, BarChart2 } from 'lucide-react';
+import { Wallet, Landmark, DollarSign, Shield, TrendingUp, UploadCloud, Activity, TrendingDown, MessageSquare, KeyRound, User, FileText, Send, BarChart2, Lock, Zap, MessageCircle } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { SiteHeader } from "@/components/site-header";
 import Link from "next/link";
@@ -317,9 +317,9 @@ export default function LandingPage() {
         </div>
       </main>
 
-       <section className="bg-muted/90 text-foreground py-16 lg:py-24 flex items-center justify-center min-h-[300px]">
+       <section className="bg-muted/90 text-foreground flex items-center h-[290px]">
             <div className="container mx-auto px-[5%]">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 text-center">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-16 text-center">
                     {features.map((feature, index) => (
                         <div key={index} className="flex flex-col items-center group">
                             <div className="relative flex items-center justify-center h-24 w-24 rounded-full border border-primary/30 bg-primary/10 mb-6 transition-all duration-300">
@@ -336,5 +336,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
-    
