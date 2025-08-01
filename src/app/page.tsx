@@ -9,7 +9,7 @@ import {
   CarouselItem,
   type CarouselApi,
 } from "@/components/ui/carousel";
-import { Wallet, Landmark, DollarSign, Shield, TrendingUp, UploadCloud, Activity, TrendingDown, MessageSquare, KeyRound, User, FileText, Send, BarChart2, Lock, Zap, MessageCircle } from 'lucide-react';
+import { Wallet, Landmark, DollarSign, Shield, TrendingUp, UploadCloud, Activity, TrendingDown, MessageSquare, KeyRound, User, FileText, Send, Lock, Zap, MessageCircle, ArrowRight, Circle, ArrowRightCircle } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { SiteHeader } from "@/components/site-header";
 import Link from "next/link";
@@ -37,7 +37,7 @@ const sliderItems = [
         align: "right"
       },
       {
-        Icon: BarChart2,
+        Icon: Activity,
         title: "Realtime Deposit History",
         description: "Your financial data is protected with robust security measures.",
         position: { top: "65%", right: "5%" },
@@ -223,6 +223,79 @@ const features = [
   },
 ];
 
+const DepositFeatureHotspot = ({
+  feature,
+}: {
+  feature: {
+    Icon: React.ElementType;
+    title: string;
+    description: string;
+    position: React.CSSProperties;
+    align: "left" | "right";
+  };
+}) => {
+  const { Icon, title, position, align } = feature;
+
+  return (
+    <div
+      className={cn(
+        "absolute flex items-center group animate-fade-in",
+        align === "left" ? "flex-row" : "flex-row-reverse"
+      )}
+      style={position}
+    >
+      <div className="relative flex items-center justify-center w-8 h-8">
+        <div className="absolute w-full h-full rounded-full bg-primary/20 animate-ping-slow" />
+        <div className="relative w-5 h-5 flex items-center justify-center rounded-full bg-primary text-primary-foreground">
+          <Icon className="w-3 h-3" />
+        </div>
+      </div>
+      <div
+        className={cn(
+          "relative w-16 h-px bg-primary/30",
+          align === "left" ? "ml-2" : "mr-2"
+        )}
+      >
+        <div
+          className={cn(
+            "absolute top-0 h-px bg-primary animate-draw-line",
+            align === "left" ? "left-0" : "right-0"
+          )}
+        />
+      </div>
+      <div
+        className={cn(
+          "font-headline text-foreground",
+          align === "left" ? "text-left" : "text-right"
+        )}
+      >
+        <h3 className="font-semibold text-base">{title}</h3>
+      </div>
+    </div>
+  );
+};
+
+const depositFeatures = [
+    {
+        Icon: Circle,
+        title: "Exact Amount",
+        position: { top: '23%', left: '8%' },
+        align: 'right'
+    },
+    {
+        Icon: Circle,
+        title: "Bank Details",
+        position: { top: '48%', left: '12%' },
+        align: 'right'
+    },
+    {
+        Icon: Circle,
+        title: "Upload Proof",
+        position: { top: '78%', right: '10%' },
+        align: 'left'
+    }
+];
+
 
 export default function LandingPage() {
   const [api, setApi] = React.useState<CarouselApi>();
@@ -332,6 +405,46 @@ export default function LandingPage() {
                     ))}
                 </div>
             </div>
+      </section>
+
+      <section className="bg-background text-foreground py-20 lg:py-32 px-[5%]">
+        <div className="container mx-auto grid lg:grid-cols-10 gap-12 items-center">
+            <div className="lg:col-span-3 space-y-6 text-center lg:text-left">
+                <h2 className="text-4xl font-headline font-bold text-primary animate-slide-from-top" style={{ animationDelay: '0.2s' }}>
+                    Seamless & Secure Deposits
+                </h2>
+                <p className="text-muted-foreground animate-slide-from-left" style={{ animationDelay: '0.4s' }}>
+                    Adding funds to your account is straightforward. Follow our simple steps to deposit money, upload your proof, and see the funds reflect in your wallet upon admin confirmation. Fast, reliable, and secure.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-slide-from-bottom" style={{ animationDelay: '0.6s' }}>
+                   <Link href="#" className="group inline-flex items-center justify-center px-6 py-3 border border-primary text-primary rounded-md font-semibold transition-all duration-300 overflow-hidden relative">
+                       <span className="absolute inset-0 bg-gradient-to-r from-primary to-blue-400 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
+                       <span className="relative z-10 flex items-center gap-2 group-hover:text-white transition-colors duration-300">
+                           <UploadCloud className="w-5 h-5"/> Read More
+                       </span>
+                   </Link>
+                   <Link href="/dashboard/deposit" className="inline-flex items-center justify-center px-6 py-3 bg-primary text-primary-foreground rounded-md font-semibold transition-colors hover:bg-primary/90">
+                       <ArrowRightCircle className="w-5 h-5 mr-2" /> Get Started
+                   </Link>
+                </div>
+            </div>
+             <div className="lg:col-span-7 relative flex justify-center items-center">
+                <div className="absolute w-[80%] h-[80%] bg-blue-100/50 rounded-full blur-3xl -z-0 animate-blob" />
+                <div className="absolute w-[60%] h-[60%] bg-teal-100/50 rounded-full blur-3xl -z-0 animate-blob" style={{ animationDelay: '2s' }}/>
+                
+                <Image 
+                    src="/images/deposec.png"
+                    alt="Deposit Section Mockup"
+                    width={600}
+                    height={600}
+                    className="relative z-10 animate-fade-in"
+                />
+
+                {depositFeatures.map((feature, i) => (
+                    <DepositFeatureHotspot key={i} feature={{...feature, Icon: feature.Icon }} />
+                ))}
+            </div>
+        </div>
       </section>
     </div>
   );
