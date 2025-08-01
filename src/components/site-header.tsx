@@ -82,7 +82,7 @@ export const SiteHeader = () => {
             <div className="bg-black/80 backdrop-blur-sm">
                 <div className="container mx-auto flex items-center justify-between h-20 px-[5%]">
                     <Link href="/" aria-label="Back to homepage">
-                        <AppLogo className="h-[90px] w-auto" />
+                        <AppLogo className="h-[60px] w-auto" />
                     </Link>
 
                     <nav className="hidden md:flex items-center h-full">
