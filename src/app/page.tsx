@@ -277,19 +277,19 @@ const DepositFeatureHotspot = ({
 
 const depositFeatures = [
     {
-        Icon: Circle,
+        Icon: DollarSign,
         title: "Exact Amount",
         position: { top: '23%', left: '8%' },
         align: 'right'
     },
     {
-        Icon: Circle,
+        Icon: Landmark,
         title: "Bank Details",
         position: { top: '48%', left: '12%' },
         align: 'right'
     },
     {
-        Icon: Circle,
+        Icon: UploadCloud,
         title: "Upload Proof",
         position: { top: '78%', right: '10%' },
         align: 'left'
@@ -416,16 +416,13 @@ export default function LandingPage() {
                 <p className="text-muted-foreground animate-slide-from-left" style={{ animationDelay: '0.4s' }}>
                     Adding funds to your account is straightforward. Follow our simple steps to deposit money, upload your proof, and see the funds reflect in your wallet upon admin confirmation. Fast, reliable, and secure.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-slide-from-bottom" style={{ animationDelay: '0.6s' }}>
-                   <Link href="#" className="group inline-flex items-center justify-center px-6 py-3 border border-primary text-primary rounded-md font-semibold transition-all duration-300 overflow-hidden relative">
-                       <span className="absolute inset-0 bg-gradient-to-r from-primary to-blue-400 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
-                       <span className="relative z-10 flex items-center gap-2 group-hover:text-white transition-colors duration-300">
-                           <UploadCloud className="w-5 h-5"/> Read More
-                       </span>
-                   </Link>
-                   <Link href="/dashboard/deposit" className="inline-flex items-center justify-center px-6 py-3 bg-primary text-primary-foreground rounded-md font-semibold transition-colors hover:bg-primary/90">
-                       <ArrowRightCircle className="w-5 h-5 mr-2" /> Get Started
-                   </Link>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center animate-slide-from-bottom" style={{ animationDelay: '0.6s' }}>
+                    <Link href="#" passHref>
+                        <Image src="/images/appstore.png" alt="Download on the App Store" width={180} height={60} className="object-contain" unoptimized />
+                    </Link>
+                    <Link href="#" passHref>
+                        <Image src="/images/play.png" alt="Get it on Google Play" width={180} height={60} className="object-contain" unoptimized />
+                    </Link>
                 </div>
             </div>
              <div className="lg:col-span-7 relative flex justify-center items-center">
@@ -441,7 +438,7 @@ export default function LandingPage() {
                 />
 
                 {depositFeatures.map((feature, i) => (
-                    <DepositFeatureHotspot key={i} feature={{...feature, Icon: feature.Icon }} />
+                    <DepositFeatureHotspot key={i} feature={{...feature, Icon: feature.Icon, description: '' }} />
                 ))}
             </div>
         </div>
