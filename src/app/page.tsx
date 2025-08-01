@@ -9,8 +9,7 @@ import {
   CarouselItem,
   type CarouselApi,
 } from "@/components/ui/carousel";
-import { Button } from "@/components/ui/button";
-import { Wallet, Landmark, DollarSign, Shield, TrendingUp, UploadCloud, Activity, TrendingDown, MessageSquare, KeyRound, User, FileText, BarChart2, Send, Zap, MessageCircle, Lock } from 'lucide-react';
+import { Wallet, Landmark, DollarSign, Shield, TrendingUp, UploadCloud, Activity, TrendingDown, MessageSquare, KeyRound, User, FileText, Lock, Zap, MessageCircle, Send, BarChart2 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { SiteHeader } from "@/components/site-header";
 import Link from "next/link";
@@ -254,18 +253,18 @@ export default function LandingPage() {
 
   return (
     <div className="w-full min-h-screen text-white overflow-x-hidden">
-        <div className="fixed inset-0 -z-20">
-            <Image
-                src="/images/sliderhero.jpg"
-                alt="Mountain background"
-                fill
-                style={{ objectFit: "cover" }}
-                className="opacity-100"
-                priority
-                unoptimized
-            />
-        </div>
-        <div className="fixed inset-0 bg-black/80 -z-10" />
+      <div className="fixed inset-0 -z-20">
+          <Image
+              src="/images/sliderhero.jpg"
+              alt="Mountain background"
+              fill
+              style={{ objectFit: "cover" }}
+              className="opacity-100"
+              priority
+              unoptimized
+          />
+      </div>
+      <div className="fixed inset-0 bg-black/80 -z-10" />
 
       <SiteHeader />
 
@@ -318,16 +317,17 @@ export default function LandingPage() {
         </div>
       </main>
 
-       <section className="bg-muted/90 text-foreground py-20 lg:py-28">
+       <section className="bg-muted/90 text-foreground py-16 lg:py-24 flex items-center justify-center min-h-[300px]">
             <div className="container mx-auto px-[5%]">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 text-center">
                     {features.map((feature, index) => (
-                        <div key={index} className="flex flex-col items-center">
-                            <div className="flex items-center justify-center h-24 w-24 rounded-full border border-accent/30 bg-accent/10 mb-6 transition-all duration-300 hover:scale-110 hover:shadow-lg hover:border-accent">
-                                <feature.icon className="w-12 h-12 text-accent" />
+                        <div key={index} className="flex flex-col items-center group">
+                            <div className="relative flex items-center justify-center h-24 w-24 rounded-full border border-primary/30 bg-primary/10 mb-6 transition-all duration-300">
+                                <span className="absolute inline-flex h-full w-full rounded-full bg-primary/20 animate-ping-slow opacity-0 group-hover:opacity-100"></span>
+                                <feature.icon className="w-[26px] h-[26px] text-primary" />
                             </div>
-                            <h3 className="text-xl font-bold font-headline mb-2">{feature.title}</h3>
-                            <p className="text-muted-foreground max-w-xs">{feature.description}</p>
+                            <h3 className="text-[22px] font-headline font-normal mb-2">{feature.title}</h3>
+                            <p className="text-base font-normal text-muted-foreground max-w-xs">{feature.description}</p>
                         </div>
                     ))}
                 </div>
@@ -336,3 +336,5 @@ export default function LandingPage() {
     </div>
   );
 }
+
+    
