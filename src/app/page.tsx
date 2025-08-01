@@ -247,52 +247,57 @@ export default function LandingPage() {
             />
         </div>
         <SiteHeader />
-        <main className="relative z-10 flex flex-col items-center justify-center text-center pt-32 md:pt-40">
-            <div className="w-full flex-1 flex flex-col items-center justify-center">
-                 <Carousel setApi={setApi} className="w-full max-w-7xl">
-                    <div className="px-4">
-                        {sliderItems.map((slide, index) => (
-                             <div key={index} className={cn("transition-opacity duration-700", current === index ? 'opacity-100' : 'opacity-0 absolute inset-0 pointer-events-none')}>
-                                <div className="flex flex-col items-center justify-center h-full">
+        <main className="relative z-10 flex flex-col items-center justify-center text-center pt-16 md:pt-24 min-h-[calc(100vh-100px)]">
+            <div className="w-full max-w-7xl mx-auto px-[5%]">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+                    <div className="md:col-span-5 flex flex-col items-center md:items-start text-center md:text-left">
+                         {sliderItems.map((slide, index) => (
+                             <div key={index} className={cn("transition-opacity duration-700 w-full", current === index ? 'opacity-100' : 'opacity-0 absolute pointer-events-none')}>
+                                <div className="flex flex-col items-center md:items-start">
                                     <h1 className={cn("text-4xl md:text-5xl font-bold tracking-tight transition-all duration-700 delay-100", current === index ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0')}>{slide.title}</h1>
-                                    <p className={cn("mt-4 text-white/70 transition-all duration-700 delay-200", current === index ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0')}>{slide.description}</p>
-                                    <div className="mt-8 flex flex-col sm:flex-row gap-4">
-                                        <Button variant="outline" className="bg-white/10 border-white/20 hover:bg-white/20 text-white w-full sm:w-[320px] transition-all duration-700 delay-300">
-                                            <Apple className="mr-2 h-5 w-5"/> AppStore
-                                        </Button>
-                                         <Button variant="outline" className="bg-white/10 border-white/20 hover:bg-white/20 text-white w-full sm:w-[320px] transition-all duration-700 delay-400">
-                                            <PlayStoreIcon className="mr-2 h-5 w-5" />
-                                            Play Store
-                                        </Button>
-                                    </div>
+                                    <p className={cn("mt-4 text-white/70 transition-all duration-700 delay-200 max-w-md", current === index ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0')}>{slide.description}</p>
                                 </div>
                             </div>
                         ))}
                     </div>
-                     <CarouselContent className="mt-24 lg:mt-32">
-                        {sliderItems.map((slide, index) => (
-                            <CarouselItem key={index}>
-                                <div className="relative w-full flex items-center justify-center h-[500px] lg:h-[600px]">
-                                    <Image
-                                        src={slide.screen}
-                                        alt={slide.alt}
-                                        width={800}
-                                        height={600}
-                                        className={cn("w-auto h-full object-contain transition-all duration-700 delay-500", current === index ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0')}
-                                        priority={index === 0}
-                                    />
-                                    {slide.features.map((feature, i) => (
-                                        <FeatureHotspot key={i} feature={feature} isActive={current === index} />
-                                    ))}
-                                </div>
-                             </CarouselItem>
-                        ))}
-                    </CarouselContent>
-                </Carousel>
+                    <div className="md:col-span-7 flex flex-col items-center">
+                        <Carousel setApi={setApi} className="w-full">
+                             <CarouselContent>
+                                {sliderItems.map((slide, index) => (
+                                    <CarouselItem key={index}>
+                                         <div className={cn("transition-opacity duration-700", current === index ? 'opacity-100' : 'opacity-0')}>
+                                            <div className="relative w-full flex items-center justify-center h-[500px] lg:h-[600px]">
+                                                <Image
+                                                    src={slide.screen}
+                                                    alt={slide.alt}
+                                                    width={800}
+                                                    height={600}
+                                                    className={cn("w-auto h-full object-contain transition-all duration-700 delay-500", current === index ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0')}
+                                                    priority={index === 0}
+                                                />
+                                                {slide.features.map((feature, i) => (
+                                                    <FeatureHotspot key={i} feature={feature} isActive={current === index} />
+                                                ))}
+                                            </div>
+                                        </div>
+                                     </CarouselItem>
+                                ))}
+                            </CarouselContent>
+                        </Carousel>
+
+                         <div className="mt-8 flex flex-col sm:flex-row gap-4">
+                            <Button variant="outline" className="bg-white/10 border-white/20 hover:bg-white/20 text-white w-full sm:w-[200px]">
+                                <Apple className="mr-2 h-5 w-5"/> AppStore
+                            </Button>
+                                <Button variant="outline" className="bg-white/10 border-white/20 hover:bg-white/20 text-white w-full sm:w-[200px]">
+                                <PlayStoreIcon className="mr-2 h-5 w-5" />
+                                Play Store
+                            </Button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
-         {/* Dummy content to demonstrate parallax */}
-        <div className="h-[100vh] bg-transparent relative z-10"></div>
     </div>
   );
 }
