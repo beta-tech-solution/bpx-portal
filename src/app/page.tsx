@@ -9,7 +9,7 @@ import {
   CarouselItem,
   type CarouselApi,
 } from "@/components/ui/carousel";
-import { Wallet, Landmark, DollarSign, Shield, TrendingUp, UploadCloud, Activity, TrendingDown, MessageSquare, KeyRound, User, FileText, Send, Lock, Zap, MessageCircle, ArrowRight, Circle, ArrowRightCircle, BarChart2 } from 'lucide-react';
+import { Wallet, Landmark, DollarSign, Shield, TrendingUp, UploadCloud, Activity, TrendingDown, MessageSquare, KeyRound, User, FileText, Send, Lock, Zap, MessageCircle, ArrowRight, Circle, ArrowRightCircle } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { SiteHeader } from "@/components/site-header";
 import Link from "next/link";
@@ -38,7 +38,7 @@ const sliderItems = [
         align: "right"
       },
       {
-        Icon: BarChart2,
+        Icon: Activity,
         title: "Realtime Deposit History",
         description: "Your financial data is protected with robust security measures.",
         position: { top: "65%", right: "5%" },
@@ -408,11 +408,10 @@ export default function LandingPage() {
       </section>
 
       <section className="bg-background text-foreground py-20 lg:py-32 px-[5%] relative overflow-hidden">
-        <ParticlesBackground variant="default" className="absolute inset-0 -z-0 opacity-50" />
         <div className="container mx-auto grid lg:grid-cols-10 gap-12 items-center relative z-10">
             <div className="lg:col-span-3 space-y-6 text-center lg:text-left">
                 <h2 className="text-4xl font-headline font-bold text-primary animate-slide-from-top" style={{ animationDelay: '0.2s' }}>
-                    Seamless & Secure Deposits
+                    <span className="font-script text-5xl block">Seamless & Secure</span> Deposits
                 </h2>
                 <p className="text-muted-foreground animate-slide-from-left" style={{ animationDelay: '0.4s' }}>
                     Adding funds to your account is straightforward. Follow our simple steps to deposit money, upload your proof, and see the funds reflect in your wallet upon admin confirmation. Fast, reliable, and secure.
@@ -433,10 +432,9 @@ export default function LandingPage() {
                 <Image 
                     src="/images/deposec.png"
                     alt="Deposit Section Mockup"
-                    width={0}
+                    width={600}
                     height={600}
-                    className="relative z-10 animate-fade-in w-auto"
-                    sizes="100vw"
+                    className="relative z-10 animate-fade-in object-contain"
                 />
 
                 {depositFeatures.map((feature, i) => (

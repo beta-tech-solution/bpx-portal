@@ -13,6 +13,7 @@ export default {
       fontFamily: {
         body: ['PT Sans', 'sans-serif'],
         headline: ['Poppins', 'sans-serif'],
+        script: ['Dancing Script', 'cursive'],
         code: ['monospace'],
       },
       colors: {
