@@ -9,10 +9,11 @@ import {
   CarouselItem,
   type CarouselApi,
 } from "@/components/ui/carousel";
-import { Wallet, Landmark, DollarSign, Shield, TrendingUp, UploadCloud, Activity, TrendingDown, MessageSquare, KeyRound, User, FileText, Send, Lock, Zap, MessageCircle, ArrowRight, Circle, ArrowRightCircle } from 'lucide-react';
+import { Wallet, Landmark, DollarSign, Shield, TrendingUp, UploadCloud, Activity, TrendingDown, MessageSquare, KeyRound, User, FileText, Send, Lock, Zap, MessageCircle, ArrowRight, Circle, ArrowRightCircle, BarChart2 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { SiteHeader } from "@/components/site-header";
 import Link from "next/link";
+import ParticlesBackground from "@/components/particles-background";
 
 
 const sliderItems = [
@@ -37,7 +38,7 @@ const sliderItems = [
         align: "right"
       },
       {
-        Icon: Activity,
+        Icon: BarChart2,
         title: "Realtime Deposit History",
         description: "Your financial data is protected with robust security measures.",
         position: { top: "65%", right: "5%" },
@@ -229,7 +230,6 @@ const DepositFeatureHotspot = ({
   feature: {
     Icon: React.ElementType;
     title: string;
-    description: string;
     position: React.CSSProperties;
     align: "left" | "right";
   };
@@ -246,8 +246,8 @@ const DepositFeatureHotspot = ({
     >
       <div className="relative flex items-center justify-center w-8 h-8">
         <div className="absolute w-full h-full rounded-full bg-primary/20 animate-ping-slow" />
-        <div className="relative w-5 h-5 flex items-center justify-center rounded-full bg-primary text-primary-foreground">
-          <Icon className="w-3 h-3" />
+        <div className="relative w-8 h-8 flex items-center justify-center rounded-full bg-primary text-primary-foreground">
+          <Icon className="w-5 h-5" />
         </div>
       </div>
       <div
@@ -407,8 +407,9 @@ export default function LandingPage() {
             </div>
       </section>
 
-      <section className="bg-background text-foreground py-20 lg:py-32 px-[5%]">
-        <div className="container mx-auto grid lg:grid-cols-10 gap-12 items-center">
+      <section className="bg-background text-foreground py-20 lg:py-32 px-[5%] relative overflow-hidden">
+        <ParticlesBackground variant="default" className="absolute inset-0 -z-0 opacity-50" />
+        <div className="container mx-auto grid lg:grid-cols-10 gap-12 items-center relative z-10">
             <div className="lg:col-span-3 space-y-6 text-center lg:text-left">
                 <h2 className="text-4xl font-headline font-bold text-primary animate-slide-from-top" style={{ animationDelay: '0.2s' }}>
                     Seamless & Secure Deposits
@@ -418,10 +419,10 @@ export default function LandingPage() {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center animate-slide-from-bottom" style={{ animationDelay: '0.6s' }}>
                     <Link href="#" passHref>
-                        <Image src="/images/appstore.png" alt="Download on the App Store" width={180} height={60} className="object-contain" unoptimized />
+                        <Image src="/images/appstore.png" alt="Download on the App Store" width={180} height={60} className="object-contain transition-transform hover:scale-105 drop-shadow-lg hover:drop-shadow-xl" unoptimized />
                     </Link>
                     <Link href="#" passHref>
-                        <Image src="/images/play.png" alt="Get it on Google Play" width={180} height={60} className="object-contain" unoptimized />
+                        <Image src="/images/play.png" alt="Get it on Google Play" width={180} height={60} className="object-contain transition-transform hover:scale-105 drop-shadow-lg hover:drop-shadow-xl" unoptimized />
                     </Link>
                 </div>
             </div>
@@ -438,7 +439,7 @@ export default function LandingPage() {
                 />
 
                 {depositFeatures.map((feature, i) => (
-                    <DepositFeatureHotspot key={i} feature={{...feature, Icon: feature.Icon, description: '' }} />
+                    <DepositFeatureHotspot key={i} feature={{...feature, Icon: feature.Icon }} />
                 ))}
             </div>
         </div>
@@ -446,3 +447,5 @@ export default function LandingPage() {
     </div>
   );
 }
+
+    
