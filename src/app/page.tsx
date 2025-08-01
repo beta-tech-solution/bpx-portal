@@ -246,7 +246,7 @@ const DepositFeatureHotspot = ({
     >
       <div className="relative flex items-center justify-center w-8 h-8">
         <div className="absolute w-full h-full rounded-full bg-primary/20 animate-ping-slow" />
-        <div className="relative w-8 h-8 flex items-center justify-center rounded-full bg-primary text-primary-foreground">
+        <div className="relative flex items-center justify-center rounded-full bg-primary text-primary-foreground w-8 h-8">
           <Icon className="w-5 h-5" />
         </div>
       </div>
@@ -380,10 +380,10 @@ export default function LandingPage() {
             </Carousel>
             <div className="flex flex-col sm:flex-row items-center gap-4 mt-[30px]">
               <Link href="#" passHref>
-                <Image src="/images/appstore.png" alt="Download on the App Store" width={180} height={60} className="object-contain" unoptimized />
+                <Image src="/images/appstore.png" alt="Download on the App Store" width={180} height={60} className="object-contain drop-shadow-lg hover:drop-shadow-xl" unoptimized />
               </Link>
               <Link href="#" passHref>
-                 <Image src="/images/play.png" alt="Get it on Google Play" width={180} height={60} className="object-contain" unoptimized />
+                 <Image src="/images/play.png" alt="Get it on Google Play" width={180} height={60} className="object-contain drop-shadow-lg hover:drop-shadow-xl" unoptimized />
               </Link>
             </div>
           </div>
@@ -433,9 +433,10 @@ export default function LandingPage() {
                 <Image 
                     src="/images/deposec.png"
                     alt="Deposit Section Mockup"
-                    width={600}
+                    width={0}
                     height={600}
-                    className="relative z-10 animate-fade-in"
+                    className="relative z-10 animate-fade-in w-auto"
+                    sizes="100vw"
                 />
 
                 {depositFeatures.map((feature, i) => (
@@ -447,5 +448,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
-    
