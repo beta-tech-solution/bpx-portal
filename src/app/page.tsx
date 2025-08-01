@@ -10,7 +10,7 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
-import { Wallet, Landmark, DollarSign, Shield, TrendingUp, UploadCloud, Activity, TrendingDown, MessageSquare, KeyRound, User, FileText, BarChart2, Send } from 'lucide-react';
+import { Wallet, Landmark, DollarSign, Shield, TrendingUp, UploadCloud, Activity, TrendingDown, MessageSquare, KeyRound, User, FileText, BarChart2, Send, Zap, MessageCircle, Lock } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { SiteHeader } from "@/components/site-header";
 import Link from "next/link";
@@ -27,14 +27,14 @@ const sliderItems = [
         Icon: TrendingUp,
         title: "Total Deposits",
         description: "See your total approved deposits at a glance.",
-        position: { top: "35%", left: "5%" },
+        position: { top: "30%", left: "5%" },
         align: "right"
       },
       {
         Icon: TrendingDown,
         title: "Total Withdrawals",
         description: "Monitor your all-time withdrawals from your account.",
-        position: { top: "50%", left: "5%" },
+        position: { top: "45%", left: "5%" },
         align: "right"
       },
       {
@@ -56,21 +56,21 @@ const sliderItems = [
         Icon: DollarSign,
         title: "Enter Amount",
         description: "Quickly input the amount you wish to deposit.",
-        position: { top: "40%", left: "5%" },
+        position: { top: "24%", left: "5%" },
         align: "right"
       },
       {
         Icon: Landmark,
         title: "Bank Details",
         description: "Clear instructions and account details for your transfer.",
-        position: { top: "58%", left: "5%" },
+        position: { top: "48%", left: "5%" },
         align: "right"
       },
       {
         Icon: UploadCloud,
         title: "Proof Upload",
         description: "Securely upload your transaction proof for fast verification.",
-        position: { top: "72%", right: "5%" },
+        position: { top: "64%", right: "5%" },
         align: "left"
       },
     ],
@@ -85,7 +85,7 @@ const sliderItems = [
         Icon: Wallet,
         title: "Total Withdrawn",
         description: "Track your all-time approved withdrawals.",
-        position: { top: "30%", left: "5%" },
+        position: { top: "25%", left: "5%" },
         align: "right"
       },
       {
@@ -99,7 +99,7 @@ const sliderItems = [
         Icon: Send,
         title: "Submit Request",
         description: "Your withdrawal request is sent to admins for approval.",
-        position: { top: "75%", right: "5%" },
+        position: { top: "85%", right: "5%" },
         align: "left"
       },
     ],
@@ -201,6 +201,29 @@ const FeatureHotspot = ({
     );
 };
 
+const features = [
+  {
+    icon: Lock,
+    title: "Secure Deposits",
+    description: "Your funds are protected with industry-leading security protocols.",
+  },
+  {
+    icon: Zap,
+    title: "Fast Withdrawals",
+    description: "Access your money quickly with our efficient withdrawal process.",
+  },
+  {
+    icon: MessageCircle,
+    title: "Live Support",
+    description: "Get instant help from our dedicated support team via live chat.",
+  },
+  {
+    icon: Shield,
+    title: "Total Transparency",
+    description: "Track every transaction with a clear and detailed history.",
+  },
+];
+
 
 export default function LandingPage() {
   const [api, setApi] = React.useState<CarouselApi>();
@@ -230,32 +253,35 @@ export default function LandingPage() {
   }, [api]);
 
   return (
-    <div className="w-full min-h-screen bg-[#0c0a18] text-white overflow-x-hidden">
-      <div className="fixed inset-0 -z-10">
-        <Image
-          src="/images/sliderhero.jpg"
-          alt="Mountain background"
-          layout="fill"
-          objectFit="cover"
-          className="opacity-20"
-          priority
-          unoptimized
-        />
-      </div>
+    <div className="w-full min-h-screen text-white overflow-x-hidden">
+        <div className="fixed inset-0 -z-20">
+            <Image
+                src="/images/sliderhero.jpg"
+                alt="Mountain background"
+                fill
+                style={{ objectFit: "cover" }}
+                className="opacity-100"
+                priority
+                unoptimized
+            />
+        </div>
+        <div className="fixed inset-0 bg-black/80 -z-10" />
+
       <SiteHeader />
+
       <main className="relative z-10 flex flex-col items-center justify-center text-center pt-24 min-h-[calc(100vh-100px)]">
         <div className="w-full max-w-7xl mx-auto px-[5%]">
-          <div className="flex flex-col items-center pt-10">
-            {sliderItems.map((slide, index) => (
-              <div key={index} className={cn("transition-opacity duration-700 w-full", current === index ? 'opacity-100' : 'opacity-0 absolute pointer-events-none')}>
-                <div className="flex flex-col items-center">
-                  <h1 className={cn("text-4xl md:text-5xl font-bold tracking-tight transition-all duration-700 delay-100", current === index ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0')}>{slide.title}</h1>
-                  <p className={cn("mt-4 text-white/70 transition-all duration-700 delay-200 max-w-md", current === index ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0')}>{slide.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="flex flex-col items-center mt-8">
+            <div className="flex flex-col items-center pt-10">
+                {sliderItems.map((slide, index) => (
+                  <div key={index} className={cn("transition-opacity duration-700 w-full", current === index ? 'opacity-100' : 'opacity-0 absolute pointer-events-none')}>
+                    <div className="flex flex-col items-center">
+                      <h1 className={cn("text-4xl md:text-5xl font-bold tracking-tight transition-all duration-700 delay-100", current === index ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0')}>{slide.title}</h1>
+                      <p className={cn("mt-4 text-white/70 transition-all duration-700 delay-200 max-w-md", current === index ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0')}>{slide.description}</p>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          <div className="flex flex-col items-center">
             <Carousel setApi={setApi} className="w-full">
               <CarouselContent>
                 {sliderItems.map((slide, index) => (
@@ -291,6 +317,22 @@ export default function LandingPage() {
           </div>
         </div>
       </main>
+
+       <section className="bg-muted/90 text-foreground py-20 lg:py-28">
+            <div className="container mx-auto px-[5%]">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 text-center">
+                    {features.map((feature, index) => (
+                        <div key={index} className="flex flex-col items-center">
+                            <div className="flex items-center justify-center h-24 w-24 rounded-full border border-accent/30 bg-accent/10 mb-6 transition-all duration-300 hover:scale-110 hover:shadow-lg hover:border-accent">
+                                <feature.icon className="w-12 h-12 text-accent" />
+                            </div>
+                            <h3 className="text-xl font-bold font-headline mb-2">{feature.title}</h3>
+                            <p className="text-muted-foreground max-w-xs">{feature.description}</p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+      </section>
     </div>
   );
 }
