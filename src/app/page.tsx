@@ -10,7 +10,7 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
-import { Wallet, Landmark, DollarSign, ShieldCheck, TrendingUp, UploadCloud, Activity, TrendingDown, MessageSquare, Shield, KeyRound, User, FileText, BarChart2 } from 'lucide-react';
+import { Wallet, Landmark, DollarSign, Shield, TrendingUp, UploadCloud, Activity, TrendingDown, MessageSquare, KeyRound, User, FileText, BarChart2, Send } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { SiteHeader } from "@/components/site-header";
 
@@ -61,21 +61,21 @@ const sliderItems = [
         Icon: DollarSign,
         title: "Enter Amount",
         description: "Quickly input the amount you wish to deposit.",
-        position: { top: "25%", left: "15%" },
+        position: { top: "40%", left: "15%" },
         align: "right"
       },
       {
         Icon: Landmark,
         title: "Bank Details",
         description: "Clear instructions and account details for your transfer.",
-        position: { top: "45%", left: "15%" },
+        position: { top: "58%", left: "15%" },
         align: "right"
       },
       {
         Icon: UploadCloud,
         title: "Proof Upload",
         description: "Securely upload your transaction proof for fast verification.",
-        position: { top: "65%", right: "15%" },
+        position: { top: "72%", right: "15%" },
         align: "left"
       },
     ],
@@ -101,7 +101,7 @@ const sliderItems = [
         align: "right"
       },
       {
-        Icon: UploadCloud,
+        Icon: Send,
         title: "Submit Request",
         description: "Your withdrawal request is sent to admins for approval.",
         position: { top: "75%", right: "15%" },
@@ -159,7 +159,7 @@ const sliderItems = [
             align: "right"
         },
         {
-            Icon: UploadCloud,
+            Icon: MessageSquare,
             title: "Real-time Messaging",
             description: "Instant message delivery for a seamless conversation flow.",
             position: { top: "85%", right: "10%" },
@@ -247,10 +247,10 @@ export default function LandingPage() {
             />
         </div>
         <SiteHeader />
-        <main className="relative z-10 flex flex-col items-center justify-center text-center pt-16 md:pt-24 min-h-[calc(100vh-100px)]">
+        <main className="relative z-10 flex flex-col items-center justify-center text-center pt-24 min-h-[calc(100vh-100px)]">
             <div className="w-full max-w-7xl mx-auto px-[5%]">
                  <div className="w-full">
-                    <div className="flex flex-col items-center text-center">
+                    <div className="flex flex-col items-center text-center pt-10">
                          {sliderItems.map((slide, index) => (
                              <div key={index} className={cn("transition-opacity duration-700 w-full", current === index ? 'opacity-100' : 'opacity-0 absolute pointer-events-none')}>
                                 <div className="flex flex-col items-center">
@@ -286,7 +286,7 @@ export default function LandingPage() {
                             </CarouselContent>
                         </Carousel>
 
-                         <div className="mt-8 flex flex-col sm:flex-row gap-4">
+                         <div className="flex flex-col sm:flex-row gap-4">
                             <Button variant="outline" className="bg-white/10 border-white/20 hover:bg-white/20 text-white w-full sm:w-[200px]">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M17.435 12.001c-.01.01-.01.02-.02.03l-2.8 2.809c-.18.18-.47.18-.65.01l-1.42-1.41c-.19-.18-.2-.47-.02-.65l1.64-1.631-1.64-1.64c-.18-.18-.17-.47.02-.65l1.42-1.42c.18-.18.47-.18.65-.01l2.8 2.81c.01.01.01.02.02.03a.473.473 0 0 1 0 .66Zm-10.87-5.43c.01-.01.01-.02.02-.03l5.6-5.61c.18-.18.47-.18.65 0l1.41 1.41c.18.18.18.47 0 .65l-4.17 4.18-2.07 2.06c-.18.18-.47.18-.65.01l-1.42-1.41c-.18-.18-.18-.47 0-.65Zm10.87 5.43-.02.03.02-.03Zm-9.45 6.84a.46.46 0 0 1-.02.65l-1.42 1.42c-.18.18-.47.18-.65 0L.435 14.1c-.18-.18-.18-.47 0-.65l1.41-1.42c.18-.18.47-.18.65 0l2.07 2.07 4.17 4.18Z" /></svg>
                                 AppStore
