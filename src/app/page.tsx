@@ -280,7 +280,7 @@ export default function LandingPage() {
                 ))}
               </CarouselContent>
             </Carousel>
-            <div className="flex flex-col sm:flex-row gap-4 mt-[30px]">
+            <div className="flex flex-col sm:flex-row items-center gap-4 mt-[30px]">
               <Link href="#" passHref>
                 <Image src="/images/appstore.png" alt="Download on the App Store" width={180} height={60} className="object-contain" unoptimized />
               </Link>
@@ -294,5 +294,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
-    
