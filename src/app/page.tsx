@@ -296,6 +296,27 @@ const depositFeatures = [
     }
 ];
 
+const withdrawalFeatures = [
+    {
+        Icon: Wallet,
+        title: "Total Withdrawn",
+        position: { top: '25%', left: '15%' },
+        align: 'right'
+    },
+    {
+        Icon: Landmark,
+        title: "Your Bank Info",
+        position: { top: '55%', right: '15%' },
+        align: 'left'
+    },
+    {
+        Icon: Send,
+        title: "Submit Request",
+        position: { top: '85%', right: '15%' },
+        align: 'left'
+    },
+];
+
 
 export default function LandingPage() {
   const [api, setApi] = React.useState<CarouselApi>();
@@ -429,16 +450,16 @@ export default function LandingPage() {
                 <Image
                     src="/images/circle-art.png"
                     alt="Decorative circle art"
-                    width={800}
-                    height={800}
-                    className="absolute -z-10 opacity-70 animate-spin-slow"
+                    width={600}
+                    height={600}
+                    className="absolute -z-10 opacity-10 animate-spin-slow"
                     unoptimized
                 />
                 <Image 
-                    src="/images/deposec.png"
+                    src="/images/prot.png"
                     alt="Deposit Section Mockup"
-                    width={600}
-                    height={600}
+                    width={500}
+                    height={500}
                     style={{ width: "auto" }}
                     unoptimized
                     className="relative z-10 animate-fade-in object-contain"
@@ -450,6 +471,50 @@ export default function LandingPage() {
             </div>
         </div>
       </section>
+
+      <section className="bg-muted/10 text-foreground py-20 lg:py-32 px-[5%] relative overflow-hidden">
+        <div className="container mx-auto grid lg:grid-cols-2 gap-12 items-center relative z-10">
+            <div className="lg:order-last lg:col-span-1 space-y-6 text-center lg:text-left">
+                <h2 className="text-4xl font-headline font-bold text-primary animate-slide-from-top" style={{ animationDelay: '0.2s' }}>
+                    <span className="font-script text-5xl block">Effortless & Quick</span> Withdrawals
+                </h2>
+                <p className="text-muted-foreground animate-slide-from-left" style={{ animationDelay: '0.4s' }}>
+                    Access your funds whenever you need them. Our streamlined withdrawal process ensures your money is transferred to your bank account securely and promptly after admin approval.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center animate-slide-from-bottom" style={{ animationDelay: '0.6s' }}>
+                    <Link href="#" passHref>
+                        <Image src="/images/appstore.png" alt="Download on the App Store" width={180} height={60} className="object-contain transition-transform hover:scale-105 drop-shadow-lg hover:drop-shadow-xl" unoptimized />
+                    </Link>
+                    <Link href="#" passHref>
+                        <Image src="/images/play.png" alt="Get it on Google Play" width={180} height={60} className="object-contain transition-transform hover:scale-105 drop-shadow-lg hover:drop-shadow-xl" unoptimized />
+                    </Link>
+                </div>
+            </div>
+             <div className="lg:col-span-1 relative flex justify-center items-center">
+                <Image
+                    src="/images/circle-art.png"
+                    alt="Decorative circle art"
+                    width={600}
+                    height={600}
+                    className="absolute -z-10 opacity-5 animate-spin-slow"
+                    unoptimized
+                />
+                <Image 
+                    src="/images/with.png"
+                    alt="Withdrawal Section Mockup"
+                    width={500}
+                    height={500}
+                    style={{ width: "auto" }}
+                    unoptimized
+                    className="relative z-10 animate-fade-in object-contain"
+                />
+                {withdrawalFeatures.map((feature, i) => (
+                    <DepositFeatureHotspot key={i} feature={{...feature, Icon: feature.Icon }} />
+                ))}
+            </div>
+        </div>
+      </section>
+
     </div>
   );
 }
