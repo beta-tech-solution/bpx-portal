@@ -500,10 +500,10 @@ export default function LandingPage() {
         <ParticlesBackground variant="admin" />
         <div className="container mx-auto grid lg:grid-cols-2 gap-12 items-center relative z-10">
             <div className="lg:order-last lg:col-span-1 space-y-6 text-center lg:text-left">
-                <h2 className="text-4xl font-headline font-bold text-primary animate-slide-from-top" style={{ animationDelay: '0.2s' }}>
-                    <span className="font-script text-5xl block">Effortless & Quick</span> Withdrawals
+                <h2 className="text-4xl font-headline font-bold text-white animate-slide-from-top" style={{ animationDelay: '0.2s' }}>
+                    <span className="font-script text-5xl block text-white">Effortless & Quick</span> Withdrawals
                 </h2>
-                <p className="text-muted-foreground animate-slide-from-left" style={{ animationDelay: '0.4s' }}>
+                <p className="text-white/70 animate-slide-from-left" style={{ animationDelay: '0.4s' }}>
                     Access your funds whenever you need them. Our streamlined withdrawal process ensures your money is transferred to your bank account securely and promptly after admin approval.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center animate-slide-from-bottom" style={{ animationDelay: '0.6s' }}>
@@ -541,7 +541,6 @@ export default function LandingPage() {
       </section>
       
       <section className="bg-background text-foreground py-20 lg:py-32 px-[5%] relative overflow-hidden">
-          <ParticlesBackground variant="signup" className="opacity-50" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60rem] h-[60rem] bg-primary/5 rounded-full filter blur-3xl animate-blob opacity-50"></div>
           
           <div className="container mx-auto grid lg:grid-cols-2 gap-12 items-center relative z-10">
@@ -569,6 +568,14 @@ export default function LandingPage() {
                       <div className="absolute top-0 left-1/4 w-32 h-32 bg-accent/20 rounded-full filter blur-2xl animate-blob animation-delay-2000"></div>
                       <div className="absolute bottom-10 right-0 w-48 h-48 bg-primary/20 rounded-full filter blur-3xl animate-blob animation-delay-4000"></div>
                   </div>
+                   <Image 
+                        src="/images/neon.png"
+                        alt="Neon circle"
+                        width={600}
+                        height={600}
+                        className="absolute -z-10 opacity-70 animate-spin-slow rounded-full"
+                        unoptimized
+                    />
                    <PhoneMockup className="max-w-[320px]">
                       <Image
                           src="/images/dob.png"
@@ -586,3 +593,4 @@ export default function LandingPage() {
     </div>
   );
 }
+
