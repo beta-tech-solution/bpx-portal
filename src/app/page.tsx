@@ -13,7 +13,7 @@ import { Wallet, Landmark, DollarSign, Shield, TrendingUp, UploadCloud, Activity
 import { cn } from "@/lib/utils";
 import { SiteHeader } from "@/components/site-header";
 import Link from "next/link";
-
+import { AppLogo } from "@/components/app-logo";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { PhoneMockup } from "@/components/phone-mockup";
 
@@ -597,21 +597,21 @@ export default function LandingPage() {
                     icon={KeyRound}
                     title="Your Credentials"
                     description="Admin-provided username and password for BPExch."
-                    position={{ top: '35%', right: '0%', lg: { right: '15%'} }}
+                    position={{ top: '35%', right: '15%'}}
                     align="left"
                 />
                 <BpexchFeatureHotspot 
                     icon={Shield}
                     title="Block Suspicious IPs"
                     description="Instantly block any unrecognized IP address."
-                    position={{ top: '55%', left: '0%', lg: { left: '15%'} }}
+                    position={{ top: '70%', left: '15%'}}
                     align="right"
                 />
                 <BpexchFeatureHotspot 
                     icon={Activity}
                     title="Login History"
                     description="Review all login attempts for enhanced security."
-                    position={{ top: '75%', right: '0%', lg: { right: '20%'} }}
+                    position={{ top: '55%', right: '20%'}}
                     align="left"
                 />
             </div>
@@ -638,7 +638,7 @@ export default function LandingPage() {
                   <p className="text-muted-foreground animate-slide-from-left" style={{ animationDelay: '0.4s' }}>
                       We provide a secure, fast, and user-friendly platform for all your financial needs. Explore our frequently asked questions to learn more about our commitment to excellence.
                   </p>
-                  <Accordion type="single" collapsible className="w-full text-left">
+                  <Accordion type="single" collapsible className="w-full text-left" id="faq">
                       {faqItems.map((item, index) => (
                           <AccordionItem key={index} value={`item-${index}`}>
                               <AccordionTrigger className="font-semibold text-lg hover:no-underline">{item.question}</AccordionTrigger>
@@ -675,7 +675,40 @@ export default function LandingPage() {
               </div>
           </div>
       </section>
-
+      <footer className="border-t bg-background text-foreground">
+        <div className="container py-8 px-[5%]">
+            <div className="grid gap-8 md:grid-cols-4">
+                <div className="flex flex-col gap-2">
+                    <Link href="/" className="flex items-center gap-2 font-bold" prefetch={false}>
+                        <AppLogo className="h-10 w-auto" />
+                    </Link>
+                    <p className="text-sm text-muted-foreground">Your Portal to Effortless Finance.</p>
+                </div>
+                <div className="flex flex-col gap-2">
+                    <h4 className="font-semibold font-headline">Company</h4>
+                    <Link href="/about-us" className="text-sm text-muted-foreground hover:text-primary" prefetch={false}>About Us</Link>
+                    <Link href="/contact-us" className="text-sm text-muted-foreground hover:text-primary" prefetch={false}>Contact Us</Link>
+                </div>
+                <div className="flex flex-col gap-2">
+                    <h4 className="font-semibold font-headline">Legal</h4>
+                    <Link href="/terms-of-service" className="text-sm text-muted-foreground hover:text-primary" prefetch={false}>Terms of Service</Link>
+                    <Link href="/privacy-policy" className="text-sm text-muted-foreground hover:text-primary" prefetch={false}>Privacy Policy</Link>
+                    <Link href="/refund-policy" className="text-sm text-muted-foreground hover:text-primary" prefetch={false}>Refund Policy</Link>
+                </div>
+                 <div className="flex flex-col gap-2">
+                    <h4 className="font-semibold font-headline">Support</h4>
+                    <Link href="/#faq" className="text-sm text-muted-foreground hover:text-primary" prefetch={false}>FAQ</Link>
+                    <Link href="/login" className="text-sm text-muted-foreground hover:text-primary" prefetch={false}>My Account</Link>
+                </div>
+            </div>
+             <div className="mt-8 flex flex-col md:flex-row justify-between items-center border-t pt-6">
+                <p className="text-xs text-muted-foreground">&copy; 2024 BPX Master. All rights reserved.</p>
+                <p className="text-xs text-muted-foreground mt-2 md:mt-0">
+                    Developed by <a href="https://beta-tech.solutions" target="_blank" rel="noopener noreferrer" className="font-medium hover:text-primary underline underline-offset-4">Beta Tech Solutions</a>.
+                </p>
+            </div>
+        </div>
+      </footer>
     </div>
   );
 }
