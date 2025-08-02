@@ -7,10 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LanguageToggle } from '@/components/language-toggle';
-import { Landmark, TrendingDown, Loader2 } from "lucide-react";
+import { Landmark, TrendingDown, Loader2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Area, AreaChart, CartesianGrid, XAxis, Tooltip } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { auth, db } from '@/lib/firebase/config';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { collection, addDoc, serverTimestamp, query, where, onSnapshot, doc, updateDoc, increment } from 'firebase/firestore';
@@ -35,13 +36,21 @@ export default function WithdrawPage() {
   const [totalWithdrawals, setTotalWithdrawals] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [chartData, setChartData] = useState<WithdrawalChartData[]>([]);
+  const [hasPendingWithdrawal, setHasPendingWithdrawal] = useState(false);
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
     if (!user) return;
 
-    const q = query(collection(db, 'withdrawals'), where('userId', '==', user.uid), where('status', '==', 'Approved'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    // Check for pending withdrawals
+    const pendingQuery = query(collection(db, 'withdrawals'), where('userId', '==', user.uid), where('status', '==', 'Pending'));
+    const unsubscribePending = onSnapshot(pendingQuery, (snapshot) => {
+        setHasPendingWithdrawal(!snapshot.empty);
+    });
+
+
+    const approvedQuery = query(collection(db, 'withdrawals'), where('userId', '==', user.uid), where('status', '==', 'Approved'));
+    const unsubscribeApproved = onSnapshot(approvedQuery, (snapshot) => {
         let total = 0;
         const monthlyData: { [key: string]: number } = {};
         snapshot.forEach(doc => {
@@ -59,7 +68,10 @@ export default function WithdrawPage() {
         setChartData(formattedChartData);
     });
 
-    return () => unsubscribe();
+    return () => {
+        unsubscribePending();
+        unsubscribeApproved();
+    }
   }, [user]);
 
   const handleWithdraw = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -116,6 +128,15 @@ export default function WithdrawPage() {
 
   return (
     <div className="animate-fade-in grid gap-8">
+       {hasPendingWithdrawal && (
+             <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Pending Withdrawal Request</AlertTitle>
+                <AlertDescription>
+                    You already have a withdrawal request pending approval. Please wait for the admin to process it before submitting a new one.
+                </AlertDescription>
+            </Alert>
+        )}
       <Card className={`w-full max-w-2xl mx-auto ${isMobile ? "max-w-[420px]" : ""}`}>
         <form onSubmit={handleWithdraw}>
         <CardHeader>
@@ -172,7 +193,7 @@ export default function WithdrawPage() {
           </div>
         </CardContent>
         <CardFooter>
-          <Button type="submit" disabled={isLoading}>
+          <Button type="submit" disabled={isLoading || hasPendingWithdrawal}>
             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Landmark className="mr-2 h-4 w-4" />}
             Submit Withdrawal Request
           </Button>

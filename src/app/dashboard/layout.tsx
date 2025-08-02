@@ -26,7 +26,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { DollarSign, Landmark, LogOut, Wallet, ExternalLink, LayoutDashboard, Loader2, Settings, MoreVertical } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { DollarSign, Landmark, LogOut, Wallet, ExternalLink, LayoutDashboard, Loader2, Settings, MoreVertical, Info } from "lucide-react";
 import { auth, db } from "@/lib/firebase/config";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import { doc, onSnapshot, updateDoc, serverTimestamp, getDoc } from "firebase/firestore";
@@ -52,6 +53,7 @@ interface UserData {
     photoURL?: string;
     role: 'Admin' | 'User';
     emailVerified: boolean;
+    bpexchUsername?: string;
 }
 
 export default function DashboardLayout({
@@ -105,9 +107,9 @@ export default function DashboardLayout({
             return;
         }
         
-        const userData = userDoc.data() as UserData;
+        const userDataFromDb = userDoc.data() as UserData;
 
-        if (userData.role !== 'Admin' && !currentUser.emailVerified) {
+        if (userDataFromDb.role !== 'Admin' && !currentUser.emailVerified) {
              toast({
                 title: "Email Not Verified",
                 description: "Please check your inbox and verify your email address to log in.",
@@ -118,7 +120,7 @@ export default function DashboardLayout({
         }
 
         setUser(currentUser);
-        setUserData(userData);
+        setUserData(userDataFromDb);
         setLoading(false);
 
         const unsubscribeSnapshot = onSnapshot(userDocRef, (doc) => {
@@ -160,6 +162,8 @@ export default function DashboardLayout({
     }
     return name.substring(0, 2).toUpperCase();
   };
+  
+  const isAccountPending = !userData?.bpexchUsername;
 
   const loadingText = `Loading My ${getPageTitle()}`;
 
@@ -228,6 +232,18 @@ export default function DashboardLayout({
             </div>
         </header>
         <main className="flex-1 p-4 md:p-6 mb-20 md:mb-0 overflow-hidden">
+            {isAccountPending && (
+                 <Alert className="mb-6 bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-200">
+                    <Info className="h-4 w-4 !text-blue-600 dark:!text-blue-300" />
+                    <AlertTitle className="font-semibold">Account Pending Approval</AlertTitle>
+                    <AlertDescription>
+                        Your account is currently under review. To expedite the approval process, please make a deposit.
+                        <Link href="/dashboard/deposit" className="font-bold underline ml-2 hover:text-blue-600 dark:hover:text-blue-100">
+                            Make a Deposit
+                        </Link>
+                    </AlertDescription>
+                </Alert>
+            )}
             {children}
         </main>
         {user && <ChatWidget />}

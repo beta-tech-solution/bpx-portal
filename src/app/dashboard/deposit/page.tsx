@@ -8,11 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { LanguageToggle } from '@/components/language-toggle';
-import { UploadCloud, Hourglass, TrendingUp, Loader2, Landmark } from 'lucide-react';
+import { UploadCloud, Hourglass, TrendingUp, Loader2, Landmark, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Area, AreaChart, CartesianGrid, XAxis, Tooltip } from "recharts"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { auth, db } from '@/lib/firebase/config';
 import { collection, addDoc, serverTimestamp, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -50,14 +51,20 @@ export default function DepositPage() {
   const [chartData, setChartData] = useState<DepositChartData[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loadingAccounts, setLoadingAccounts] = useState(true);
+  const [hasPendingDeposit, setHasPendingDeposit] = useState(false);
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
     if (!user) return;
 
-    const q = query(collection(db, 'deposits'), where('userId', '==', user.uid), where('status', '==', 'Approved'));
-    
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    // Check for pending deposits
+    const pendingQuery = query(collection(db, 'deposits'), where('userId', '==', user.uid), where('status', '==', 'Pending'));
+    const unsubscribePending = onSnapshot(pendingQuery, (snapshot) => {
+        setHasPendingDeposit(!snapshot.empty);
+    });
+
+    const approvedQuery = query(collection(db, 'deposits'), where('userId', '==', user.uid), where('status', '==', 'Approved'));
+    const unsubscribeApproved = onSnapshot(approvedQuery, (querySnapshot) => {
         const monthlyData: { [key: string]: number } = {};
         
         querySnapshot.forEach((doc) => {
@@ -71,7 +78,10 @@ export default function DepositPage() {
         setChartData(formattedChartData);
     });
 
-    return () => unsubscribe();
+    return () => {
+        unsubscribePending();
+        unsubscribeApproved();
+    };
   }, [user]);
 
   useEffect(() => {
@@ -204,6 +214,15 @@ export default function DepositPage() {
 
   return (
     <div className="animate-fade-in grid gap-8">
+        {hasPendingDeposit && (
+             <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Pending Deposit Request</AlertTitle>
+                <AlertDescription>
+                    You already have a deposit request pending approval. Please wait for the admin to process it before submitting a new one.
+                </AlertDescription>
+            </Alert>
+        )}
         <Card className={`w-full max-w-2xl mx-auto ${isMobile ? "max-w-[420px]" : ""}`}>
             <CardHeader>
                 <CardTitle className="font-headline">Deposit Funds</CardTitle>
@@ -255,7 +274,7 @@ export default function DepositPage() {
                     </div>
                 </CardContent>
                 <CardFooter>
-                    <Button type="submit" className="bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isLoading}>
+                    <Button type="submit" className="bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isLoading || hasPendingDeposit}>
                         {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
                         Submit Deposit
                     </Button>
