@@ -14,7 +14,8 @@ import { useToast } from "@/hooks/use-toast"
 import { db, auth } from "@/lib/firebase/config"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { collection, doc, query, onSnapshot, orderBy, addDoc, setDoc, serverTimestamp, updateDoc } from "firebase/firestore"
-import { format, formatDistanceToNow } from 'date-fns'
+import { format } from 'date-fns'
+import Image from "next/image"
 
 const CLOUDINARY_CLOUD_NAME = "datq7sbdp";
 const CLOUDINARY_UPLOAD_PRESET = "bpxmaster";
@@ -42,7 +43,6 @@ export default function ChatWidget() {
   const notificationAudioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-     // Ensure audio element is created on client
     notificationAudioRef.current = new Audio('/notification.mp3');
     notificationAudioRef.current.preload = 'auto';
   }, []);
@@ -58,7 +58,7 @@ export default function ChatWidget() {
     const unsubscribeChat = onSnapshot(chatDocRef, (docSnap) => {
         if(docSnap.exists()){
             const data = docSnap.data();
-            if(!data.userRead) {
+            if(!data.userRead && isOpen === false) { // Only count if chat is closed
                 setUnreadCount(prev => prev + 1);
             }
         }
@@ -69,7 +69,6 @@ export default function ChatWidget() {
     const unsubscribeMessages = onSnapshot(q, (querySnapshot) => {
       const msgs: Message[] = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
 
-      // Play sound only for new incoming messages from admin
       if (messages.length > 0 && msgs.length > messages.length) {
         const lastMsg = msgs[msgs.length - 1];
         if(lastMsg.senderId === 'admin') {
@@ -84,19 +83,18 @@ export default function ChatWidget() {
         unsubscribeChat();
         unsubscribeMessages();
     }
-  }, [user])
+  }, [user, isOpen])
 
   useEffect(() => {
-    // Scroll to bottom when messages change
     if (scrollAreaRef.current) {
         scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
     }
   }, [messages, isOpen]);
 
   const toggleOpen = async () => {
-    setIsOpen(!isOpen);
-    if (!isOpen && chatId) {
-        // When opening, mark messages as read by user
+    const nextIsOpen = !isOpen;
+    setIsOpen(nextIsOpen);
+    if (nextIsOpen && chatId) {
         setUnreadCount(0);
         await updateDoc(doc(db, 'chats', chatId), { userRead: true });
     }
@@ -117,7 +115,6 @@ export default function ChatWidget() {
             ...(attachment && { attachmentUrl: attachment.url, attachmentName: attachment.name }),
         });
 
-        // Create or update the chat session document
         await setDoc(chatDocRef, {
             userId: user.uid,
             userName: user.displayName || 'Anonymous',
@@ -166,6 +163,8 @@ export default function ChatWidget() {
     const names = name.split(' ');
     return names.length > 1 ? `${names[0][0]}${names[names.length - 1][0]}` : name.substring(0, 1);
   };
+  
+  const isImage = (url: string) => /\.(jpeg|jpg|gif|png|webp)$/i.test(url);
 
   return (
     <>
@@ -193,11 +192,17 @@ export default function ChatWidget() {
                   <div key={msg.id} className={cn("flex items-end gap-2", msg.senderId === user?.uid ? "justify-end" : "justify-start")}>
                     {msg.senderId !== user?.uid && <Avatar className="h-8 w-8"><AvatarFallback>{getInitials('Admin')}</AvatarFallback></Avatar>}
                      <div className={cn("max-w-xs md:max-w-xs rounded-lg px-3 py-2", msg.senderId === user?.uid ? "bg-primary text-primary-foreground" : "bg-muted")}>
-                        <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                        {msg.text && <p className="text-sm whitespace-pre-wrap">{msg.text}</p>}
                         {msg.attachmentUrl && (
-                            <a href={msg.attachmentUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 mt-2 text-xs text-blue-500 underline">
-                               <FileText className="h-4 w-4" /> {msg.attachmentName || 'View Attachment'}
-                            </a>
+                             isImage(msg.attachmentUrl) ? (
+                                 <a href={msg.attachmentUrl} target="_blank" rel="noopener noreferrer" className="mt-2 block">
+                                    <Image src={msg.attachmentUrl} alt={msg.attachmentName || 'Attachment'} width={200} height={200} className="rounded-md object-cover" />
+                                 </a>
+                            ) : (
+                                <a href={msg.attachmentUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 mt-2 text-xs text-blue-500 underline">
+                                   <FileText className="h-4 w-4" /> {msg.attachmentName || 'View Attachment'}
+                                </a>
+                            )
                         )}
                         <p className="text-xs text-right mt-1 opacity-70">
                             {msg.timestamp ? format(msg.timestamp.toDate(), 'p') : '...'}

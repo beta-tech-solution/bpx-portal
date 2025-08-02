@@ -4,13 +4,16 @@
 import { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation';
 import { db } from "@/lib/firebase/config";
-import { collection, query, onSnapshot, orderBy } from "firebase/firestore";
+import { collection, query, onSnapshot, orderBy, doc, deleteDoc, getDocs } from "firebase/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from 'date-fns';
-import { Loader2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 interface ChatSession {
   id: string;
@@ -24,6 +27,7 @@ export default function AdminChatListPage() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
     setLoading(true);
@@ -46,6 +50,26 @@ export default function AdminChatListPage() {
     const names = name.split(' ');
     return names.length > 1 ? `${names[0][0]}${names[names.length - 1][0]}` : name.substring(0, 1);
   };
+  
+  const handleDeleteChat = async (chatId: string) => {
+    try {
+        const chatRef = doc(db, 'chats', chatId);
+        const messagesQuery = query(collection(chatRef, 'messages'));
+        const messagesSnapshot = await getDocs(messagesQuery);
+        
+        // Firestore doesn't support batch deletes of subcollections from the client-side easily.
+        // We delete messages one by one. For large chats, a cloud function is better.
+        for (const messageDoc of messagesSnapshot.docs) {
+            await deleteDoc(doc(db, `chats/${chatId}/messages`, messageDoc.id));
+        }
+        
+        await deleteDoc(chatRef);
+        toast({ title: "Chat Deleted", description: "The entire chat session has been removed." });
+    } catch(e) {
+        console.error("Error deleting chat:", e);
+        toast({ title: "Error", description: "Could not delete chat session.", variant: "destructive" });
+    }
+  }
 
   if (loading) {
     return <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin h-8 w-8" /></div>;
@@ -63,28 +87,51 @@ export default function AdminChatListPage() {
             sessions.map(session => (
               <div
                 key={session.id}
-                className="flex items-center gap-4 p-4 border-b cursor-pointer hover:bg-muted/50"
-                onClick={() => router.push(`/admin/chat/${session.id}`)}
+                className="flex items-center gap-4 p-4 border-b group hover:bg-muted/50"
               >
-                <Avatar>
-                  <AvatarFallback>{getInitials(session.userName)}</AvatarFallback>
-                </Avatar>
-                <div className="flex-grow overflow-hidden">
-                  <div className="flex justify-between items-center">
-                    <p className="font-semibold truncate">{session.userName}</p>
-                    {session.lastMessageTimestamp && (
-                      <p className="text-xs text-muted-foreground whitespace-nowrap">
-                        {formatDistanceToNow(session.lastMessageTimestamp.toDate(), { addSuffix: true })}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex justify-between items-start">
-                    <p className="text-sm text-muted-foreground truncate">{session.lastMessage}</p>
-                    {!session.adminRead && (
-                       <Badge variant="destructive" className="ml-2">New</Badge>
-                    )}
-                  </div>
+                <div
+                    className="flex-grow flex items-center gap-4 cursor-pointer"
+                    onClick={() => router.push(`/admin/chat/${session.id}`)}
+                >
+                    <Avatar>
+                      <AvatarFallback>{getInitials(session.userName)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-grow overflow-hidden">
+                      <div className="flex justify-between items-center">
+                        <p className="font-semibold truncate">{session.userName}</p>
+                        {session.lastMessageTimestamp && (
+                          <p className="text-xs text-muted-foreground whitespace-nowrap">
+                            {formatDistanceToNow(session.lastMessageTimestamp.toDate(), { addSuffix: true })}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex justify-between items-start">
+                        <p className="text-sm text-muted-foreground truncate">{session.lastMessage}</p>
+                        {!session.adminRead && (
+                           <Badge variant="destructive" className="ml-2">New</Badge>
+                        )}
+                      </div>
+                    </div>
                 </div>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-destructive/70 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Chat?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This will permanently delete the entire chat history with {session.userName}. This action cannot be undone.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDeleteChat(session.id)} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
               </div>
             ))
           ) : (

@@ -3,19 +3,21 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from 'next/navigation';
-import { db, auth } from "@/lib/firebase/config";
-import { collection, query, onSnapshot, orderBy, doc, addDoc, serverTimestamp, updateDoc } from "firebase/firestore";
-import { useAuthState } from 'react-firebase-hooks/auth';
+import { db } from "@/lib/firebase/config";
+import { collection, query, onSnapshot, orderBy, doc, addDoc, serverTimestamp, updateDoc, deleteDoc, getDocs } from "firebase/firestore";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Send, Loader2, Paperclip, FileText, ArrowLeft } from "lucide-react";
+import { Send, Loader2, Paperclip, FileText, ArrowLeft, MoreVertical, Edit, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
-import Link from "next/link";
+import Image from "next/image";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 const CLOUDINARY_CLOUD_NAME = "datq7sbdp";
 const CLOUDINARY_UPLOAD_PRESET = "bpxmaster";
@@ -36,12 +38,14 @@ export default function AdminChatPage() {
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [user] = useAuthState(auth);
   const [chatUser, setChatUser] = useState({ name: 'User' });
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const notificationAudioRef = useRef<HTMLAudioElement>(null);
+
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
+  const [editText, setEditText] = useState("");
 
   useEffect(() => {
     if (!chatId) return;
@@ -61,7 +65,6 @@ export default function AdminChatPage() {
     const unsubscribeMessages = onSnapshot(q, (querySnapshot) => {
       const msgs: Message[] = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
       
-      // Play sound only for new incoming messages from the user
       if (messages.length > 0 && msgs.length > messages.length) {
         const lastMsg = msgs[msgs.length - 1];
         if(lastMsg.senderId !== 'admin') {
@@ -80,20 +83,19 @@ export default function AdminChatPage() {
   }, [chatId]);
 
   useEffect(() => {
-    // Scroll to bottom when messages change
     if (scrollAreaRef.current) {
         scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
     }
   }, [messages]);
 
-   const getInitials = (name: string) => {
+  const getInitials = (name: string) => {
     if (!name) return 'U';
     const names = name.split(' ');
     return names.length > 1 ? `${names[0][0]}${names[names.length - 1][0]}` : name.substring(0, 1);
   };
 
   const handleSendMessage = async (attachment?: { url: string; name: string }) => {
-    if ((!newMessage.trim() && !attachment) || !user) return;
+    if ((!newMessage.trim() && !attachment) || !chatId) return;
     setSending(true);
     
     try {
@@ -146,12 +148,29 @@ export default function AdminChatPage() {
     }
   }
 
+  const handleEditMessage = async () => {
+    if (!editingMessage || !chatId) return;
+    const messageRef = doc(db, `chats/${chatId}/messages`, editingMessage.id);
+    await updateDoc(messageRef, { text: editText });
+    toast({ title: "Message updated" });
+    setEditingMessage(null);
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!chatId) return;
+    await deleteDoc(doc(db, `chats/${chatId}/messages`, messageId));
+    toast({ title: "Message deleted" });
+  };
+  
+  const isImage = (url: string) => /\.(jpeg|jpg|gif|png|webp)$/i.test(url);
+
 
   if (loading) {
     return <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin h-8 w-8" /></div>;
   }
 
   return (
+    <>
     <Card className="h-full flex flex-col animate-fade-in">
       <audio ref={notificationAudioRef} src="/notification.mp3" preload="auto"></audio>
       <CardHeader className="border-b">
@@ -171,20 +190,56 @@ export default function AdminChatPage() {
         <ScrollArea className="h-full p-4" ref={scrollAreaRef}>
           <div className="space-y-4">
             {messages.map(msg => (
-              <div key={msg.id} className={cn("flex items-end gap-2", msg.senderId === 'admin' ? "justify-end" : "justify-start")}>
+              <div key={msg.id} className={cn("flex items-end gap-2 group", msg.senderId === 'admin' ? "justify-end" : "justify-start")}>
                  {msg.senderId !== 'admin' && <Avatar className="h-8 w-8"><AvatarFallback>{getInitials(chatUser.name)}</AvatarFallback></Avatar>}
                  <div className={cn("max-w-xs md:max-w-md rounded-lg px-3 py-2", msg.senderId === 'admin' ? "bg-primary text-primary-foreground" : "bg-muted")}>
-                    <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                    {msg.text && <p className="text-sm whitespace-pre-wrap">{msg.text}</p>}
                     {msg.attachmentUrl && (
-                        <a href={msg.attachmentUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 mt-2 text-xs text-blue-500 underline">
-                           <FileText className="h-4 w-4" /> {msg.attachmentName || 'View Attachment'}
-                        </a>
+                        isImage(msg.attachmentUrl) ? (
+                             <a href={msg.attachmentUrl} target="_blank" rel="noopener noreferrer" className="mt-2 block">
+                                <Image src={msg.attachmentUrl} alt={msg.attachmentName || 'Attachment'} width={200} height={200} className="rounded-md object-cover" />
+                             </a>
+                        ) : (
+                            <a href={msg.attachmentUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 mt-2 text-xs text-blue-500 underline">
+                               <FileText className="h-4 w-4" /> {msg.attachmentName || 'View Attachment'}
+                            </a>
+                        )
                     )}
                     <p className="text-xs text-right mt-1 opacity-70">
                         {msg.timestamp ? format(msg.timestamp.toDate(), 'p') : '...'}
                     </p>
                  </div>
-                 {msg.senderId === 'admin' && <Avatar className="h-8 w-8"><AvatarFallback>{getInitials('Admin')}</AvatarFallback></Avatar>}
+                 {msg.senderId === 'admin' && 
+                    <>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <MoreVertical className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                <DropdownMenuItem onClick={() => { setEditingMessage(msg); setEditText(msg.text); }}>
+                                    <Edit className="mr-2 h-4 w-4" /> Edit
+                                </DropdownMenuItem>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                            <Trash2 className="mr-2 h-4 w-4 text-destructive" /> <span className="text-destructive">Delete</span>
+                                        </DropdownMenuItem>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete the message.</AlertDialogDescription></AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleDeleteMessage(msg.id)}>Delete</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        <Avatar className="h-8 w-8"><AvatarFallback>{getInitials('Admin')}</AvatarFallback></Avatar>
+                    </>
+                 }
               </div>
             ))}
           </div>
@@ -209,5 +264,20 @@ export default function AdminChatPage() {
         </div>
       </CardFooter>
     </Card>
+    {editingMessage && (
+         <AlertDialog open onOpenChange={() => setEditingMessage(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Edit Message</AlertDialogTitle>
+                </AlertDialogHeader>
+                <Textarea value={editText} onChange={(e) => setEditText(e.target.value)} className="min-h-[100px]" />
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleEditMessage}>Save Changes</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    )}
+    </>
   );
 }
