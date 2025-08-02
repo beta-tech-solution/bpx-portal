@@ -9,11 +9,13 @@ import {
   CarouselItem,
   type CarouselApi,
 } from "@/components/ui/carousel";
-import { Wallet, Landmark, DollarSign, Shield, TrendingUp, UploadCloud, Activity, TrendingDown, MessageSquare, KeyRound, User, FileText, Send, Lock, Zap, MessageCircle, ArrowRight, Circle, ArrowRightCircle } from 'lucide-react';
+import { Wallet, Landmark, DollarSign, Shield, TrendingUp, UploadCloud, Activity, TrendingDown, MessageSquare, KeyRound, User, FileText, Send, Lock, Zap, MessageCircle, ArrowRight, Circle, ArrowRightCircle, BarChart2 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { SiteHeader } from "@/components/site-header";
 import Link from "next/link";
 import ParticlesBackground from "@/components/particles-background";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { PhoneMockup } from "@/components/phone-mockup";
 
 
 const sliderItems = [
@@ -37,8 +39,8 @@ const sliderItems = [
         position: { top: "45%", left: "5%" },
         align: "right"
       },
-      {
-        Icon: Activity,
+       {
+        Icon: BarChart2,
         title: "Realtime Deposit History",
         description: "Your financial data is protected with robust security measures.",
         position: { top: "65%", right: "5%" },
@@ -317,6 +319,25 @@ const withdrawalFeatures = [
     },
 ];
 
+const faqItems = [
+    {
+        question: "How secure are my transactions?",
+        answer: "We prioritize your security using state-of-the-art encryption and robust authentication protocols. All transactions are monitored to prevent fraud, ensuring your funds and data are always protected."
+    },
+    {
+        question: "How long do deposits and withdrawals take?",
+        answer: "Deposits are typically credited to your account within minutes of admin confirmation. Withdrawals are processed swiftly and usually reflect in your bank account within 24-48 business hours."
+    },
+    {
+        question: "What if I need help with a transaction?",
+        answer: "Our dedicated support team is available 24/7 via live chat. You can initiate a conversation directly from your dashboard to get real-time assistance with any questions or issues."
+    },
+    {
+        question: "Can I use BPX Master on my mobile device?",
+        answer: "Absolutely! Our platform is fully responsive and designed to work seamlessly across all devices, including desktops, tablets, and smartphones. You can also download our native apps from the App Store and Google Play."
+    }
+];
+
 
 export default function LandingPage() {
   const [api, setApi] = React.useState<CarouselApi>();
@@ -429,6 +450,9 @@ export default function LandingPage() {
       </section>
 
       <section className="bg-background text-foreground py-20 lg:py-32 px-[5%] relative overflow-hidden">
+        <div className="absolute top-0 left-0 -translate-x-1/3 -translate-y-1/3 w-96 h-96 bg-primary/5 rounded-full filter blur-3xl animate-blob opacity-70"></div>
+        <div className="absolute bottom-0 right-0 translate-x-1/3 translate-y-1/3 w-96 h-96 bg-accent/5 rounded-full filter blur-3xl animate-blob animation-delay-4000 opacity-70"></div>
+        
         <div className="container mx-auto grid lg:grid-cols-10 gap-12 items-center relative z-10">
             <div className="lg:col-span-3 space-y-6 text-center lg:text-left">
                 <h2 className="text-4xl font-headline font-bold text-primary animate-slide-from-top" style={{ animationDelay: '0.2s' }}>
@@ -456,10 +480,10 @@ export default function LandingPage() {
                     unoptimized
                 />
                 <Image 
-                    src="/images/prot.png"
+                    src="/images/deposec.png"
                     alt="Deposit Section Mockup"
-                    width={500}
-                    height={500}
+                    width={600}
+                    height={600}
                     style={{ width: "auto" }}
                     unoptimized
                     className="relative z-10 animate-fade-in object-contain"
@@ -473,6 +497,7 @@ export default function LandingPage() {
       </section>
 
       <section className="bg-muted/10 text-foreground py-20 lg:py-32 px-[5%] relative overflow-hidden">
+        <ParticlesBackground variant="admin" />
         <div className="container mx-auto grid lg:grid-cols-2 gap-12 items-center relative z-10">
             <div className="lg:order-last lg:col-span-1 space-y-6 text-center lg:text-left">
                 <h2 className="text-4xl font-headline font-bold text-primary animate-slide-from-top" style={{ animationDelay: '0.2s' }}>
@@ -513,6 +538,49 @@ export default function LandingPage() {
                 ))}
             </div>
         </div>
+      </section>
+      
+      <section className="bg-background text-foreground py-20 lg:py-32 px-[5%] relative overflow-hidden">
+          <ParticlesBackground variant="signup" className="opacity-50" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60rem] h-[60rem] bg-primary/5 rounded-full filter blur-3xl animate-blob opacity-50"></div>
+          
+          <div className="container mx-auto grid lg:grid-cols-2 gap-12 items-center relative z-10">
+              <div className="space-y-6 text-center lg:text-left">
+                  <h2 className="text-4xl font-headline font-bold text-primary animate-slide-from-top" style={{ animationDelay: '0.2s' }}>
+                      <span className="font-script text-5xl block">Still have questions?</span>
+                      Why Choose Us
+                  </h2>
+                  <p className="text-muted-foreground animate-slide-from-left" style={{ animationDelay: '0.4s' }}>
+                      We provide a secure, fast, and user-friendly platform for all your financial needs. Explore our frequently asked questions to learn more about our commitment to excellence.
+                  </p>
+                  <Accordion type="single" collapsible className="w-full text-left">
+                      {faqItems.map((item, index) => (
+                          <AccordionItem key={index} value={`item-${index}`}>
+                              <AccordionTrigger className="font-semibold text-lg hover:no-underline">{item.question}</AccordionTrigger>
+                              <AccordionContent className="text-muted-foreground">
+                                  {item.answer}
+                              </AccordionContent>
+                          </AccordionItem>
+                      ))}
+                  </Accordion>
+              </div>
+              <div className="relative flex justify-center items-center">
+                  <div className="absolute -inset-8 w-full h-full">
+                      <div className="absolute top-0 left-1/4 w-32 h-32 bg-accent/20 rounded-full filter blur-2xl animate-blob animation-delay-2000"></div>
+                      <div className="absolute bottom-10 right-0 w-48 h-48 bg-primary/20 rounded-full filter blur-3xl animate-blob animation-delay-4000"></div>
+                  </div>
+                   <PhoneMockup className="max-w-[320px]">
+                      <Image
+                          src="/images/dob.png"
+                          alt="App dashboard on phone"
+                          width={320}
+                          height={650}
+                          className="w-full h-full object-cover"
+                          unoptimized
+                      />
+                  </PhoneMockup>
+              </div>
+          </div>
       </section>
 
     </div>
