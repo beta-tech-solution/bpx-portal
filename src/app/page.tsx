@@ -13,7 +13,7 @@ import { Wallet, Landmark, DollarSign, Shield, TrendingUp, UploadCloud, Activity
 import { cn } from "@/lib/utils";
 import { SiteHeader } from "@/components/site-header";
 import Link from "next/link";
-import ParticlesBackground from "@/components/particles-background";
+
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { PhoneMockup } from "@/components/phone-mockup";
 
@@ -338,6 +338,20 @@ const faqItems = [
     }
 ];
 
+const ThreeDHotspot = ({ icon: Icon, title, description, position }: { icon: React.ElementType, title: string, description: string, position: React.CSSProperties }) => (
+    <div className="absolute w-64 p-4 rounded-lg bg-white/10 backdrop-blur-md border border-white/20" style={position}>
+        <div className="flex items-center gap-3">
+            <div className="w-10 h-10 flex items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <Icon className="w-5 h-5"/>
+            </div>
+            <div>
+                <h4 className="font-bold text-white">{title}</h4>
+                <p className="text-xs text-white/70">{description}</p>
+            </div>
+        </div>
+    </div>
+);
+
 
 export default function LandingPage() {
   const [api, setApi] = React.useState<CarouselApi>();
@@ -476,7 +490,7 @@ export default function LandingPage() {
                     alt="Decorative circle art"
                     width={600}
                     height={600}
-                    className="absolute -z-10 opacity-10 animate-spin-slow"
+                    className="absolute -z-10 opacity-5 animate-spin-slow"
                     unoptimized
                 />
                 <Image 
@@ -484,7 +498,7 @@ export default function LandingPage() {
                     alt="Deposit Section Mockup"
                     width={600}
                     height={600}
-                    style={{ width: "auto" }}
+                    style={{ width: "auto", height: "600px" }}
                     unoptimized
                     className="relative z-10 animate-fade-in object-contain"
                 />
@@ -497,7 +511,7 @@ export default function LandingPage() {
       </section>
 
       <section className="bg-muted/10 text-foreground py-20 lg:py-32 px-[5%] relative overflow-hidden">
-        <ParticlesBackground variant="admin" />
+        
         <div className="container mx-auto grid lg:grid-cols-2 gap-12 items-center relative z-10">
             <div className="lg:order-last lg:col-span-1 space-y-6 text-center lg:text-left">
                 <h2 className="text-4xl font-headline font-bold text-white animate-slide-from-top" style={{ animationDelay: '0.2s' }}>
@@ -540,6 +554,58 @@ export default function LandingPage() {
         </div>
       </section>
       
+      <section className="relative py-20 lg:py-32 px-[5%] overflow-hidden">
+         <Image
+            src="/images/sliderhero.jpg"
+            alt="Mountain background"
+            fill
+            className="absolute inset-0 w-full h-full object-cover -z-20"
+            unoptimized
+        />
+        <div className="absolute inset-0 bg-black/70 -z-10" />
+        <div className="container mx-auto text-center text-white relative">
+            <h2 className="text-4xl font-headline font-bold">
+                Secure, Monitored BPExch Access
+            </h2>
+            <p className="mt-4 max-w-2xl mx-auto text-white/70">
+                Log in to your BPExch account with confidence. We provide your credentials and track all login activity, allowing you to block any suspicious IP addresses instantly for complete peace of mind.
+            </p>
+            <div className="relative mt-12 flex justify-center items-center h-[650px] [perspective:1000px]">
+                <div className="absolute w-full h-full [transform-style:preserve-3d] animate-spin-slow [animation-duration:40s]">
+                    <ThreeDHotspot 
+                        icon={KeyRound}
+                        title="Your Credentials"
+                        description="Admin-provided username and password for BPExch."
+                        position={{ transform: 'rotateY(0deg) translateZ(350px)' }}
+                    />
+                    <ThreeDHotspot 
+                        icon={Shield}
+                        title="Block Suspicious IPs"
+                        description="Instantly block any unrecognized IP address."
+                        position={{ transform: 'rotateY(120deg) translateZ(350px)' }}
+                    />
+                    <ThreeDHotspot 
+                        icon={Activity}
+                        title="Login History"
+                        description="Review all login attempts for enhanced security."
+                        position={{ transform: 'rotateY(240deg) translateZ(350px)' }}
+                    />
+                </div>
+
+                <PhoneMockup className="max-w-[280px] md:max-w-[320px]">
+                    <Image
+                      src="/images/bpexchlogin.png"
+                      alt="BPExch Login on phone"
+                      width={320}
+                      height={650}
+                      className="w-full h-full object-cover"
+                      unoptimized
+                    />
+                </PhoneMockup>
+            </div>
+        </div>
+      </section>
+
       <section className="bg-background text-foreground py-20 lg:py-32 px-[5%] relative overflow-hidden">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60rem] h-[60rem] bg-primary/5 rounded-full filter blur-3xl animate-blob opacity-50"></div>
           
@@ -593,4 +659,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
