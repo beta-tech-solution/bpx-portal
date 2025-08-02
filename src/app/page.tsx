@@ -444,7 +444,7 @@ export default function LandingPage() {
                 ))}
               </CarouselContent>
             </Carousel>
-            <div className="flex flex-col sm:flex-row items-center gap-4 mt-[30px]">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-[30px]">
               <Link href="#" passHref>
                 <Image src="/images/appstore.png" alt="Download on the App Store" width={180} height={60} className="object-contain drop-shadow-lg hover:drop-shadow-xl" unoptimized />
               </Link>
@@ -675,35 +675,44 @@ export default function LandingPage() {
               </div>
           </div>
       </section>
-      <footer className="border-t bg-background text-foreground">
-        <div className="container py-8 px-[5%]">
+      <footer className="relative border-t text-white overflow-hidden">
+        <Image
+          src="/images/footer.jpg"
+          alt="Footer background"
+          layout="fill"
+          objectFit="cover"
+          className="absolute inset-0 -z-20"
+          unoptimized
+        />
+        <div className="absolute inset-0 bg-black/20 -z-10" />
+        <div className="container relative z-10 py-8 px-[5%]">
             <div className="grid gap-8 md:grid-cols-4">
                 <div className="flex flex-col gap-2">
                     <Link href="/" className="flex items-center gap-2 font-bold" prefetch={false}>
-                        <AppLogo className="h-10 w-auto" />
+                        <AppLogo className="h-[90px] w-auto" />
                     </Link>
-                    <p className="text-sm text-muted-foreground">Your Portal to Effortless Finance.</p>
+                    <p className="text-sm text-white/70">Your Portal to Effortless Finance.</p>
                 </div>
                 <div className="flex flex-col gap-2">
                     <h4 className="font-semibold font-headline">Company</h4>
-                    <Link href="/about-us" className="text-sm text-muted-foreground hover:text-primary" prefetch={false}>About Us</Link>
-                    <Link href="/contact-us" className="text-sm text-muted-foreground hover:text-primary" prefetch={false}>Contact Us</Link>
+                    <Link href="/about-us" className="text-sm text-white/70 hover:text-primary" prefetch={false}>About Us</Link>
+                    <Link href="/contact-us" className="text-sm text-white/70 hover:text-primary" prefetch={false}>Contact Us</Link>
                 </div>
                 <div className="flex flex-col gap-2">
                     <h4 className="font-semibold font-headline">Legal</h4>
-                    <Link href="/terms-of-service" className="text-sm text-muted-foreground hover:text-primary" prefetch={false}>Terms of Service</Link>
-                    <Link href="/privacy-policy" className="text-sm text-muted-foreground hover:text-primary" prefetch={false}>Privacy Policy</Link>
-                    <Link href="/refund-policy" className="text-sm text-muted-foreground hover:text-primary" prefetch={false}>Refund Policy</Link>
+                    <Link href="/terms-of-service" className="text-sm text-white/70 hover:text-primary" prefetch={false}>Terms of Service</Link>
+                    <Link href="/privacy-policy" className="text-sm text-white/70 hover:text-primary" prefetch={false}>Privacy Policy</Link>
+                    <Link href="/refund-policy" className="text-sm text-white/70 hover:text-primary" prefetch={false}>Refund Policy</Link>
                 </div>
                  <div className="flex flex-col gap-2">
                     <h4 className="font-semibold font-headline">Support</h4>
-                    <Link href="/#faq" className="text-sm text-muted-foreground hover:text-primary" prefetch={false}>FAQ</Link>
-                    <Link href="/login" className="text-sm text-muted-foreground hover:text-primary" prefetch={false}>My Account</Link>
+                    <Link href="/#faq" className="text-sm text-white/70 hover:text-primary" prefetch={false}>FAQ</Link>
+                    <Link href="/login" className="text-sm text-white/70 hover:text-primary" prefetch={false}>My Account</Link>
                 </div>
             </div>
-             <div className="mt-8 flex flex-col md:flex-row justify-between items-center border-t pt-6">
-                <p className="text-xs text-muted-foreground">&copy; 2024 BPX Master. All rights reserved.</p>
-                <p className="text-xs text-muted-foreground mt-2 md:mt-0">
+             <div className="mt-8 flex flex-col md:flex-row justify-between items-center border-t border-white/20 pt-6">
+                <p className="text-xs text-white/70">&copy; 2024 BPX Master. All rights reserved.</p>
+                <p className="text-xs text-white/70 mt-2 md:mt-0">
                     Developed by <a href="https://beta-tech.solutions" target="_blank" rel="noopener noreferrer" className="font-medium hover:text-primary underline underline-offset-4">Beta Tech Solutions</a>.
                 </p>
             </div>
