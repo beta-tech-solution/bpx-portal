@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { LanguageToggle } from '@/components/language-toggle';
-import { UploadCloud, Hourglass, TrendingUp, Loader2, Landmark, AlertCircle } from 'lucide-react';
+import { UploadCloud, Hourglass, TrendingUp, Loader2, Landmark, AlertCircle, Copy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Area, AreaChart, CartesianGrid, XAxis, Tooltip } from "recharts"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -173,6 +173,11 @@ export default function DepositPage() {
         setIsLoading(false);
     }
   };
+  
+  const handleCopy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: `${label} Copied!` });
+  }
 
   useEffect(() => {
     if (isSubmitted) {
@@ -249,9 +254,18 @@ export default function DepositPage() {
                                             </AccordionTrigger>
                                             <AccordionContent>
                                                 <div className="p-4 rounded-lg border bg-muted/50 space-y-2 text-sm">
-                                                    <p><span className="font-semibold">Bank Name:</span> {account.bankName}</p>
-                                                    <p><span className="font-semibold">Account Number:</span> {account.accountNumber}</p>
-                                                    <p><span className="font-semibold">Account Holder:</span> {account.accountHolder}</p>
+                                                    <div className="flex justify-between items-center">
+                                                        <p><span className="font-semibold">Bank Name:</span> {account.bankName}</p>
+                                                        <Button type="button" variant="ghost" size="icon" onClick={() => handleCopy(account.bankName, 'Bank Name')}><Copy className="h-4 w-4"/></Button>
+                                                    </div>
+                                                    <div className="flex justify-between items-center">
+                                                        <p><span className="font-semibold">Account Number:</span> {account.accountNumber}</p>
+                                                        <Button type="button" variant="ghost" size="icon" onClick={() => handleCopy(account.accountNumber, 'Account Number')}><Copy className="h-4 w-4"/></Button>
+                                                    </div>
+                                                    <div className="flex justify-between items-center">
+                                                        <p><span className="font-semibold">Account Holder:</span> {account.accountHolder}</p>
+                                                        <Button type="button" variant="ghost" size="icon" onClick={() => handleCopy(account.accountHolder, 'Account Holder')}><Copy className="h-4 w-4"/></Button>
+                                                    </div>
                                                 </div>
                                             </AccordionContent>
                                         </AccordionItem>

@@ -1,21 +1,26 @@
 
 "use client"
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import Image from 'next/image';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, XCircle, ArrowUpRight, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, ArrowUpRight, Loader2, Upload, Eye, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { db } from '@/lib/firebase/config';
 import { collection, query, onSnapshot, doc, getDoc, updateDoc, increment, writeBatch } from 'firebase/firestore';
 import { format, subDays } from 'date-fns';
 import { useMediaQuery } from '@/hooks/use-media-query';
+
+const CLOUDINARY_CLOUD_NAME = "datq7sbdp";
+const CLOUDINARY_UPLOAD_PRESET = "bpxmaster";
 
 type WithdrawalStatus = 'Pending' | 'Approved' | 'Rejected';
 
@@ -30,6 +35,7 @@ interface Withdrawal {
   accountNumber: string;
   accountHolder: string;
   createdAt: any;
+  adminProofUrl?: string;
 }
 
 const statusVariant = {
@@ -188,6 +194,8 @@ export default function AdminWithdrawalsPage() {
 function WithdrawalContent({ data, loading }: { data: Withdrawal[], loading: boolean }) {
     const { toast } = useToast()
     const isDesktop = useMediaQuery("(min-width: 768px)");
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [selectedWithdrawalId, setSelectedWithdrawalId] = useState<string | null>(null);
 
     const handleUpdateStatus = async (withdrawal: Withdrawal, newStatus: WithdrawalStatus) => {
         try {
@@ -218,6 +226,44 @@ function WithdrawalContent({ data, loading }: { data: Withdrawal[], loading: boo
         }
     };
     
+    const handleProofUploadClick = (withdrawalId: string) => {
+        setSelectedWithdrawalId(withdrawalId);
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0 || !selectedWithdrawalId) return;
+
+        const file = e.target.files[0];
+        toast({ title: "Uploading...", description: "Your proof is being uploaded." });
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+            const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+                method: 'POST', body: formData,
+            });
+
+            if (!uploadResponse.ok) throw new Error('Upload to Cloudinary failed.');
+
+            const data = await uploadResponse.json();
+            const adminProofUrl = data.secure_url;
+
+            const withdrawalRef = doc(db, 'withdrawals', selectedWithdrawalId);
+            await updateDoc(withdrawalRef, { adminProofUrl });
+
+            toast({ title: "Upload Complete", description: "Admin proof has been saved." });
+        } catch (error) {
+            console.error("Error uploading proof:", error);
+            toast({ title: "Upload Failed", description: "Could not upload the proof.", variant: "destructive" });
+        } finally {
+            if(fileInputRef.current) fileInputRef.current.value = "";
+            setSelectedWithdrawalId(null);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex justify-center items-center p-8">
@@ -233,6 +279,7 @@ function WithdrawalContent({ data, loading }: { data: Withdrawal[], loading: boo
     if (!isDesktop) {
         return (
           <div className="space-y-4">
+             <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*,.pdf" />
             {data.map((item) => (
               <Card key={item.id}>
                 <CardContent className="p-4 flex flex-col gap-3">
@@ -248,18 +295,24 @@ function WithdrawalContent({ data, loading }: { data: Withdrawal[], loading: boo
                     </div>
                   <div className="flex items-center justify-between gap-2 mt-2">
                     <Badge variant={statusVariant[item.status]}>{item.status}</Badge>
-                    {item.status === 'Pending' && (
-                      <div className="flex items-center gap-2">
-                        <Button variant="outline" size="icon" onClick={() => handleUpdateStatus(item, 'Approved')}>
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                            <span className="sr-only">Approve</span>
+                    <div className="flex items-center gap-2">
+                        {item.adminProofUrl && <ProofDialog proofUrl={item.adminProofUrl} />}
+                        <Button variant="outline" size="icon" title="Upload Proof" onClick={() => handleProofUploadClick(item.id)}>
+                            <Upload className="h-4 w-4" />
                         </Button>
-                        <Button variant="outline" size="icon" onClick={() => handleUpdateStatus(item, 'Rejected')}>
-                            <XCircle className="h-4 w-4 text-red-600" />
-                            <span className="sr-only">Reject</span>
-                        </Button>
-                      </div>
-                    )}
+                        {item.status === 'Pending' && (
+                        <>
+                            <Button variant="outline" size="icon" onClick={() => handleUpdateStatus(item, 'Approved')}>
+                                <CheckCircle className="h-4 w-4 text-green-600" />
+                                <span className="sr-only">Approve</span>
+                            </Button>
+                            <Button variant="outline" size="icon" onClick={() => handleUpdateStatus(item, 'Rejected')}>
+                                <XCircle className="h-4 w-4 text-red-600" />
+                                <span className="sr-only">Reject</span>
+                            </Button>
+                        </>
+                        )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -270,6 +323,7 @@ function WithdrawalContent({ data, loading }: { data: Withdrawal[], loading: boo
     
     return (
         <div className="overflow-x-auto">
+          <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*,.pdf" />
          <Table>
           <TableHeader>
             <TableRow>
@@ -296,16 +350,22 @@ function WithdrawalContent({ data, loading }: { data: Withdrawal[], loading: boo
                   <Badge variant={statusVariant[item.status]}>{item.status}</Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                    {item.status === 'Pending' && (
-                        <div className="flex items-center justify-end gap-2">
+                     <div className="flex items-center justify-end gap-2">
+                        {item.adminProofUrl && <ProofDialog proofUrl={item.adminProofUrl} />}
+                        <Button variant="outline" size="icon" title="Upload Proof" onClick={() => handleProofUploadClick(item.id)}>
+                            <Upload className="h-4 w-4" />
+                        </Button>
+                        {item.status === 'Pending' && (
+                        <>
                             <Button variant="secondary" size="sm" onClick={() => handleUpdateStatus(item, 'Approved')}>
                                 <CheckCircle className="mr-2 h-4 w-4"/>Approve
                             </Button>
                             <Button variant="destructive" size="sm" onClick={() => handleUpdateStatus(item, 'Rejected')}>
                                 <XCircle className="mr-2 h-4 w-4"/>Reject
                             </Button>
-                        </div>
-                    )}
+                        </>
+                        )}
+                     </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -315,4 +375,42 @@ function WithdrawalContent({ data, loading }: { data: Withdrawal[], loading: boo
     )
 }
 
-    
+function ProofDialog({ proofUrl }: { proofUrl: string }) {
+  const handleDownload = () => {
+    // This creates a temporary link to trigger the download
+    const link = document.createElement('a');
+    link.href = proofUrl;
+    link.target = "_blank" // Open in new tab to let browser handle download
+    link.download = `proof-${Date.now()}`; 
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+  
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="icon" title="View Proof">
+          <Eye className="h-4 w-4" />
+          <span className="sr-only">View Proof</span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md w-[90vw]">
+        <DialogHeader>
+          <DialogTitle>Admin Proof of Transfer</DialogTitle>
+          <DialogDescription>Proof of transfer uploaded by an administrator.</DialogDescription>
+        </DialogHeader>
+        <div className="relative mt-4 h-[60vh] w-full">
+            {proofUrl ? (
+                <Image src={proofUrl} alt="Admin Proof of Transfer" layout="fill" objectFit="contain" />
+            ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">No proof available</div>
+            )}
+        </div>
+         <Button onClick={handleDownload} variant="secondary">
+            <Download className="mr-2 h-4 w-4" /> Download Proof
+        </Button>
+      </DialogContent>
+    </Dialog>
+  )
+}
