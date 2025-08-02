@@ -338,15 +338,25 @@ const faqItems = [
     }
 ];
 
-const ThreeDHotspot = ({ icon: Icon, title, description, position }: { icon: React.ElementType, title: string, description: string, position: React.CSSProperties }) => (
-    <div className="absolute w-64 p-4 rounded-lg bg-white/10 backdrop-blur-md border border-white/20" style={position}>
-        <div className="flex items-center gap-3">
-            <div className="w-10 h-10 flex items-center justify-center rounded-full bg-primary text-primary-foreground">
-                <Icon className="w-5 h-5"/>
+const BpexchFeatureHotspot = ({ icon: Icon, title, description, position, align = 'left' }: { icon: React.ElementType, title: string, description: string, position: React.CSSProperties, align?: 'left' | 'right' }) => (
+    <div className="absolute hidden lg:flex items-center group" style={position}>
+        <div className={cn("relative flex items-center", align === 'left' ? 'flex-row' : 'flex-row-reverse')}>
+            <div className="w-5 h-5 flex items-center justify-center">
+                <div className="absolute w-3 h-3 rounded-full bg-rose-500 animate-pulsing-dot" />
             </div>
-            <div>
-                <h4 className="font-bold text-white">{title}</h4>
-                <p className="text-xs text-white/70">{description}</p>
+            
+            <div className={cn("relative w-16 h-px bg-white/30", align === 'left' ? 'ml-2' : 'mr-2')}>
+                <div className={cn("absolute top-0 h-px bg-rose-500 animate-draw-line", align === 'left' ? 'left-0' : 'right-0')} />
+            </div>
+
+            <div className={cn("flex items-center gap-4", align === 'left' ? 'flex-row' : 'flex-row-reverse')}>
+                <div className="w-12 h-12 rounded-full border-2 border-white/20 flex items-center justify-center text-rose-500 bg-white/5">
+                    <Icon className="w-6 h-6" />
+                </div>
+                <div className={cn("text-white", align === 'left' ? 'text-left' : 'text-right')}>
+                    <h3 className="font-bold whitespace-nowrap">{title}</h3>
+                    <p className="text-sm text-white/60 max-w-[200px]">{description}</p>
+                </div>
             </div>
         </div>
     </div>
@@ -555,7 +565,7 @@ export default function LandingPage() {
       </section>
       
       <section className="relative py-20 lg:py-32 px-[5%] overflow-hidden">
-         <Image
+        <Image
             src="/images/sliderhero.jpg"
             alt="Mountain background"
             fill
@@ -563,35 +573,15 @@ export default function LandingPage() {
             unoptimized
         />
         <div className="absolute inset-0 bg-black/70 -z-10" />
-        <div className="container mx-auto text-center text-white relative">
-            <h2 className="text-4xl font-headline font-bold">
+        <div className="container mx-auto text-center text-white relative z-10">
+            <h2 className="text-4xl font-headline font-bold animate-fade-in" style={{animationDelay: '0.2s'}}>
                 Secure, Monitored BPExch Access
             </h2>
-            <p className="mt-4 max-w-2xl mx-auto text-white/70">
+            <p className="mt-4 max-w-3xl mx-auto text-white/70 animate-fade-in" style={{animationDelay: '0.4s'}}>
                 Log in to your BPExch account with confidence. We provide your credentials and track all login activity, allowing you to block any suspicious IP addresses instantly for complete peace of mind.
             </p>
-            <div className="relative mt-12 flex justify-center items-center h-[650px] [perspective:1000px]">
-                <div className="absolute w-full h-full [transform-style:preserve-3d] animate-spin-slow [animation-duration:40s]">
-                    <ThreeDHotspot 
-                        icon={KeyRound}
-                        title="Your Credentials"
-                        description="Admin-provided username and password for BPExch."
-                        position={{ transform: 'rotateY(0deg) translateZ(350px)' }}
-                    />
-                    <ThreeDHotspot 
-                        icon={Shield}
-                        title="Block Suspicious IPs"
-                        description="Instantly block any unrecognized IP address."
-                        position={{ transform: 'rotateY(120deg) translateZ(350px)' }}
-                    />
-                    <ThreeDHotspot 
-                        icon={Activity}
-                        title="Login History"
-                        description="Review all login attempts for enhanced security."
-                        position={{ transform: 'rotateY(240deg) translateZ(350px)' }}
-                    />
-                </div>
-
+            
+             <div className="relative mt-12 flex justify-center items-center h-[550px] lg:h-[600px] animate-fade-in" style={{animationDelay: '0.6s'}}>
                 <PhoneMockup className="max-w-[280px] md:max-w-[320px]">
                     <Image
                       src="/images/bpexchlogin.png"
@@ -602,6 +592,36 @@ export default function LandingPage() {
                       unoptimized
                     />
                 </PhoneMockup>
+
+                <BpexchFeatureHotspot 
+                    icon={KeyRound}
+                    title="Your Credentials"
+                    description="Admin-provided username and password for BPExch."
+                    position={{ top: '35%', right: '0%', lg: { right: '15%'} }}
+                    align="left"
+                />
+                <BpexchFeatureHotspot 
+                    icon={Shield}
+                    title="Block Suspicious IPs"
+                    description="Instantly block any unrecognized IP address."
+                    position={{ top: '55%', left: '0%', lg: { left: '15%'} }}
+                    align="right"
+                />
+                <BpexchFeatureHotspot 
+                    icon={Activity}
+                    title="Login History"
+                    description="Review all login attempts for enhanced security."
+                    position={{ top: '75%', right: '0%', lg: { right: '20%'} }}
+                    align="left"
+                />
+            </div>
+             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8 animate-fade-in" style={{animationDelay: '0.8s'}}>
+              <Link href="#" passHref>
+                <Image src="/images/appstore.png" alt="Download on the App Store" width={180} height={60} className="object-contain drop-shadow-lg hover:drop-shadow-xl" unoptimized />
+              </Link>
+              <Link href="#" passHref>
+                 <Image src="/images/play.png" alt="Get it on Google Play" width={180} height={60} className="object-contain drop-shadow-lg hover:drop-shadow-xl" unoptimized />
+              </Link>
             </div>
         </div>
       </section>
