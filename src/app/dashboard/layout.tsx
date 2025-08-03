@@ -2,49 +2,16 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  SidebarProvider,
-  Sidebar,
-  SidebarHeader,
-  SidebarContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarFooter,
-  SidebarTrigger,
-  SidebarInset,
-  SidebarGroup,
-  SidebarGroupLabel,
-} from "@/components/ui/sidebar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { DollarSign, Landmark, LogOut, Wallet, ExternalLink, LayoutDashboard, Loader2, Settings, MoreVertical, Info } from "lucide-react";
+import { Home, DollarSign, Landmark, ExternalLink, Settings, LogOut, Loader2, ArrowRightLeft } from "lucide-react";
 import { auth, db } from "@/lib/firebase/config";
-import { onAuthStateChanged, signOut, User } from "firebase/auth";
-import { doc, onSnapshot, updateDoc, serverTimestamp, getDoc } from "firebase/firestore";
+import { onAuthStateChanged, User } from "firebase/auth";
+import { doc, onSnapshot } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import Preloader from "@/components/preloader";
 import ChatWidget from "@/components/chat-widget";
-
-const mainNavItems = [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/dashboard/deposit", label: "Deposit", icon: DollarSign },
-    { href: "/dashboard/withdraw", label: "Withdrawal", icon: Landmark },
-    { href: "/dashboard/bpexch-login", label: "BPExch Login", icon: ExternalLink },
-    { href: "/dashboard/settings", label: "Settings", icon: Settings },
-];
-
-const allNavItems = [...mainNavItems];
-
+import { DashboardHeader } from "@/components/dashboard-header";
+import { BottomNav } from "@/components/bottom-nav";
 
 interface UserData {
     fullName: string;
@@ -67,197 +34,57 @@ export default function DashboardLayout({
   const [user, setUser] = React.useState<User | null>(null);
   const [userData, setUserData] = React.useState<UserData | null>(null);
   const [loading, setLoading] = React.useState(true);
-  const [isNavigating, setIsNavigating] = React.useState(false);
-  const [pageLoading, setPageLoading] = React.useState(true);
   
-  const getPageTitle = () => {
-    const currentItem = allNavItems.find(item => item.href === pathname);
-    if (currentItem) return currentItem.label;
-    const parts = pathname.split('/').pop()?.replace(/-/g, ' ').split(' ') ?? [];
-    return parts.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-  }
-
   React.useEffect(() => {
-    // Show preloader for a moment on initial load
-    setPageLoading(true);
-    const timer = setTimeout(() => setPageLoading(false), 1000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  React.useEffect(() => {
-    setIsNavigating(false);
-  }, [pathname]);
-
-  const handleNavigation = (href: string) => {
-    if (pathname !== href) {
-        setIsNavigating(true);
-        router.push(href);
-    }
-  }
-
-  React.useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
-        const userDocRef = doc(db, "users", currentUser.uid);
-        const userDoc = await getDoc(userDocRef);
-
-        if (!userDoc.exists()) {
-            toast({ title: "Error", description: "User profile not found.", variant: "destructive"});
-            signOut(auth);
-            return;
-        }
-        
-        const userDataFromDb = userDoc.data() as UserData;
-
-        if (userDataFromDb.role !== 'Admin' && !currentUser.emailVerified) {
-             toast({
-                title: "Email Not Verified",
-                description: "Please check your inbox and verify your email address to log in.",
-                variant: "destructive"
+        if (userData === null) { // Prevent re-fetching user data on every auth state change
+            const userDocRef = doc(db, "users", currentUser.uid);
+            const unsubscribeSnapshot = onSnapshot(userDocRef, (doc) => {
+                if (doc.exists()) {
+                    const dbData = doc.data() as UserData;
+                     if (dbData.role !== 'Admin' && !currentUser.emailVerified) {
+                        toast({
+                            title: "Email Not Verified",
+                            description: "Please check your inbox and verify your email address to log in.",
+                            variant: "destructive"
+                        });
+                        signOut(auth);
+                        return;
+                    }
+                    setUser(currentUser);
+                    setUserData(dbData);
+                    setLoading(false);
+                } else {
+                    toast({ title: "Error", description: "User profile not found.", variant: "destructive"});
+                    signOut(auth);
+                }
+            }, (error) => {
+                 toast({ title: "Error", description: "Could not fetch user profile.", variant: "destructive"});
+                 console.error("Firestore snapshot error:", error);
+                 signOut(auth);
             });
-            signOut(auth);
-            return;
+             return () => unsubscribeSnapshot();
         }
-
-        setUser(currentUser);
-        setUserData(userDataFromDb);
-        setLoading(false);
-
-        const unsubscribeSnapshot = onSnapshot(userDocRef, (doc) => {
-          if (doc.exists()) {
-            setUserData(doc.data() as UserData);
-          }
-        });
-        
-        updateDoc(userDocRef, { lastSeen: serverTimestamp() });
-
-        return () => unsubscribeSnapshot();
       } else {
         router.push("/login");
-        setLoading(false);
       }
     });
     return () => unsubscribeAuth();
-  }, [router, toast]);
+  }, [router, toast, userData]);
 
-
-  const handleLogout = async () => {
-      try {
-          await signOut(auth);
-          toast({ title: "Logged Out", description: "You have been successfully logged out." });
-          router.push('/login');
-      } catch (error) {
-          console.error("Logout error:", error);
-          toast({ title: "Logout Failed", description: "Could not log out. Please try again.", variant: "destructive" });
-      }
-  }
-
-  const isActive = (path: string) => pathname === path;
-
-  const getInitials = (name: string | undefined | null): string => {
-    if (!name) return 'U';
-    const names = name.split(' ');
-    if (names.length > 1 && names[0] && names[names.length - 1]) {
-      return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
-  };
-  
-  const isAccountPending = !userData?.bpexchUsername;
-
-  const loadingText = `Loading My ${getPageTitle()}`;
-
-  if (loading || pageLoading || isNavigating) {
-    return <Preloader loadingText={loadingText} />;
+  if (loading) {
+    return <Preloader loadingText="Loading Dashboard..." />;
   }
 
   return (
-    <SidebarProvider>
-      <Sidebar>
-        <SidebarHeader className="p-4">
-            <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                    <Wallet className="w-6 h-6"/>
-                </div>
-                <h1 className="text-xl font-headline font-semibold text-sidebar-foreground">
-                    BPX Portal
-                </h1>
-            </div>
-        </SidebarHeader>
-        <SidebarContent>
-          <SidebarMenu>
-            {mainNavItems.map((item) => (
-                 <SidebarMenuItem key={item.href}>
-                 <SidebarMenuButton
-                   onClick={() => handleNavigation(item.href)}
-                   isActive={isActive(item.href)}
-                   tooltip={item.label}
-                 >
-                   <item.icon />
-                   <span>{item.label}</span>
-                 </SidebarMenuButton>
-               </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarContent>
-        <SidebarFooter className="p-4">
-            <div className="flex items-center gap-3 bg-sidebar-accent/10 p-2 rounded-lg">
-                <Avatar>
-                    <AvatarImage src={userData?.photoURL} data-ai-hint="person avatar" alt={userData?.fullName} />
-                    <AvatarFallback>{getInitials(userData?.fullName)}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 overflow-hidden">
-                    <p className="text-sm font-semibold text-sidebar-foreground truncate">{userData?.fullName ?? 'User'}</p>
-                    <p className="text-xs text-sidebar-foreground/70 truncate">{userData?.email ?? 'user@bpx.com'}</p>
-                </div>
-                <Button variant="ghost" size="icon" className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent" onClick={handleLogout}>
-                    <LogOut className="w-4 h-4"/>
-                </Button>
-            </div>
-        </SidebarFooter>
-      </Sidebar>
-      <SidebarInset>
-        <header className="flex items-center justify-between p-4 border-b md:p-6 bg-card md:bg-transparent">
-            <div className="flex items-center gap-2">
-                 <SidebarTrigger className="md:hidden" />
-                 <h2 className="text-2xl font-bold font-headline md:hidden">
-                    {getPageTitle()}
-                </h2>
-            </div>
-            <h2 className="text-2xl font-bold font-headline text-center hidden md:block flex-1 md:flex-none">
-                {getPageTitle()}
-            </h2>
-            <div className="md:hidden w-8">
-                {/* Empty div for spacing */}
-            </div>
-        </header>
-        <main className="flex-1 p-4 md:p-6 mb-20 md:mb-0 overflow-hidden">
-            {isAccountPending && (
-                 <Alert className="mb-6 bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-200">
-                    <Info className="h-4 w-4 !text-blue-600 dark:!text-blue-300" />
-                    <AlertTitle className="font-semibold">Account Pending Approval</AlertTitle>
-                    <AlertDescription>
-                        Your account is currently under review. To expedite the approval process, please make a deposit.
-                        <Link href="/dashboard/deposit" className="font-bold underline ml-2 hover:text-blue-600 dark:hover:text-blue-100">
-                            Make a Deposit
-                        </Link>
-                    </AlertDescription>
-                </Alert>
-            )}
-            {children}
-        </main>
-        {user && <ChatWidget />}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-10">
-            <div className="flex justify-around items-center h-16">
-                {mainNavItems.map((item) => (
-                    <Link href={item.href} key={item.href} className={`flex flex-col items-center justify-center gap-1 p-2 ${isActive(item.href) ? 'text-primary' : 'text-muted-foreground'}`}>
-                        <item.icon className="w-5 h-5"/>
-                        <span className="text-[10px]">{item.label}</span>
-                    </Link>
-                ))}
-            </div>
-        </nav>
-      </SidebarInset>
-    </SidebarProvider>
+    <div className="flex flex-col min-h-screen bg-muted/30">
+      <DashboardHeader user={user} userData={userData} />
+      <main className="flex-1 p-4 md:p-6 pb-24 md:pb-6">
+          {children}
+      </main>
+      {user && <ChatWidget />}
+      <BottomNav />
+    </div>
   );
 }
