@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Loader2, CalendarCheck, Hand, Copy, ExternalLink, Wallet, FileText, Download, Megaphone } from "lucide-react"
 import { auth, db } from "@/lib/firebase/config"
-import { collection, query, where, getDocs, onSnapshot, doc, orderBy, limit, Timestamp } from "firestore"
+import { collection, query, where, onSnapshot, doc, orderBy, limit, Timestamp } from "firebase/firestore"
 import { onAuthStateChanged, User } from "firebase/auth"
 import { format } from 'date-fns';
 import { useToast } from "@/hooks/use-toast"
