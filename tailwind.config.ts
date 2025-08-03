@@ -138,7 +138,7 @@ export default {
         'circular-shine': 'circular-shine 4s linear infinite',
         'bounce-horizontal-right': 'bounce-horizontal-right 1.5s ease-in-out infinite',
         'bounce-horizontal-left': 'bounce-horizontal-left 1.5s ease-in-out infinite',
-        marquee: 'marquee 25s linear infinite',
+        marquee: 'marquee 40s linear infinite',
       },
     },
   },

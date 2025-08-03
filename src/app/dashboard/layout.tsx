@@ -5,7 +5,7 @@ import * as React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase/config";
 import { onAuthStateChanged, User, signOut } from "firebase/auth";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, serverTimestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import Preloader from "@/components/preloader";
 import ChatWidget from "@/components/chat-widget";
@@ -20,6 +20,7 @@ interface UserData {
     role: 'Admin' | 'User';
     emailVerified: boolean;
     bpexchUsername?: string;
+    lastSeen?: any;
 }
 
 export default function DashboardLayout({
@@ -53,6 +54,14 @@ export default function DashboardLayout({
                     }
                     setUser(currentUser);
                     setUserData(dbData);
+                    
+                    // Update lastSeen on initial load and if it's been a while
+                    const now = Date.now();
+                    const lastSeen = dbData.lastSeen?.toMillis() || 0;
+                    if(now - lastSeen > 5 * 60 * 1000) { // 5 minutes
+                        updateDoc(userDocRef, { lastSeen: serverTimestamp() });
+                    }
+                    
                     setLoading(false);
                 } else {
                     toast({ title: "Error", description: "User profile not found.", variant: "destructive"});
@@ -69,7 +78,19 @@ export default function DashboardLayout({
         router.push("/login");
       }
     });
-    return () => unsubscribeAuth();
+
+    // Update lastSeen timestamp periodically for 'online' status
+    const interval = setInterval(() => {
+        if(auth.currentUser){
+            const userDocRef = doc(db, 'users', auth.currentUser.uid);
+            updateDoc(userDocRef, { lastSeen: serverTimestamp() });
+        }
+    }, 2 * 60 * 1000); // every 2 minutes
+
+    return () => {
+        unsubscribeAuth();
+        clearInterval(interval);
+    };
   }, [router, toast, userData]);
 
   if (loading) {

@@ -73,13 +73,12 @@ export default function DashboardPage() {
         });
         
         const depositsQuery = query(collection(db, "deposits"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(5));
-        const withdrawalsQuery = query(collection(db, "withdrawals"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(5));
-        
         const unsubDeposits = onSnapshot(depositsQuery, (snapshot) => {
             const deposits = snapshot.docs.map(doc => ({ id: doc.id, type: 'Deposit', ...doc.data() } as Transaction));
             setDepositsData(deposits);
         });
 
+        const withdrawalsQuery = query(collection(db, "withdrawals"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(5));
         const unsubWithdrawals = onSnapshot(withdrawalsQuery, (snapshot) => {
             const withdrawals = snapshot.docs.map(doc => ({ id: doc.id, type: 'Withdrawal', ...doc.data() } as Transaction));
             setWithdrawalsData(withdrawals);
@@ -96,7 +95,7 @@ export default function DashboardPage() {
     useEffect(() => {
         const allTransactions = [...depositsData, ...withdrawalsData]
             .sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
-        setRecentTransactions(allTransactions.slice(0, 10));
+        setRecentTransactions(allTransactions);
     }, [depositsData, withdrawalsData]);
     
     const handleCopy = (text: string, label: string) => {
