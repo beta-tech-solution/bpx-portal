@@ -33,6 +33,8 @@ export default function DashboardPage() {
     const [userData, setUserData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
+    const [depositsData, setDepositsData] = useState<Transaction[]>([]);
+    const [withdrawalsData, setWithdrawalsData] = useState<Transaction[]>([]);
     const [globalAnnouncement, setGlobalAnnouncement] = useState<string | null>(null);
     
     useEffect(() => {
@@ -72,25 +74,15 @@ export default function DashboardPage() {
         
         const depositsQuery = query(collection(db, "deposits"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(5));
         const withdrawalsQuery = query(collection(db, "withdrawals"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(5));
-
-        let depositsData: Transaction[] = [];
-        let withdrawalsData: Transaction[] = [];
-
-        const combineAndSort = () => {
-             const allTransactions = [...depositsData, ...withdrawalsData]
-                .sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
-            
-            setRecentTransactions(allTransactions);
-        };
-
+        
         const unsubDeposits = onSnapshot(depositsQuery, (snapshot) => {
-            depositsData = snapshot.docs.map(doc => ({ id: doc.id, type: 'Deposit', ...doc.data() } as Transaction));
-            combineAndSort();
+            const deposits = snapshot.docs.map(doc => ({ id: doc.id, type: 'Deposit', ...doc.data() } as Transaction));
+            setDepositsData(deposits);
         });
 
         const unsubWithdrawals = onSnapshot(withdrawalsQuery, (snapshot) => {
-            withdrawalsData = snapshot.docs.map(doc => ({ id: doc.id, type: 'Withdrawal', ...doc.data() } as Transaction));
-            combineAndSort();
+            const withdrawals = snapshot.docs.map(doc => ({ id: doc.id, type: 'Withdrawal', ...doc.data() } as Transaction));
+            setWithdrawalsData(withdrawals);
         });
 
         return () => { 
@@ -100,6 +92,12 @@ export default function DashboardPage() {
         };
 
     }, [user]);
+
+    useEffect(() => {
+        const allTransactions = [...depositsData, ...withdrawalsData]
+            .sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
+        setRecentTransactions(allTransactions.slice(0, 10));
+    }, [depositsData, withdrawalsData]);
     
     const handleCopy = (text: string, label: string) => {
         if (text) {
@@ -181,7 +179,7 @@ export default function DashboardPage() {
                         <Megaphone className="h-5 w-5 text-white" />
                     </div>
                     <div className="flex-1 whitespace-nowrap overflow-hidden">
-                        <p className="font-bold text-sm text-black inline-block animate-marquee">{globalAnnouncement}</p>
+                        <p className="font-bold text-xl text-black inline-block animate-marquee">{globalAnnouncement}</p>
                     </div>
                 </CardContent>
             </Card>

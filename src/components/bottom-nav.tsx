@@ -33,8 +33,8 @@ export const BottomNav = () => {
             </div>
             
             {/* Desktop Nav */}
-            <div className="hidden md:flex justify-center items-center h-20 w-full max-w-4xl mx-auto px-8 gap-8">
-                {navItems.map((item) => {
+            <div className="hidden md:flex justify-between items-center h-20 w-full gap-[250px] px-[6%]">
+            {navItems.map((item) => {
                     const isActive = pathname === item.href;
                     return (
                         <Link href={item.href} key={item.href} className="flex flex-col items-center justify-center gap-1.5 group">

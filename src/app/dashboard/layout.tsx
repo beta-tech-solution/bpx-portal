@@ -79,7 +79,7 @@ export default function DashboardLayout({
   return (
     <div className="flex flex-col min-h-screen bg-muted/30">
       <DashboardHeader user={user} userData={userData} />
-      <main className="flex-1 p-4 md:p-6 pb-24">
+      <main className="flex-1 p-4 md:p-6 pb-32">
           {children}
       </main>
       {user && <ChatWidget />}
