@@ -17,7 +17,7 @@ export const BottomNav = () => {
     const pathname = usePathname();
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 bg-card border-t shadow-top z-40 md:flex md:justify-center">
+        <nav className="fixed bottom-0 left-0 right-0 bg-card border-t shadow-top z-40">
             {/* Mobile Nav */}
             <div className="flex justify-around items-center h-16 max-w-lg mx-auto md:hidden">
                 {navItems.map((item) => {
@@ -33,7 +33,7 @@ export const BottomNav = () => {
             </div>
             
             {/* Desktop Nav */}
-            <div className="hidden md:flex justify-around items-center h-20 w-full max-w-4xl mx-auto px-8">
+            <div className="hidden md:flex justify-center items-center h-20 w-full max-w-4xl mx-auto px-8 gap-8">
                 {navItems.map((item) => {
                     const isActive = pathname === item.href;
                     return (

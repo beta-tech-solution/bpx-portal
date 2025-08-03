@@ -21,6 +21,10 @@ interface Transaction {
     amount: string;
     status: "Approved" | "Pending" | "Rejected";
     createdAt: Timestamp;
+    // Optional fields for withdrawal details
+    bankName?: string;
+    accountNumber?: string;
+    accountHolder?: string;
 }
 
 export default function DashboardPage() {
@@ -66,17 +70,15 @@ export default function DashboardPage() {
             setLoading(false);
         });
         
-        // --- Corrected Transaction Fetching Logic ---
-        const depositsQuery = query(collection(db, "deposits"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(10));
-        const withdrawalsQuery = query(collection(db, "withdrawals"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(10));
+        const depositsQuery = query(collection(db, "deposits"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(5));
+        const withdrawalsQuery = query(collection(db, "withdrawals"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(5));
 
         let depositsData: Transaction[] = [];
         let withdrawalsData: Transaction[] = [];
 
         const combineAndSort = () => {
              const allTransactions = [...depositsData, ...withdrawalsData]
-                .sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime())
-                .slice(0, 10);
+                .sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
             
             setRecentTransactions(allTransactions);
         };
@@ -90,7 +92,6 @@ export default function DashboardPage() {
             withdrawalsData = snapshot.docs.map(doc => ({ id: doc.id, type: 'Withdrawal', ...doc.data() } as Transaction));
             combineAndSort();
         });
-        // --- End of Correction ---
 
         return () => { 
             unsubscribeUser();
@@ -130,7 +131,7 @@ export default function DashboardPage() {
                     <p className="text-sm text-muted-foreground">Member Since</p>
                     <p className="font-bold text-lg">{userData?.createdAt ? format((userData.createdAt as Timestamp).toDate(), 'PPP') : 'N/A'}</p>
                 </div>
-                 <Link href="/dashboard/deposit" className="flex items-center gap-2 px-4 py-2 text-sm text-white rounded-md transition-colors border border-white hover:border-transparent bg-gradient-to-r from-primary to-blue-400 hover:shadow-lg">
+                 <Link href="/dashboard/deposit" className="flex items-center gap-2 px-4 py-2 text-sm text-white rounded-md transition-colors border border-white hover:border-transparent bg-gradient-to-r from-primary to-blue-400 hover:shadow-lg drop-shadow-lg">
                     Deposit
                  </Link>
             </CardContent>
@@ -161,23 +162,27 @@ export default function DashboardPage() {
                         </div>
                     </div>
                 ) : (
-                    <Button className="w-full bg-slate-600 hover:bg-slate-500 justify-center">
-                        <Hand className="mr-2 h-4 w-4 animate-bounce-horizontal-right" />
-                        Activate Your Account
-                        <Hand className="ml-2 h-4 w-4 transform -scale-x-100 animate-bounce-horizontal-left" />
-                    </Button>
+                    <Link href="/dashboard/account-activation" passHref>
+                        <Button className="w-full bg-slate-600 hover:bg-slate-500 justify-center">
+                            <Hand className="mr-2 h-4 w-4 animate-bounce-horizontal-right" />
+                            Activate Your Account
+                            <Hand className="ml-2 h-4 w-4 transform -scale-x-100 animate-bounce-horizontal-left" />
+                        </Button>
+                    </Link>
                 )}
             </CardContent>
         </Card>
 
         {/* Global Announcement Card */}
         {globalAnnouncement && (
-            <Card className="shadow-md bg-amber-400">
+            <Card className="shadow-md bg-amber-400 overflow-hidden">
                 <CardContent className="p-3 flex items-center gap-4">
                     <div className="bg-amber-500 p-2 rounded-md">
                         <Megaphone className="h-5 w-5 text-white" />
                     </div>
-                    <p className="font-bold text-sm text-black flex-1">{globalAnnouncement}</p>
+                    <div className="flex-1 whitespace-nowrap overflow-hidden">
+                        <p className="font-bold text-sm text-black inline-block animate-marquee">{globalAnnouncement}</p>
+                    </div>
                 </CardContent>
             </Card>
         )}
@@ -199,7 +204,7 @@ export default function DashboardPage() {
                 {recentTransactions.length > 0 ? (
                     <div className="space-y-4">
                         {recentTransactions.map(tx => (
-                             <div key={tx.id} className="flex items-center justify-between">
+                             <div key={tx.id} className="flex items-start justify-between">
                                 <div className="flex items-center gap-3">
                                     <div className={`p-2 rounded-full ${tx.type === 'Deposit' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                         <Wallet className="h-5 w-5" />
@@ -207,6 +212,9 @@ export default function DashboardPage() {
                                     <div>
                                         <p className="font-semibold">{tx.type}</p>
                                         <p className="text-xs text-muted-foreground">{tx.createdAt ? format(tx.createdAt.toDate(), 'PP') : 'N/A'}</p>
+                                        {tx.type === 'Withdrawal' && (
+                                            <p className="text-xs text-muted-foreground">{tx.bankName} - ...{tx.accountNumber?.slice(-4)}</p>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="text-right">
@@ -230,7 +238,7 @@ export default function DashboardPage() {
         
          {/* Download App Card */}
          <Card className="shadow-md relative overflow-hidden text-white bg-gradient-to-tr from-cyan-400 to-blue-600">
-            <div className="h-[3px] bg-gradient-to-r from-blue-500 via-blue-400 to-cyan-400 animate-shine" />
+            <div className="absolute top-0 left-0 h-[3px] w-full bg-gradient-to-r from-blue-500 via-blue-400 to-cyan-400 animate-shine" />
              <CardContent className="p-6 flex flex-col items-center text-center">
                  <div className="p-3 bg-white/20 rounded-2xl mb-4">
                     <Image src="/images/logo.png" width={40} height={40} alt="App Logo" className="rounded-lg" unoptimized />

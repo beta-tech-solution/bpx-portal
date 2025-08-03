@@ -4,7 +4,7 @@
 import * as React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase/config";
-import { onAuthStateChanged, User } from "firebase/auth";
+import { onAuthStateChanged, User, signOut } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import Preloader from "@/components/preloader";

@@ -122,7 +122,11 @@ export default {
         'bounce-horizontal-left': {
           '0%, 100%': { transform: 'translateX(0) scaleX(-1)' },
           '50%': { transform: 'translateX(-5px) scaleX(-1)' },
-        }
+        },
+        marquee: {
+          '0%': { transform: 'translateX(100%)' },
+          '100%': { transform: 'translateX(-100%)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -134,6 +138,7 @@ export default {
         'circular-shine': 'circular-shine 4s linear infinite',
         'bounce-horizontal-right': 'bounce-horizontal-right 1.5s ease-in-out infinite',
         'bounce-horizontal-left': 'bounce-horizontal-left 1.5s ease-in-out infinite',
+        marquee: 'marquee 15s linear infinite',
       },
     },
   },
