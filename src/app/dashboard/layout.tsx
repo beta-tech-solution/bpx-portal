@@ -5,7 +5,7 @@ import * as React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Home, DollarSign, Landmark, ExternalLink, Settings, LogOut, Loader2, ArrowRightLeft } from "lucide-react";
 import { auth, db } from "@/lib/firebase/config";
-import { onAuthStateChanged, User } from "firebase/auth";
+import { onAuthStateChanged, User, signOut } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import Preloader from "@/components/preloader";
@@ -80,7 +80,7 @@ export default function DashboardLayout({
   return (
     <div className="flex flex-col min-h-screen bg-muted/30">
       <DashboardHeader user={user} userData={userData} />
-      <main className="flex-1 p-4 md:p-6 pb-24 md:pb-6">
+      <main className="flex-1 p-4 md:p-6 pb-24">
           {children}
       </main>
       {user && <ChatWidget />}

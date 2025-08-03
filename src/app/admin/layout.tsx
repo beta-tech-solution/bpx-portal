@@ -37,7 +37,8 @@ import {
   Loader2,
   MoreVertical,
   MessageSquare,
-  BarChart2
+  BarChart2,
+  Megaphone
 } from "lucide-react";
 import { db, auth } from "@/lib/firebase/config";
 import { collection, onSnapshot, query, where, doc } from "firebase/firestore";
@@ -53,6 +54,7 @@ const navItems = [
     { href: "/admin/withdrawals", label: "Withdrawals", icon: Landmark, countKey: 'withdrawals' },
     { href: "/admin/users", label: "Users", icon: Users, countKey: null },
     { href: "/admin/profit-stats", label: "Profit Stats", icon: BarChart2, countKey: null },
+    { href: "/admin/announcement", label: "Announcement", icon: Megaphone, countKey: null },
 ];
 
 const mobileHeaderItems = [

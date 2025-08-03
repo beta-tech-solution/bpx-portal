@@ -5,8 +5,8 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, CalendarCheck, Hand, Copy, ExternalLink, Wallet, FileText, Download } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { Loader2, CalendarCheck, Hand, Copy, ExternalLink, Wallet, FileText, Download, Megaphone } from "lucide-react"
 import { auth, db } from "@/lib/firebase/config"
 import { collection, query, where, getDocs, onSnapshot, doc, orderBy, limit, Timestamp } from "firebase/firestore"
 import { onAuthStateChanged, User } from "firebase/auth"
@@ -28,6 +28,7 @@ export default function DashboardPage() {
     const [userData, setUserData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
+    const [globalAnnouncement, setGlobalAnnouncement] = useState<string | null>(null);
     
     useEffect(() => {
         const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
@@ -37,7 +38,21 @@ export default function DashboardPage() {
                 setLoading(false);
             }
         });
-        return () => unsubscribeAuth();
+        
+        // Fetch global announcement
+        const announcementDocRef = doc(db, "settings", "globalAnnouncement");
+        const unsubscribeAnnouncement = onSnapshot(announcementDocRef, (docSnap) => {
+            if(docSnap.exists() && docSnap.data().message) {
+                setGlobalAnnouncement(docSnap.data().message);
+            } else {
+                setGlobalAnnouncement(null);
+            }
+        });
+
+        return () => {
+            unsubscribeAuth();
+            unsubscribeAnnouncement();
+        }
     }, []);
 
     useEffect(() => {
@@ -60,7 +75,7 @@ export default function DashboardPage() {
             const allWithdrawals = withdrawalsSnapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id, type: 'Withdrawal' }));
 
             const allTransactions = [...allDeposits, ...allWithdrawals]
-            .sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime())
+            .sort((a, b) => (b.createdAt?.toDate() || 0) > (a.createdAt?.toDate() || 0) ? 1 : -1)
             .slice(0, 10)
             .map(tx => ({
                 id: tx.id,
@@ -158,14 +173,14 @@ export default function DashboardPage() {
             </CardContent>
         </Card>
 
-        {/* Admin Message Card */}
-        {userData?.adminMessage && (
-            <Card className="shadow-md bg-amber-400 text-amber-900">
+        {/* Global Announcement Card */}
+        {globalAnnouncement && (
+            <Card className="shadow-md bg-amber-400">
                 <CardContent className="p-3 flex items-center gap-4">
                     <div className="bg-amber-500 p-2 rounded-md">
-                        <FileText className="h-5 w-5 text-white" />
+                        <Megaphone className="h-5 w-5 text-white" />
                     </div>
-                    <p className="font-semibold text-sm flex-1">{userData.adminMessage}</p>
+                    <p className="font-bold text-sm text-black flex-1">{globalAnnouncement}</p>
                 </CardContent>
             </Card>
         )}
@@ -218,6 +233,7 @@ export default function DashboardPage() {
         
          {/* Download App Card */}
          <Card className="shadow-md relative overflow-hidden text-white bg-gradient-to-tr from-cyan-400 to-blue-600">
+            <div className="absolute inset-0 -z-10 bg-gradient-to-br from-blue-500 to-cyan-400 animate-shine" />
              <CardContent className="p-6 flex flex-col items-center text-center">
                  <div className="p-3 bg-white/20 rounded-2xl mb-4">
                     <Image src="/images/logo.png" width={40} height={40} alt="App Logo" className="rounded-lg" unoptimized />
