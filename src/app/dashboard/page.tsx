@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Loader2, CalendarCheck, Hand, Copy, ExternalLink, Wallet, FileText, Download, Megaphone } from "lucide-react"
 import { auth, db } from "@/lib/firebase/config"
-import { collection, query, where, getDocs, onSnapshot, doc, orderBy, limit, Timestamp } from "firebase/firestore"
+import { collection, query, where, getDocs, onSnapshot, doc, orderBy, limit, Timestamp } from "firestore"
 import { onAuthStateChanged, User } from "firebase/auth"
 import { format } from 'date-fns';
 import { useToast } from "@/hooks/use-toast"
@@ -20,6 +20,7 @@ interface Transaction {
     date: string;
     amount: string;
     status: "Approved" | "Pending" | "Rejected";
+    createdAt: Timestamp;
 }
 
 export default function DashboardPage() {
@@ -39,7 +40,6 @@ export default function DashboardPage() {
             }
         });
         
-        // Fetch global announcement
         const announcementDocRef = doc(db, "settings", "globalAnnouncement");
         const unsubscribeAnnouncement = onSnapshot(announcementDocRef, (docSnap) => {
             if(docSnap.exists() && docSnap.data().message) {
@@ -66,34 +66,31 @@ export default function DashboardPage() {
             setLoading(false);
         });
         
-        // Fetch transactions
-        const depositsQuery = query(collection(db, "deposits"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(5));
-        const withdrawalsQuery = query(collection(db, "withdrawals"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(5));
+        // --- Corrected Transaction Fetching Logic ---
+        const depositsQuery = query(collection(db, "deposits"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(10));
+        const withdrawalsQuery = query(collection(db, "withdrawals"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(10));
 
-        const processTransactions = (depositsSnapshot: any, withdrawalsSnapshot: any) => {
-            const allDeposits = depositsSnapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id, type: 'Deposit' }));
-            const allWithdrawals = withdrawalsSnapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id, type: 'Withdrawal' }));
+        let depositsData: Transaction[] = [];
+        let withdrawalsData: Transaction[] = [];
 
-            const allTransactions = [...allDeposits, ...allWithdrawals]
-            .sort((a, b) => (b.createdAt?.toDate() || 0) > (a.createdAt?.toDate() || 0) ? 1 : -1)
-            .slice(0, 10)
-            .map(tx => ({
-                id: tx.id,
-                type: tx.type,
-                date: tx.createdAt ? format(tx.createdAt.toDate(), 'PP') : 'N/A',
-                amount: `PKR ${parseFloat(tx.amount).toFixed(2)}`,
-                status: tx.status
-            } as Transaction));
+        const combineAndSort = () => {
+             const allTransactions = [...depositsData, ...withdrawalsData]
+                .sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime())
+                .slice(0, 10);
+            
             setRecentTransactions(allTransactions);
         };
-        
-        const unsubDeposits = onSnapshot(depositsQuery, (depositsSnapshot) => {
-            getDocs(withdrawalsQuery).then(withdrawalsSnapshot => processTransactions(depositsSnapshot, withdrawalsSnapshot));
+
+        const unsubDeposits = onSnapshot(depositsQuery, (snapshot) => {
+            depositsData = snapshot.docs.map(doc => ({ id: doc.id, type: 'Deposit', ...doc.data() } as Transaction));
+            combineAndSort();
         });
-        
-        const unsubWithdrawals = onSnapshot(withdrawalsQuery, (withdrawalsSnapshot) => {
-            getDocs(depositsQuery).then(depositsSnapshot => processTransactions(depositsSnapshot, withdrawalsSnapshot));
+
+        const unsubWithdrawals = onSnapshot(withdrawalsQuery, (snapshot) => {
+            withdrawalsData = snapshot.docs.map(doc => ({ id: doc.id, type: 'Withdrawal', ...doc.data() } as Transaction));
+            combineAndSort();
         });
+        // --- End of Correction ---
 
         return () => { 
             unsubscribeUser();
@@ -133,9 +130,9 @@ export default function DashboardPage() {
                     <p className="text-sm text-muted-foreground">Member Since</p>
                     <p className="font-bold text-lg">{userData?.createdAt ? format((userData.createdAt as Timestamp).toDate(), 'PPP') : 'N/A'}</p>
                 </div>
-                <Button asChild className="bg-primary/10 text-primary hover:bg-primary/20">
-                    <Link href="/dashboard/deposit">Deposit</Link>
-                </Button>
+                 <Link href="/dashboard/deposit" className="flex items-center gap-2 px-4 py-2 text-sm text-white rounded-md transition-colors border border-white hover:border-transparent bg-gradient-to-r from-primary to-blue-400 hover:shadow-lg">
+                    Deposit
+                 </Link>
             </CardContent>
         </Card>
         
@@ -209,11 +206,11 @@ export default function DashboardPage() {
                                     </div>
                                     <div>
                                         <p className="font-semibold">{tx.type}</p>
-                                        <p className="text-xs text-muted-foreground">{tx.date}</p>
+                                        <p className="text-xs text-muted-foreground">{tx.createdAt ? format(tx.createdAt.toDate(), 'PP') : 'N/A'}</p>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <p className="font-bold font-mono">{tx.amount}</p>
+                                    <p className="font-bold font-mono">PKR {parseFloat(tx.amount).toFixed(2)}</p>
                                     <Badge variant={statusVariant[tx.status as keyof typeof statusVariant]}>{tx.status}</Badge>
                                 </div>
                             </div>
@@ -233,7 +230,7 @@ export default function DashboardPage() {
         
          {/* Download App Card */}
          <Card className="shadow-md relative overflow-hidden text-white bg-gradient-to-tr from-cyan-400 to-blue-600">
-            <div className="absolute inset-0 -z-10 bg-gradient-to-br from-blue-500 to-cyan-400 animate-shine" />
+            <div className="h-[3px] bg-gradient-to-r from-blue-500 via-blue-400 to-cyan-400 animate-shine" />
              <CardContent className="p-6 flex flex-col items-center text-center">
                  <div className="p-3 bg-white/20 rounded-2xl mb-4">
                     <Image src="/images/logo.png" width={40} height={40} alt="App Logo" className="rounded-lg" unoptimized />

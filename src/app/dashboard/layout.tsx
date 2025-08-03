@@ -3,9 +3,8 @@
 
 import * as React from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, DollarSign, Landmark, ExternalLink, Settings, LogOut, Loader2, ArrowRightLeft } from "lucide-react";
 import { auth, db } from "@/lib/firebase/config";
-import { onAuthStateChanged, User, signOut } from "firebase/auth";
+import { onAuthStateChanged, User } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import Preloader from "@/components/preloader";

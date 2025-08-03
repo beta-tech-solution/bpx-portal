@@ -17,16 +17,33 @@ export const BottomNav = () => {
     const pathname = usePathname();
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 bg-card border-t shadow-top z-40">
-            <div className="flex justify-around items-center h-16 max-w-lg mx-auto">
+        <nav className="fixed bottom-0 left-0 right-0 bg-card border-t shadow-top z-40 md:flex md:justify-center">
+            {/* Mobile Nav */}
+            <div className="flex justify-around items-center h-16 max-w-lg mx-auto md:hidden">
                 {navItems.map((item) => {
                     const isActive = pathname === item.href;
-                    
                     return (
                         <Link href={item.href} key={item.href} className="flex flex-col items-center justify-center gap-1 w-full h-full">
                            <div className={cn("p-2 rounded-full transition-colors", isActive ? "bg-primary/10" : "")}>
                              <item.icon className={cn("w-6 h-6 transition-colors", isActive ? 'text-primary' : 'text-muted-foreground')} />
                            </div>
+                        </Link>
+                    )
+                })}
+            </div>
+            
+            {/* Desktop Nav */}
+            <div className="hidden md:flex justify-around items-center h-20 w-full max-w-4xl mx-auto px-8">
+                {navItems.map((item) => {
+                    const isActive = pathname === item.href;
+                    return (
+                        <Link href={item.href} key={item.href} className="flex flex-col items-center justify-center gap-1.5 group">
+                           <div className={cn("p-3 rounded-full transition-colors", isActive ? "bg-primary/10" : "bg-muted group-hover:bg-primary/10")}>
+                             <item.icon className={cn("w-6 h-6 transition-colors", isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary')} />
+                           </div>
+                           <span className={cn("text-xs font-medium transition-colors", isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary')}>
+                            {item.label}
+                           </span>
                         </Link>
                     )
                 })}
