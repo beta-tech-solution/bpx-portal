@@ -152,7 +152,7 @@ export default function DashboardPage() {
                            </Button>
                         </div>
                         <div className="flex items-center justify-between p-2 rounded-md bg-slate-700">
-                           <span className="text-sm font-mono tracking-widest">••••••••</span>
+                           <span className="text-sm font-mono tracking-widest">{userData.bpexchPassword}</span>
                            <Button size="icon" variant="ghost" onClick={() => handleCopy(userData.bpexchPassword, 'Password')}>
                                <Copy className="h-4 w-4"/>
                            </Button>
@@ -210,7 +210,7 @@ export default function DashboardPage() {
                                         <p className="font-semibold">{tx.type}</p>
                                         <p className="text-xs text-muted-foreground">{tx.createdAt ? format(tx.createdAt.toDate(), 'PP') : 'N/A'}</p>
                                         {tx.type === 'Withdrawal' && (
-                                            <p className="text-xs text-muted-foreground">{tx.bankName} - ...{tx.accountNumber?.slice(-4)}</p>
+                                            <p className="text-xs text-muted-foreground">{tx.bankName} - {tx.accountNumber}</p>
                                         )}
                                     </div>
                                 </div>
