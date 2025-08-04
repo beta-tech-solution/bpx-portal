@@ -51,19 +51,22 @@ export default function DashboardPage() {
                 });
 
                 // Set up transaction listeners
-                const depositsQuery = query(collection(db, "deposits"), where("userId", "==", currentUser.uid), orderBy("createdAt", "desc"), limit(5));
+                // Removed orderBy from deposits query to prevent index error
+                const depositsQuery = query(collection(db, "deposits"), where("userId", "==", currentUser.uid), limit(5));
                 const unsubDeposits = onSnapshot(depositsQuery, (snapshot) => {
                     const deposits = snapshot.docs.map(doc => ({ id: doc.id, type: 'Deposit', ...doc.data() } as Transaction));
                     setDepositsData(deposits);
+                }, (error) => {
+                    console.error("Error fetching deposits:", error);
                 });
 
-                // Corrected withdrawals query: remove orderBy to prevent index error, will sort client-side
+                // Removed orderBy from withdrawals to prevent index error, will sort client-side
                 const withdrawalsQuery = query(collection(db, "withdrawals"), where("userId", "==", currentUser.uid), limit(5));
                 const unsubWithdrawals = onSnapshot(withdrawalsQuery, (snapshot) => {
                     const withdrawals = snapshot.docs.map(doc => ({ id: doc.id, type: 'Withdrawal', ...doc.data() } as Transaction));
                     setWithdrawalsData(withdrawals);
                 }, (error) => {
-                    console.error("Error fetching withdrawals:", error); // Log potential errors
+                    console.error("Error fetching withdrawals:", error);
                 });
 
                 // Set up global announcement listener
@@ -260,3 +263,5 @@ export default function DashboardPage() {
     </div>
   )
 }
+
+  
