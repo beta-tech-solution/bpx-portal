@@ -1,3 +1,4 @@
+
 "use client"
 
 import Link from 'next/link';
@@ -10,7 +11,7 @@ const navItems = [
     { href: '/dashboard/deposit', label: 'Deposit', icon: DollarSign },
     { href: '/dashboard/withdraw', label: 'Withdraw', icon: Landmark },
     { href: '/dashboard/bpexch-login', label: 'BPExch Login', icon: ExternalLink },
-    { href: '/dashboard/deposit/history', label: 'History', icon: History },
+    { href: '/dashboard/settings', label: 'Profile', icon: History },
 ];
 
 export const BottomNav = () => {
@@ -21,7 +22,7 @@ export const BottomNav = () => {
             {/* Mobile Nav */}
             <div className="grid grid-cols-5 h-16 max-w-lg mx-auto md:hidden">
                 {navItems.map((item) => {
-                    const isActive = pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard');
+                    const isActive = (item.href === '/dashboard' && pathname === '/dashboard') || (item.href !== '/dashboard' && pathname.startsWith(item.href));
                     return (
                         <Link
                             href={item.href}
@@ -51,7 +52,7 @@ export const BottomNav = () => {
             {/* Desktop Nav */}
              <div className="hidden md:flex justify-around items-center h-20 w-full">
                 {navItems.map((item) => {
-                    const isActive = pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard');
+                     const isActive = (item.href === '/dashboard' && pathname === '/dashboard') || (item.href !== '/dashboard' && pathname.startsWith(item.href));
                     return (
                         <Link
                             href={item.href}

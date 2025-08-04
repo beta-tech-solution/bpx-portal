@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetHeader, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { LogOut, Settings, Wallet, ChevronRight, User, History } from 'lucide-react';
+import { LogOut, Settings, Wallet, ChevronRight, User, History, Copy, Eye, EyeOff, KeyRound, Phone, Mail } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
@@ -17,6 +17,42 @@ const navLinks = [
     { href: "/dashboard/settings", label: "My Profile", icon: Settings },
     { href: "/dashboard/deposit/history", label: "Deposit History", icon: History },
 ];
+
+const InfoRow = ({ label, value, icon: Icon, isPassword = false }: { label: string, value: string | undefined, icon: React.ElementType, isPassword?: boolean }) => {
+    const { toast } = useToast();
+    const [isVisible, setIsVisible] = useState(!isPassword);
+
+    const handleCopy = () => {
+        if (value) {
+            navigator.clipboard.writeText(value);
+            toast({ title: "Copied!", description: `${label} has been copied.` });
+        }
+    };
+
+    return (
+        <div className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+            <div className="flex items-center gap-3">
+                <Icon className="h-5 w-5 text-primary" />
+                <div>
+                    <span className="text-sm font-semibold">{label}</span>
+                    <p className="text-xs text-muted-foreground">{isVisible ? value : '••••••••'}</p>
+                </div>
+            </div>
+            <div className="flex items-center gap-1">
+                {isPassword && (
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsVisible(!isVisible)}>
+                        {isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                )}
+                {value && (
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleCopy}>
+                        <Copy className="h-4 w-4" />
+                    </Button>
+                )}
+            </div>
+        </div>
+    )
+}
 
 export const DashboardHeader = ({ user, userData }: { user: any, userData: any }) => {
     const { toast } = useToast();
@@ -89,16 +125,24 @@ export const DashboardHeader = ({ user, userData }: { user: any, userData: any }
                                 </div>
                             </div>
                         </SheetHeader>
-                        <div className="flex-1 p-4 space-y-2">
-                             {navLinks.map(link => (
-                                <Link href={link.href} key={link.href} className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
-                                    <div className="flex items-center gap-3">
-                                        <link.icon className="h-5 w-5 text-primary" />
-                                        <span className="font-semibold">{link.label}</span>
-                                    </div>
-                                    <ChevronRight className="h-5 w-5 text-muted-foreground"/>
-                                </Link>
-                             ))}
+                        <div className="flex-1 p-4 space-y-2 overflow-y-auto">
+                            {navLinks.map(link => (
+                               <Link href={link.href} key={link.href} className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+                                   <div className="flex items-center gap-3">
+                                       <link.icon className="h-5 w-5 text-primary" />
+                                       <span className="font-semibold">{link.label}</span>
+                                   </div>
+                                   <ChevronRight className="h-5 w-5 text-muted-foreground"/>
+                               </Link>
+                            ))}
+                             <div className="pt-4 mt-4 border-t">
+                                <h3 className="px-3 py-2 font-headline text-muted-foreground text-sm">Your Information</h3>
+                                <InfoRow label="Full Name" value={userData?.fullName} icon={User} />
+                                <InfoRow label="Email" value={userData?.email} icon={Mail} />
+                                <InfoRow label="Phone" value={userData?.phone} icon={Phone} />
+                                <InfoRow label="BPExch Username" value={userData?.bpexchUsername} icon={User} />
+                                <InfoRow label="BPExch Password" value={userData?.bpexchPassword} icon={KeyRound} isPassword={true} />
+                            </div>
                         </div>
                         <div className="p-4 mt-auto">
                             <Button variant="destructive" onClick={handleLogout} className="w-full justify-center gap-3 p-3 text-base shadow-lg hover:shadow-xl transition-shadow drop-shadow-md hover:drop-shadow-lg">

@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Loader2, CalendarIcon, Eye, ArrowLeft, ArrowRight, User, Phone, Mail, Copy } from "lucide-react"
 import { db, auth } from "@/lib/firebase/config"
-import { collection, query, where, getDocs, Timestamp, onSnapshot, doc, orderBy } from "firebase/firestore"
+import { collection, query, where, Timestamp, onSnapshot, doc, orderBy } from "firebase/firestore"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { cn } from "@/lib/utils"
@@ -20,13 +20,16 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import Image from "next/image"
 import { useToast } from "@/hooks/use-toast"
 
-interface Deposit {
+interface Withdrawal {
   id: string
   amount: string
   status: "Approved" | "Pending" | "Rejected"
   date: string
   createdAt: Timestamp
-  proofUrl: string
+  bankName: string;
+  accountNumber: string;
+  accountHolder: string;
+  adminProofUrl?: string;
 }
 
 interface UserData {
@@ -44,9 +47,9 @@ const statusVariant = {
 
 const ITEMS_PER_PAGE = 15;
 
-function DepositHistoryContent() {
+function WithdrawalHistoryContent() {
   const [user] = useAuthState(auth);
-  const [deposits, setDeposits] = useState<Deposit[]>([])
+  const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([])
   const [userData, setUserData] = useState<UserData | null>(null);
   const [date, setDate] = useState<DateRange | undefined>({ from: subDays(new Date(), 29), to: new Date() })
   const [loading, setLoading] = useState(true);
@@ -69,53 +72,53 @@ function DepositHistoryContent() {
         }
     });
 
-    const q = query(collection(db, "deposits"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
-    const unsubscribeDeposits = onSnapshot(q, (querySnapshot) => {
-        const depositsData = querySnapshot.docs.map(doc => ({
+    const q = query(collection(db, "withdrawals"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
+    const unsubscribeWithdrawals = onSnapshot(q, (querySnapshot) => {
+        const data = querySnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
-        } as Deposit));
-        setDeposits(depositsData);
+        } as Withdrawal));
+        setWithdrawals(data);
         setLoading(false);
     }, (error) => {
-        console.error("Error fetching deposits:", error);
-        toast({ title: "Error", description: "Could not fetch deposit history.", variant: "destructive" });
+        console.error("Error fetching withdrawals:", error);
+        toast({ title: "Error", description: "Could not fetch withdrawal history.", variant: "destructive" });
         setLoading(false);
     });
 
     return () => {
         unsubscribeUser();
-        unsubscribeDeposits();
+        unsubscribeWithdrawals();
     }
   }, [user, toast]);
 
-  const filteredDeposits = useMemo(() => {
-    let filtered = deposits;
+  const filteredWithdrawals = useMemo(() => {
+    let filtered = withdrawals;
     if (date?.from && date?.to) {
         const fromDate = startOfDay(date.from);
         const toDate = endOfDay(date.to);
         filtered = filtered.filter(d => {
-            const depositDate = d.createdAt.toDate();
-            return depositDate >= fromDate && depositDate <= toDate;
+            const withdrawalDate = d.createdAt.toDate();
+            return withdrawalDate >= fromDate && withdrawalDate <= toDate;
         });
     }
     return filtered;
-  }, [deposits, date]);
+  }, [withdrawals, date]);
 
-  const paginatedDeposits = useMemo(() => {
+  const paginatedWithdrawals = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
-    return filteredDeposits.slice(startIndex, endIndex);
-  }, [filteredDeposits, currentPage]);
+    return filteredWithdrawals.slice(startIndex, endIndex);
+  }, [filteredWithdrawals, currentPage]);
 
-  const totalPages = Math.ceil(filteredDeposits.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filteredWithdrawals.length / ITEMS_PER_PAGE);
 
   const handlePageChange = (newPage: number) => {
     if (newPage > 0 && newPage <= totalPages) {
         setCurrentPage(newPage);
     }
   }
-  
+
   const InfoRow = ({ label, value, icon: Icon }: { label: string, value: string | undefined, icon: React.ElementType }) => {
     const handleCopy = () => {
         if (value) {
@@ -151,25 +154,32 @@ function DepositHistoryContent() {
       )
     }
 
-    if (paginatedDeposits.length === 0) {
-      return <div className="text-center text-muted-foreground p-8">No deposits found for this period.</div>
+    if (paginatedWithdrawals.length === 0) {
+      return <div className="text-center text-muted-foreground p-8">No withdrawals found for this period.</div>
     }
 
     return (
       <div className="space-y-4">
-        {paginatedDeposits.map(deposit => (
-          <Card key={deposit.id} className="w-full transition-shadow hover:shadow-md">
+        {paginatedWithdrawals.map(item => (
+          <Card key={item.id} className="w-full transition-shadow hover:shadow-md">
             <CardContent className="p-4 flex flex-col gap-4">
                 <div className="flex justify-between items-start">
                     <div>
-                        <p className="font-mono text-xl font-bold">PKR {deposit.amount}</p>
-                        <p className="text-sm text-muted-foreground">{format(deposit.createdAt.toDate(), 'PPpp')}</p>
+                        <p className="font-mono text-xl font-bold">PKR {item.amount}</p>
+                        <p className="text-sm text-muted-foreground">{format(item.createdAt.toDate(), 'PPpp')}</p>
                     </div>
-                    <Badge variant={statusVariant[deposit.status]}>{deposit.status}</Badge>
+                    <Badge variant={statusVariant[item.status]}>{item.status}</Badge>
                 </div>
-                <div className="border-t pt-4 flex justify-end">
-                     <ProofDialog proofUrl={deposit.proofUrl} />
+                <div className="text-xs text-muted-foreground border-l-2 border-primary pl-2 space-y-1">
+                    <p><span className="font-semibold">Bank:</span> {item.bankName}</p>
+                    <p><span className="font-semibold">Account #:</span> {item.accountNumber}</p>
+                    <p><span className="font-semibold">Holder:</span> {item.accountHolder}</p>
                 </div>
+                {item.status === 'Approved' && item.adminProofUrl && (
+                    <div className="border-t pt-4 flex justify-end">
+                        <ProofDialog proofUrl={item.adminProofUrl} />
+                    </div>
+                )}
             </CardContent>
           </Card>
         ))}
@@ -181,9 +191,9 @@ function DepositHistoryContent() {
     <div className="animate-fade-in grid gap-8 w-full">
       <Card>
         <CardHeader>
-          <CardTitle className="font-headline">Deposit History</CardTitle>
+          <CardTitle className="font-headline">Withdrawal History</CardTitle>
           <CardDescription>
-            Review all your past deposit records.
+            Review all your past withdrawal records.
           </CardDescription>
            {userData && (
              <Card className="mt-4 bg-muted/50">
@@ -260,17 +270,17 @@ function ProofDialog({ proofUrl }: { proofUrl: string }) {
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <Eye className="h-4 w-4 mr-2" />
-          View Proof
+          View Admin Proof
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md w-[90vw]">
         <DialogHeader>
-          <DialogTitle>Payment Proof</DialogTitle>
-          <DialogDescription>Review the payment proof you uploaded.</DialogDescription>
+          <DialogTitle>Admin's Proof of Transfer</DialogTitle>
+          <DialogDescription>This is the proof of payment uploaded by the administrator.</DialogDescription>
         </DialogHeader>
         <div className="relative mt-4 h-[60vh] w-full">
             {proofUrl ? (
-                <Image src={proofUrl} alt="Payment Proof" layout="fill" objectFit="contain" />
+                <Image src={proofUrl} alt="Admin Proof of Transfer" layout="fill" objectFit="contain" />
             ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground">No proof available</div>
             )}
@@ -280,11 +290,10 @@ function ProofDialog({ proofUrl }: { proofUrl: string }) {
   )
 }
 
-
-export default function DepositHistoryPage() {
+export default function WithdrawalHistoryPage() {
     return (
         <Suspense fallback={<div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
-            <DepositHistoryContent />
+            <WithdrawalHistoryContent />
         </Suspense>
     );
 }
