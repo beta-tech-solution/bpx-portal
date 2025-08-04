@@ -119,9 +119,13 @@ export default function AdminDashboardPage() {
                 const data: ProfitData[] = [
                     { name: 'Total Deposits', value: totalDeposits, fill: COLORS.deposits },
                     { name: 'Total Withdrawals', value: totalWithdrawals, fill: COLORS.withdrawals },
-                    { name: 'Net Profit', value: netProfit, fill: COLORS.profit },
                 ];
-                setProfitData(data.filter(d => d.value !== 0)); // Keep all non-zero values
+                // Only add profit slice if it's meaningful
+                if (netProfit !== 0) {
+                     data.push({ name: 'Net Profit', value: netProfit, fill: COLORS.profit });
+                }
+
+                setProfitData(data.filter(d => d.value !== 0));
             } catch (error) {
                 console.error("Error fetching all-time profit data:", error);
             }
@@ -149,15 +153,16 @@ export default function AdminDashboardPage() {
                     return 'Unknown User';
                 };
 
-                // Recent Transactions
-                const depositsQuery = query(collection(db, "deposits"), where("status", "==", "Approved"), orderBy("createdAt", "desc"), limit(5));
-                const withdrawalsQuery = query(collection(db, "withdrawals"), where("status", "==", "Approved"), orderBy("createdAt", "desc"), limit(5));
+                // Recent Transactions - Fetch without ordering here to avoid index issues
+                const depositsQuery = query(collection(db, "deposits"), where("status", "==", "Approved"));
+                const withdrawalsQuery = query(collection(db, "withdrawals"), where("status", "==", "Approved"));
                 const [depositsSnapshot, withdrawalsSnapshot] = await Promise.all([getDocs(depositsQuery), getDocs(withdrawalsQuery)]);
 
                 const depositsPromises = depositsSnapshot.docs.map(async docSnapshot => ({ id: docSnapshot.id, type: 'Deposit', userName: await getUserName(docSnapshot.data().userId), ...docSnapshot.data() } as Transaction));
                 const withdrawalsPromises = withdrawalsSnapshot.docs.map(async docSnapshot => ({ id: docSnapshot.id, type: 'Withdrawal', userName: await getUserName(docSnapshot.data().userId), ...docSnapshot.data() } as Transaction));
                 const combined = [...await Promise.all(depositsPromises), ...await Promise.all(withdrawalsPromises)];
                 
+                // Sort and slice on the client-side
                 combined.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
                 setRecentTransactions(combined.slice(0, 5));
                 
