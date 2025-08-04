@@ -42,7 +42,6 @@ export default function AdminChatPage() {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const notificationAudioRef = useRef<HTMLAudioElement>(null);
 
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [editText, setEditText] = useState("");
@@ -64,13 +63,6 @@ export default function AdminChatPage() {
     
     const unsubscribeMessages = onSnapshot(q, (querySnapshot) => {
       const msgs: Message[] = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
-      
-      if (messages.length > 0 && msgs.length > messages.length) {
-        const lastMsg = msgs[msgs.length - 1];
-        if(lastMsg.senderId !== 'admin') {
-           notificationAudioRef.current?.play().catch(e => console.error("Audio play failed:", e));
-        }
-      }
       
       setMessages(msgs);
       setLoading(false);
@@ -172,7 +164,6 @@ export default function AdminChatPage() {
   return (
     <>
     <Card className="h-full flex flex-col animate-fade-in">
-      <audio ref={notificationAudioRef} src="/notification.mp3" preload="auto"></audio>
       <CardHeader className="border-b">
         <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => router.push('/admin/chat')}>

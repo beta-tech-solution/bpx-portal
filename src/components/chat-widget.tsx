@@ -40,12 +40,6 @@ export default function ChatWidget() {
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const notificationAudioRef = useRef<HTMLAudioElement | null>(null);
-
-  useEffect(() => {
-    notificationAudioRef.current = new Audio('/notification.mp3');
-    notificationAudioRef.current.preload = 'auto';
-  }, []);
 
   useEffect(() => {
     if (!user) return
@@ -68,14 +62,6 @@ export default function ChatWidget() {
     
     const unsubscribeMessages = onSnapshot(q, (querySnapshot) => {
       const msgs: Message[] = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
-
-      if (messages.length > 0 && msgs.length > messages.length) {
-        const lastMsg = msgs[msgs.length - 1];
-        if(lastMsg.senderId === 'admin') {
-           notificationAudioRef.current?.play().catch(e => console.error("Audio play failed:", e));
-        }
-      }
-
       setMessages(msgs);
     });
 

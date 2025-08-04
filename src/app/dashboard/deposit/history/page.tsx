@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Loader2, CalendarIcon, Eye, ArrowLeft, ArrowRight, User, Phone, Mail, Copy } from "lucide-react"
 import { db, auth } from "@/lib/firebase/config"
-import { collection, query, where, getDocs, Timestamp, onSnapshot, doc, orderBy } from "firebase/firestore"
+import { collection, query, where, Timestamp, onSnapshot, doc } from "firebase/firestore"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { cn } from "@/lib/utils"
@@ -69,12 +69,15 @@ function DepositHistoryContent() {
         }
     });
 
-    const q = query(collection(db, "deposits"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
+    const q = query(collection(db, "deposits"), where("userId", "==", user.uid));
     const unsubscribeDeposits = onSnapshot(q, (querySnapshot) => {
         const depositsData = querySnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
         } as Deposit));
+        
+        depositsData.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
+
         setDeposits(depositsData);
         setLoading(false);
     }, (error) => {
