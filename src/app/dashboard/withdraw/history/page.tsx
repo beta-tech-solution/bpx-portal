@@ -176,11 +176,6 @@ function WithdrawalHistoryContent() {
                     <p><span className="font-semibold">Account #:</span> {item.accountNumber}</p>
                     <p><span className="font-semibold">Holder:</span> {item.accountHolder}</p>
                 </div>
-                {item.status === 'Approved' && item.adminProofUrl && (
-                    <div className="border-t pt-4 flex justify-end">
-                        <ProofDialog proofUrl={item.adminProofUrl} />
-                    </div>
-                )}
             </CardContent>
           </Card>
         ))}

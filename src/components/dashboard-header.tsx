@@ -14,7 +14,7 @@ import Link from 'next/link';
 import { AppLogo } from './app-logo';
 
 const navLinks = [
-    { href: "/dashboard/settings", label: "My Profile", icon: Settings },
+    { href: "/dashboard/settings", label: "My Profile", icon: User },
     { href: "/dashboard/deposit/history", label: "Deposit History", icon: History },
     { href: "/dashboard/withdraw/history", label: "Withdrawal History", icon: History },
 ];
