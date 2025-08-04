@@ -7,8 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { LanguageToggle } from '@/components/language-toggle';
-import { UploadCloud, Hourglass, Loader2, Landmark, AlertCircle, Copy, FileUp } from 'lucide-react';
+import { Hourglass, Loader2, AlertCircle, Copy, FileUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
