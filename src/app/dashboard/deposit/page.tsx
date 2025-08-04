@@ -8,29 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { LanguageToggle } from '@/components/language-toggle';
-import { UploadCloud, Hourglass, TrendingUp, Loader2, Landmark, AlertCircle, Copy } from 'lucide-react';
+import { UploadCloud, Hourglass, Loader2, Landmark, AlertCircle, Copy, FileUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Area, AreaChart, CartesianGrid, XAxis, Tooltip } from "recharts"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { auth, db } from '@/lib/firebase/config';
 import { collection, addDoc, serverTimestamp, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { format } from 'date-fns';
-import { useMediaQuery } from '@/hooks/use-media-query';
-
-interface DepositChartData {
-  month: string;
-  amount: number;
-}
-  
-const chartConfig = {
-  amount: {
-    label: "Deposits",
-    color: "hsl(var(--primary))",
-  },
-} satisfies ChartConfig
+import Image from 'next/image';
 
 const CLOUDINARY_CLOUD_NAME = "datq7sbdp";
 const CLOUDINARY_UPLOAD_PRESET = "bpxmaster";
@@ -48,11 +33,10 @@ export default function DepositPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [user] = useAuthState(auth);
   const { toast } = useToast();
-  const [chartData, setChartData] = useState<DepositChartData[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loadingAccounts, setLoadingAccounts] = useState(true);
   const [hasPendingDeposit, setHasPendingDeposit] = useState(false);
-  const isMobile = useMediaQuery("(max-width: 768px)");
+  const [fileName, setFileName] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -63,24 +47,8 @@ export default function DepositPage() {
         setHasPendingDeposit(!snapshot.empty);
     });
 
-    const approvedQuery = query(collection(db, 'deposits'), where('userId', '==', user.uid), where('status', '==', 'Approved'));
-    const unsubscribeApproved = onSnapshot(approvedQuery, (querySnapshot) => {
-        const monthlyData: { [key: string]: number } = {};
-        
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            const date = new Date(data.date);
-            const month = format(date, 'MMM');
-            monthlyData[month] = (monthlyData[month] || 0) + parseFloat(data.amount);
-        });
-
-        const formattedChartData = Object.entries(monthlyData).map(([month, amount]) => ({ month, amount }));
-        setChartData(formattedChartData);
-    });
-
     return () => {
         unsubscribePending();
-        unsubscribeApproved();
     };
   }, [user]);
 
@@ -105,11 +73,6 @@ export default function DepositPage() {
         return;
     }
     
-    if (CLOUDINARY_CLOUD_NAME === "YOUR_CLOUD_NAME" || CLOUDINARY_UPLOAD_PRESET === "YOUR_UPLOAD_PRESET") {
-        toast({ title: "Configuration Needed", description: "Cloudinary is not configured. Please update the details.", variant: "destructive" });
-        return;
-    }
-
     setIsLoading(true);
 
     const form = event.currentTarget;
@@ -125,6 +88,16 @@ export default function DepositPage() {
         description: "Please enter an amount and upload a proof of payment.",
         variant: "destructive",
       })
+      setIsLoading(false);
+      return;
+    }
+    
+    if (parseFloat(amount) < 500) {
+      toast({
+        title: "Invalid Amount",
+        description: "The minimum deposit amount is PKR 500.",
+        variant: "destructive",
+      });
       setIsLoading(false);
       return;
     }
@@ -157,6 +130,7 @@ export default function DepositPage() {
         
         setIsSubmitted(true);
         form.reset();
+        setFileName(null);
         toast({
             title: "Deposit Submitted",
             description: "We have received your proof and will confirm it shortly.",
@@ -174,9 +148,18 @@ export default function DepositPage() {
     }
   };
   
-  const handleCopy = (text: string, label: string) => {
+  const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast({ title: `${label} Copied!` });
+    toast({ title: "Copied to clipboard!" });
+  }
+  
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+        setFileName(file.name);
+    } else {
+        setFileName(null);
+    }
   }
 
   useEffect(() => {
@@ -196,8 +179,8 @@ export default function DepositPage() {
 
   if (isSubmitted) {
     return (
-      <div className="flex items-center justify-center h-full animate-fade-in">
-        <Card className="w-full max-w-lg">
+      <div className="flex items-center justify-center h-full animate-fade-in w-full">
+        <Card className="w-full">
           <CardHeader className="items-center text-center">
             <Hourglass className="w-12 h-12 text-primary mb-2 animate-spin-slow" />
             <CardTitle className="font-headline">Deposit Awaiting Confirmation</CardTitle>
@@ -218,7 +201,7 @@ export default function DepositPage() {
   }
 
   return (
-    <div className="animate-fade-in grid gap-8">
+    <div className="animate-fade-in grid gap-8 w-full">
         {hasPendingDeposit && (
              <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
@@ -228,94 +211,83 @@ export default function DepositPage() {
                 </AlertDescription>
             </Alert>
         )}
-        <Card className={`w-full max-w-2xl mx-auto ${isMobile ? "max-w-[420px]" : ""}`}>
-            <CardHeader>
-                <CardTitle className="font-headline">Deposit Funds</CardTitle>
-                <CardDescription>Follow the instructions below to add funds to your account.</CardDescription>
-            </CardHeader>
+        <Card className="w-full transition-shadow hover:shadow-lg">
             <form onSubmit={handleSubmit}>
-                <CardContent className="flex flex-col gap-8">
-                    <div className="space-y-6">
-                        <div>
-                            <Label htmlFor="amount" className="font-semibold font-headline">Amount (PKR)</Label>
-                            <Input id="amount" name="amount" type="number" placeholder="1000.00" required step="0.01" className="mt-2 text-3xl font-bold h-auto p-2" />
-                        </div>
-                        <div>
-                            <h3 className="font-semibold mb-2 font-headline">Deposit Account Details</h3>
-                            {loadingAccounts ? <Loader2 className="animate-spin"/> : (
-                                <Accordion type="single" collapsible className="w-full" defaultValue={accounts[0]?.id}>
-                                    {accounts.map(account => (
-                                        <AccordionItem value={account.id} key={account.id}>
-                                            <AccordionTrigger className="font-semibold hover:no-underline">
-                                                <div className="flex items-center gap-2">
-                                                    <Landmark className="h-5 w-5 text-primary"/>
-                                                    {account.bankName}
-                                                </div>
-                                            </AccordionTrigger>
-                                            <AccordionContent>
-                                                <div className="p-4 rounded-lg border bg-muted/50 space-y-2 text-sm">
-                                                    <div className="flex justify-between items-center">
-                                                        <p><span className="font-semibold">Bank Name:</span> {account.bankName}</p>
-                                                        <Button type="button" variant="ghost" size="icon" onClick={() => handleCopy(account.bankName, 'Bank Name')}><Copy className="h-4 w-4"/></Button>
-                                                    </div>
-                                                    <div className="flex justify-between items-center">
-                                                        <p><span className="font-semibold">Account Number:</span> {account.accountNumber}</p>
-                                                        <Button type="button" variant="ghost" size="icon" onClick={() => handleCopy(account.accountNumber, 'Account Number')}><Copy className="h-4 w-4"/></Button>
-                                                    </div>
-                                                    <div className="flex justify-between items-center">
-                                                        <p><span className="font-semibold">Account Holder:</span> {account.accountHolder}</p>
-                                                        <Button type="button" variant="ghost" size="icon" onClick={() => handleCopy(account.accountHolder, 'Account Holder')}><Copy className="h-4 w-4"/></Button>
-                                                    </div>
-                                                </div>
-                                            </AccordionContent>
-                                        </AccordionItem>
-                                    ))}
-                                    {accounts.length === 0 && <p className="text-sm text-muted-foreground">No deposit accounts are configured by the admin yet.</p>}
-                                </Accordion>
-                            )}
-                        </div>
-                         <div>
-                            <Label htmlFor="proof" className="font-semibold font-headline">Upload Payment Proof</Label>
-                            <Input id="proof" name="proof" type="file" required className="mt-2" accept="image/*,.pdf" />
-                            <p className="text-xs text-muted-foreground mt-1">Please upload an image or PDF of your transaction receipt.</p>
-                        </div>
+                <CardContent className="p-6 flex flex-col gap-6">
+                    <div>
+                        <Label htmlFor="amount" className="font-semibold text-base">Minimum Amount is Rs. 500</Label>
+                        <Input id="amount" name="amount" type="number" placeholder="Enter Amount" required min="500" step="0.01" className="mt-2 text-lg font-bold h-12 p-3" />
                     </div>
                     <div>
+                        <h3 className="font-semibold mb-2 text-base">Select Deposit Method</h3>
+                        {loadingAccounts ? <Loader2 className="animate-spin"/> : (
+                            <Accordion type="single" collapsible className="w-full" defaultValue={accounts[0]?.id}>
+                                {accounts.map(account => (
+                                    <AccordionItem value={account.id} key={account.id} className="border-0">
+                                        <AccordionTrigger className="font-semibold hover:no-underline border rounded-md p-4 bg-muted/30">
+                                            <div className="flex items-center gap-4">
+                                                <Image src="https://placehold.co/40x40.png" alt="bank logo" width={40} height={40} className="rounded-full" data-ai-hint="payment app" />
+                                                <span className="font-bold text-lg">{account.bankName}</span>
+                                            </div>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="pt-2">
+                                            <div className="p-4 rounded-b-md border border-t-0 bg-muted/50 space-y-3 text-sm">
+                                                <div className="flex justify-between items-center">
+                                                    <p><span className="font-semibold text-muted-foreground">Ac #:</span> {account.accountNumber}</p>
+                                                    <Button type="button" variant="ghost" size="icon" onClick={() => handleCopy(account.accountNumber)}><Copy className="h-4 w-4"/></Button>
+                                                </div>
+                                                <div className="flex justify-between items-center">
+                                                    <p><span className="font-semibold text-muted-foreground">Ac Title#:</span> {account.accountHolder}</p>
+                                                    <Button type="button" variant="ghost" size="icon" onClick={() => handleCopy(account.accountHolder)}><Copy className="h-4 w-4"/></Button>
+                                                </div>
+                                            </div>
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                ))}
+                                {accounts.length === 0 && <p className="text-sm text-muted-foreground p-4 border rounded-md">No deposit accounts are configured by the admin yet.</p>}
+                            </Accordion>
+                        )}
+                    </div>
+                    <div>
+                        <Label htmlFor="proof" className="font-semibold text-base">Payment Proof</Label>
+                        <div className="mt-2">
+                            <label htmlFor="proof" className="relative flex items-center justify-center w-full h-12 px-4 border-2 border-dashed rounded-md cursor-pointer bg-muted/30 hover:border-primary">
+                               <FileUp className="h-5 w-5 text-muted-foreground mr-2"/>
+                               <span className="text-muted-foreground text-sm">{fileName || "Choose File"}</span>
+                               <Input id="proof" name="proof" type="file" required className="sr-only" accept="image/*,.pdf" onChange={handleFileChange} />
+                            </label>
+                        </div>
+                    </div>
+                     <div className="p-4 border rounded-md">
                          <LanguageToggle
-                            en={<p>Please ensure the deposit amount is exact. Upload a clear screenshot or PDF of the transaction. Funds will be credited to your account upon confirmation.</p>}
-                            ur={<p className="leading-relaxed">براہ کرم یقینی بنائیں کہ جمع کی رقم درست ہے۔ لین دین کی واضح اسکرین شاٹ یا پی ڈی ایف اپ لوڈ کریں۔ تصدیق کے بعد فنڈز آپ کے اکاؤنٹ میں جمع کر دیے جائیں گے۔</p>}
+                            className="text-xs"
+                            en={<ol className="list-decimal list-inside space-y-2">
+                                <li>Send payment to the account above</li>
+                                <li>Upload payment proof and submit</li>
+                                <li>Payment will be approved within 30 minutes.</li>
+                                <li>For Binance USDT payment, use the Pay ID or email associated with your Binance account.</li>
+                                <li>Enter the exact amount to avoid payment delays.</li>
+                                <li>The amount you receive will be based on the current USDT rate at the time of your deposit.</li>
+                            </ol>}
+                            ur={<ol className="list-decimal list-inside space-y-2 text-right">
+                                <li>اوپر دیے گئے اکاؤنٹ پر ادائیگی بھیجیں</li>
+                                <li>ادائیگی کا ثبوت اپ لوڈ کریں اور جمع کروائیں</li>
+                                <li>ادائیگی کی منظوری 30 منٹ میں دی جائے گی</li>
+                                <li>بائننس USDT کی ادائیگی کے لیے اپنے بائنانس اکاؤنٹ کے ساتھ وابستہ Pay ID یا ای میل کا استعمال کریں</li>
+                                <li>ادائیگی میں تاخیر سے بچنے کے لیے درست رقم درج کریں</li>
+                                <li>آپ کو ملنے والی رقم آپ کے جمع کروانے کے وقت USDT کی موجودہ شرح کے مطابق ہوگی</li>
+                            </ol>}
                          />
                     </div>
                 </CardContent>
-                <CardFooter>
-                    <Button type="submit" className="bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isLoading || hasPendingDeposit}>
-                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
-                        Submit Deposit
+                <CardFooter className="p-6 pt-0">
+                    <Button type="submit" className="w-full h-12 text-base font-bold bg-slate-800 hover:bg-slate-700 text-white" disabled={isLoading || hasPendingDeposit}>
+                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        DEPOSIT
                     </Button>
                 </CardFooter>
             </form>
         </Card>
-         <Card className={`w-full max-w-2xl mx-auto ${isMobile ? "max-w-[320px]" : ""}`}>
-            <CardHeader className="items-center">
-              <TrendingUp className="w-8 h-8 text-primary" />
-              <CardTitle className="font-headline">Your Deposit Trends</CardTitle>
-              <CardDescription>
-                Monthly approved deposit amounts over the last 6 months.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="w-full overflow-x-auto">
-                <ChartContainer config={chartConfig} className="h-[200px] w-full">
-                  <AreaChart accessibilityLayer data={chartData} margin={{ left: 12, right: 12 }} >
-                    <CartesianGrid vertical={false} />
-                    <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
-                    <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
-                    <Area dataKey="amount" type="natural" fill="var(--color-amount)" fillOpacity={0.4} stroke="var(--color-amount)" />
-                  </AreaChart>
-                </ChartContainer>
-              </div>
-            </CardContent>
-          </Card>
     </div>
   );
 }
