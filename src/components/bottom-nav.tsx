@@ -1,9 +1,8 @@
-
 "use client"
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, ArrowRightLeft, DollarSign, Landmark, ExternalLink } from 'lucide-react';
+import { Home, DollarSign, Landmark, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -23,29 +22,58 @@ export const BottomNav = () => {
                 {navItems.map((item) => {
                     const isActive = pathname === item.href;
                     return (
-                        <Link href={item.href} key={item.href} className="flex flex-col items-center justify-center gap-1 w-full h-full">
-                           <div className={cn("p-2 rounded-full transition-colors", isActive ? "bg-primary/10" : "")}>
-                             <item.icon className={cn("w-6 h-6 transition-colors", isActive ? 'text-primary' : 'text-muted-foreground')} />
-                           </div>
+                        <Link
+                            href={item.href}
+                            key={item.href}
+                            className="flex flex-col items-center justify-center gap-1 w-full h-full"
+                        >
+                            <div className={cn(
+                                "p-2 rounded-full transition-colors",
+                                isActive ? "bg-primary/10" : ""
+                            )}>
+                                <item.icon className={cn(
+                                    "w-6 h-6 transition-colors",
+                                    isActive ? 'text-primary' : 'text-muted-foreground'
+                                )} />
+                            </div>
+                            <span className={cn(
+                                "text-[10px] font-medium transition-colors",
+                                isActive ? 'text-primary' : 'text-muted-foreground'
+                            )}>
+                                {item.label}
+                            </span>
                         </Link>
-                    )
+                    );
                 })}
             </div>
-            
+
             {/* Desktop Nav */}
             <div className="hidden md:flex justify-between items-center h-20 w-full gap-[250px] px-[6%]">
-            {navItems.map((item) => {
+                {navItems.map((item) => {
                     const isActive = pathname === item.href;
                     return (
-                        <Link href={item.href} key={item.href} className="flex flex-col items-center justify-center gap-1.5 group">
-                           <div className={cn("p-3 rounded-full transition-colors", isActive ? "bg-primary/10" : "bg-muted group-hover:bg-primary/10")}>
-                             <item.icon className={cn("w-6 h-6 transition-colors", isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary')} />
-                           </div>
-                           <span className={cn("text-xs font-medium transition-colors", isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary')}>
-                            {item.label}
-                           </span>
+                        <Link
+                            href={item.href}
+                            key={item.href}
+                            className="flex flex-col items-center justify-center gap-1.5 group"
+                        >
+                            <div className={cn(
+                                "p-3 rounded-full transition-colors",
+                                isActive ? "bg-primary/10" : "bg-muted group-hover:bg-primary/10"
+                            )}>
+                                <item.icon className={cn(
+                                    "w-6 h-6 transition-colors",
+                                    isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'
+                                )} />
+                            </div>
+                            <span className={cn(
+                                "text-xs font-medium transition-colors",
+                                isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'
+                            )}>
+                                {item.label}
+                            </span>
                         </Link>
-                    )
+                    );
                 })}
             </div>
         </nav>
