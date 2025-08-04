@@ -168,7 +168,7 @@ export default function UserSettingsPage() {
     }
 
     return (
-        <div className="max-w-4xl mx-auto animate-fade-in grid gap-8">
+        <div className="animate-fade-in grid gap-8">
             <Card>
                 <CardHeader>
                     <CardTitle className="font-headline">Your Profile</CardTitle>
@@ -244,3 +244,4 @@ export default function UserSettingsPage() {
         </div>
     );
 }
+

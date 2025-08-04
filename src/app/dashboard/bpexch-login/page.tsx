@@ -199,7 +199,7 @@ export default function BpexchLoginPage() {
 
 
   return (
-    <div className="max-w-4xl mx-auto grid gap-8 animate-fade-in">
+    <div className="grid gap-8 animate-fade-in">
         
         {userData?.adminMessage && (
             <Alert>

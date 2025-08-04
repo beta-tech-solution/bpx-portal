@@ -14,8 +14,7 @@ import Link from 'next/link';
 import { AppLogo } from './app-logo';
 
 const navLinks = [
-    { href: "/dashboard/settings", label: "Account Settings", icon: Settings },
-    { href: "/dashboard/bpexch-login", label: "BPExch Login", icon: Wallet },
+    { href: "/dashboard/settings", label: "My Profile", icon: Settings },
 ];
 
 export const DashboardHeader = ({ user, userData }: { user: any, userData: any }) => {
