@@ -41,60 +41,63 @@ export default function DashboardPage() {
         const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
             if (currentUser) {
                 setUser(currentUser);
+                
+                // Set up user data listener
+                const userDocRef = doc(db, "users", currentUser.uid);
+                const unsubscribeUser = onSnapshot(userDocRef, (doc) => {
+                    if (doc.exists()) {
+                        setUserData(doc.data());
+                    }
+                    setLoading(false);
+                });
+
+                // Set up transaction listeners
+                const depositsQuery = query(collection(db, "deposits"), where("userId", "==", currentUser.uid), orderBy("createdAt", "desc"), limit(5));
+                const unsubDeposits = onSnapshot(depositsQuery, (snapshot) => {
+                    const deposits = snapshot.docs.map(doc => ({ id: doc.id, type: 'Deposit', ...doc.data() } as Transaction));
+                    setDepositsData(deposits);
+                });
+
+                const withdrawalsQuery = query(collection(db, "withdrawals"), where("userId", "==", currentUser.uid), orderBy("createdAt", "desc"), limit(5));
+                const unsubWithdrawals = onSnapshot(withdrawalsQuery, (snapshot) => {
+                    const withdrawals = snapshot.docs.map(doc => ({ id: doc.id, type: 'Withdrawal', ...doc.data() } as Transaction));
+                    setWithdrawalsData(withdrawals);
+                });
+
+                // Set up global announcement listener
+                const announcementDocRef = doc(db, "settings", "globalAnnouncement");
+                const unsubscribeAnnouncement = onSnapshot(announcementDocRef, (docSnap) => {
+                    if(docSnap.exists() && docSnap.data().message) {
+                        setGlobalAnnouncement(docSnap.data().message);
+                    } else {
+                        setGlobalAnnouncement(null);
+                    }
+                });
+
+                return () => {
+                    unsubscribeUser();
+                    unsubDeposits();
+                    unsubWithdrawals();
+                    unsubscribeAnnouncement();
+                };
+
             } else {
+                setUser(null);
+                setUserData(null);
                 setLoading(false);
             }
         });
         
-        const announcementDocRef = doc(db, "settings", "globalAnnouncement");
-        const unsubscribeAnnouncement = onSnapshot(announcementDocRef, (docSnap) => {
-            if(docSnap.exists() && docSnap.data().message) {
-                setGlobalAnnouncement(docSnap.data().message);
-            } else {
-                setGlobalAnnouncement(null);
-            }
-        });
-
-        return () => {
-            unsubscribeAuth();
-            unsubscribeAnnouncement();
-        }
+        return () => unsubscribeAuth();
     }, []);
 
     useEffect(() => {
-        if (!user) return;
-
-        const userDocRef = doc(db, "users", user.uid);
-        const unsubscribeUser = onSnapshot(userDocRef, (doc) => {
-            if (doc.exists()) {
-                setUserData(doc.data());
-            }
-            setLoading(false);
-        });
-        
-        const depositsQuery = query(collection(db, "deposits"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(5));
-        const unsubDeposits = onSnapshot(depositsQuery, (snapshot) => {
-            const deposits = snapshot.docs.map(doc => ({ id: doc.id, type: 'Deposit', ...doc.data() } as Transaction));
-            setDepositsData(deposits);
-        });
-
-        const withdrawalsQuery = query(collection(db, "withdrawals"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(5));
-        const unsubWithdrawals = onSnapshot(withdrawalsQuery, (snapshot) => {
-            const withdrawals = snapshot.docs.map(doc => ({ id: doc.id, type: 'Withdrawal', ...doc.data() } as Transaction));
-            setWithdrawalsData(withdrawals);
-        });
-
-        return () => { 
-            unsubscribeUser();
-            unsubDeposits();
-            unsubWithdrawals();
-        };
-
-    }, [user]);
-
-    useEffect(() => {
         const allTransactions = [...depositsData, ...withdrawalsData]
-            .sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
+            .sort((a, b) => {
+                const dateA = a.createdAt?.toDate() ?? new Date(0);
+                const dateB = b.createdAt?.toDate() ?? new Date(0);
+                return dateB.getTime() - dateA.getTime();
+            });
         setRecentTransactions(allTransactions);
     }, [depositsData, withdrawalsData]);
     
@@ -255,3 +258,5 @@ export default function DashboardPage() {
     </div>
   )
 }
+
+    
