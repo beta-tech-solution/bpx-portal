@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Pie, PieChart, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { DollarSign, Users, Landmark, Loader2, UserCheck, MessageSquare, ArrowRight, TrendingUp, ArrowDownLeft, ArrowUpRight } from "lucide-react"
 import { db } from "@/lib/firebase/config"
-import { collection, getDocs, query, where, Timestamp, onSnapshot, DocumentData, orderBy, limit } from "firebase/firestore"
+import { collection, getDocs, query, where, Timestamp, onSnapshot, DocumentData, orderBy, limit, doc } from "firebase/firestore"
 import { format, formatDistanceToNow, subDays } from 'date-fns'
 import { Table, TableBody, TableCell, TableRow, TableHead, TableHeader } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
@@ -108,71 +108,91 @@ export default function AdminDashboardPage() {
         }));
 
         const fetchAllTimeProfitData = async () => {
-            const depositsQuery = query(collection(db, "deposits"), where("status", "==", "Approved"));
-            const withdrawalsQuery = query(collection(db, "withdrawals"), where("status", "==", "Approved"));
-            const [depositsSnapshot, withdrawalsSnapshot] = await Promise.all([getDocs(depositsQuery), getDocs(withdrawalsQuery)]);
-            const totalDeposits = depositsSnapshot.docs.reduce((sum, doc) => sum + parseFloat(doc.data().amount), 0);
-            const totalWithdrawals = withdrawalsSnapshot.docs.reduce((sum, doc) => sum + parseFloat(doc.data().amount), 0);
-            const netProfit = totalDeposits - totalWithdrawals;
+            try {
+                const depositsQuery = query(collection(db, "deposits"), where("status", "==", "Approved"));
+                const withdrawalsQuery = query(collection(db, "withdrawals"), where("status", "==", "Approved"));
+                const [depositsSnapshot, withdrawalsSnapshot] = await Promise.all([getDocs(depositsQuery), getDocs(withdrawalsQuery)]);
+                const totalDeposits = depositsSnapshot.docs.reduce((sum, doc) => sum + parseFloat(doc.data().amount), 0);
+                const totalWithdrawals = withdrawalsSnapshot.docs.reduce((sum, doc) => sum + parseFloat(doc.data().amount), 0);
+                const netProfit = totalDeposits - totalWithdrawals;
 
-            const data: ProfitData[] = [
-                { name: 'Total Deposits', value: totalDeposits, fill: COLORS.deposits },
-                { name: 'Total Withdrawals', value: totalWithdrawals, fill: COLORS.withdrawals },
-                { name: 'Net Profit', value: Math.max(0, netProfit), fill: COLORS.profit },
-            ];
-            setProfitData(data.filter(d => d.value > 0));
+                const data: ProfitData[] = [
+                    { name: 'Total Deposits', value: totalDeposits, fill: COLORS.deposits },
+                    { name: 'Total Withdrawals', value: totalWithdrawals, fill: COLORS.withdrawals },
+                    { name: 'Net Profit', value: netProfit, fill: COLORS.profit },
+                ];
+                setProfitData(data.filter(d => d.value !== 0)); // Keep all non-zero values
+            } catch (error) {
+                console.error("Error fetching all-time profit data:", error);
+            }
         };
 
         const fetchExtraStats = async () => {
             setLoadingExtraStats(true);
-            const userCache = new Map();
-            const getUserName = async (userId: string) => {
-                if (userCache.has(userId)) return userCache.get(userId);
-                try {
-                    const userDoc = await getDoc(doc(db, 'users', userId));
-                    if (userDoc.exists()) {
-                        const name = userDoc.data().fullName;
-                        userCache.set(userId, name);
-                        return name;
+            try {
+                const userCache = new Map<string, string>();
+                const getUserName = async (userId: string): Promise<string> => {
+                    if (userCache.has(userId)) {
+                        return userCache.get(userId)!;
                     }
-                } catch (e) { console.error("Could not fetch user", e); }
-                return 'Unknown User';
-            };
+                    try {
+                        const userDoc = await getDoc(doc(db, 'users', userId));
+                        if (userDoc.exists()) {
+                            const name = userDoc.data().fullName || 'Unknown User';
+                            userCache.set(userId, name);
+                            return name;
+                        }
+                    } catch (e) {
+                        console.error("Could not fetch user", e);
+                    }
+                    userCache.set(userId, 'Unknown User');
+                    return 'Unknown User';
+                };
 
-            // Recent Transactions
-            const depositsQuery = query(collection(db, "deposits"), where("status", "==", "Approved"), orderBy("createdAt", "desc"), limit(5));
-            const withdrawalsQuery = query(collection(db, "withdrawals"), where("status", "==", "Approved"), orderBy("createdAt", "desc"), limit(5));
-            const [depositsSnapshot, withdrawalsSnapshot] = await Promise.all([getDocs(depositsQuery), getDocs(withdrawalsQuery)]);
+                // Recent Transactions
+                const depositsQuery = query(collection(db, "deposits"), where("status", "==", "Approved"), orderBy("createdAt", "desc"), limit(5));
+                const withdrawalsQuery = query(collection(db, "withdrawals"), where("status", "==", "Approved"), orderBy("createdAt", "desc"), limit(5));
+                const [depositsSnapshot, withdrawalsSnapshot] = await Promise.all([getDocs(depositsQuery), getDocs(withdrawalsQuery)]);
 
-            const deposits = Promise.all(depositsSnapshot.docs.map(async doc => ({ id: doc.id, type: 'Deposit', userName: await getUserName(doc.data().userId), ...doc.data() } as Transaction)));
-            const withdrawals = Promise.all(withdrawalsSnapshot.docs.map(async doc => ({ id: doc.id, type: 'Withdrawal', userName: await getUserName(doc.data().userId), ...doc.data() } as Transaction)));
-            const combined = [...await deposits, ...await withdrawals];
-            combined.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
-            setRecentTransactions(combined.slice(0, 5));
-            
-            // 7-Day Stats
-            const sevenDaysAgo = subDays(new Date(), 7);
-            const sevenDayDepositsQuery = query(collection(db, "deposits"), where("status", "==", "Approved"), where("createdAt", ">=", sevenDaysAgo));
-            const sevenDayWithdrawalsQuery = query(collection(db, "withdrawals"), where("status", "==", "Approved"), where("createdAt", ">=", sevenDaysAgo));
-            const [sevenDayDepositsSnap, sevenDayWithdrawalsSnap] = await Promise.all([getDocs(sevenDayDepositsQuery), getDocs(sevenDayWithdrawalsQuery)]);
-            
-            const total7DayDeposits = sevenDayDepositsSnap.docs.reduce((sum, doc) => sum + parseFloat(doc.data().amount), 0);
-            const total7DayWithdrawals = sevenDayWithdrawalsSnap.docs.reduce((sum, doc) => sum + parseFloat(doc.data().amount), 0);
-            setSevenDayStats({
-                deposits: total7DayDeposits,
-                withdrawals: total7DayWithdrawals,
-                profit: total7DayDeposits - total7DayWithdrawals
-            });
-
-            setLoadingExtraStats(false);
+                const depositsPromises = depositsSnapshot.docs.map(async docSnapshot => ({ id: docSnapshot.id, type: 'Deposit', userName: await getUserName(docSnapshot.data().userId), ...docSnapshot.data() } as Transaction));
+                const withdrawalsPromises = withdrawalsSnapshot.docs.map(async docSnapshot => ({ id: docSnapshot.id, type: 'Withdrawal', userName: await getUserName(docSnapshot.data().userId), ...docSnapshot.data() } as Transaction));
+                const combined = [...await Promise.all(depositsPromises), ...await Promise.all(withdrawalsPromises)];
+                
+                combined.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
+                setRecentTransactions(combined.slice(0, 5));
+                
+                // 7-Day Stats
+                const sevenDaysAgo = subDays(new Date(), 7);
+                const sevenDayDepositsQuery = query(collection(db, "deposits"), where("status", "==", "Approved"), where("createdAt", ">=", sevenDaysAgo));
+                const sevenDayWithdrawalsQuery = query(collection(db, "withdrawals"), where("status", "==", "Approved"), where("createdAt", ">=", sevenDaysAgo));
+                const [sevenDayDepositsSnap, sevenDayWithdrawalsSnap] = await Promise.all([getDocs(sevenDayDepositsQuery), getDocs(sevenDayWithdrawalsQuery)]);
+                
+                const total7DayDeposits = sevenDayDepositsSnap.docs.reduce((sum, doc) => sum + parseFloat(doc.data().amount), 0);
+                const total7DayWithdrawals = sevenDayWithdrawalsSnap.docs.reduce((sum, doc) => sum + parseFloat(doc.data().amount), 0);
+                setSevenDayStats({
+                    deposits: total7DayDeposits,
+                    withdrawals: total7DayWithdrawals,
+                    profit: total7DayDeposits - total7DayWithdrawals
+                });
+            } catch (error) {
+                console.error("Error fetching extra stats:", error);
+            } finally {
+                setLoadingExtraStats(false);
+            }
         };
         
         fetchAllTimeProfitData();
         fetchExtraStats();
         setLoading(false);
+        
+        const intervalId = setInterval(() => {
+            fetchAllTimeProfitData();
+            fetchExtraStats();
+        }, 30000); // Refresh every 30 seconds
 
         return () => {
             unsubscribes.forEach(unsub => unsub());
+            clearInterval(intervalId);
         };
     }, []);
 
@@ -385,5 +405,3 @@ export default function AdminDashboardPage() {
         </div>
     )
 }
-
-    
