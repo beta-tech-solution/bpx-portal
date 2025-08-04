@@ -16,6 +16,7 @@ import { AppLogo } from './app-logo';
 const navLinks = [
     { href: "/dashboard/settings", label: "My Profile", icon: Settings },
     { href: "/dashboard/deposit/history", label: "Deposit History", icon: History },
+    { href: "/dashboard/withdraw/history", label: "Withdrawal History", icon: History },
 ];
 
 const InfoRow = ({ label, value, icon: Icon, isPassword = false }: { label: string, value: string | undefined, icon: React.ElementType, isPassword?: boolean }) => {
@@ -73,6 +74,9 @@ export const DashboardHeader = ({ user, userData }: { user: any, userData: any }
         }
         if (pathname === '/dashboard/deposit/history') {
             return 'Deposit History';
+        }
+        if (pathname === '/dashboard/withdraw/history') {
+            return 'Withdrawal History';
         }
         const parts = pathname.split('/').pop()?.replace(/-/g, ' ') ?? [];
         return parts.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');

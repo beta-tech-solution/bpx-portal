@@ -72,12 +72,13 @@ function WithdrawalHistoryContent() {
         }
     });
 
-    const q = query(collection(db, "withdrawals"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
+    const q = query(collection(db, "withdrawals"), where("userId", "==", user.uid));
     const unsubscribeWithdrawals = onSnapshot(q, (querySnapshot) => {
         const data = querySnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
         } as Withdrawal));
+        data.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
         setWithdrawals(data);
         setLoading(false);
     }, (error) => {
