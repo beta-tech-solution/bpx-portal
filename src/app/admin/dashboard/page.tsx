@@ -1,15 +1,14 @@
 
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Pie, PieChart, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts"
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { DollarSign, Users, Landmark, Loader2, UserCheck, MessageSquare, ArrowRight } from "lucide-react"
+import { DollarSign, Users, Landmark, Loader2, UserCheck, MessageSquare, ArrowRight, TrendingUp, ArrowDownLeft, ArrowUpRight } from "lucide-react"
 import { db } from "@/lib/firebase/config"
-import { collection, getDocs, query, where, Timestamp, onSnapshot, DocumentData, orderBy } from "firebase/firestore"
-import { formatDistanceToNow } from 'date-fns'
-import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
+import { collection, getDocs, query, where, Timestamp, onSnapshot, DocumentData, orderBy, limit } from "firebase/firestore"
+import { format, formatDistanceToNow, subDays } from 'date-fns'
+import { Table, TableBody, TableCell, TableRow, TableHead, TableHeader } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -35,11 +34,25 @@ interface ProfitData {
     fill: string;
 }
 
+interface Transaction {
+    id: string;
+    type: "Deposit" | "Withdrawal";
+    amount: number;
+    status: "Approved";
+    createdAt: Timestamp;
+    userName: string;
+}
+
 const COLORS = {
     deposits: 'hsl(var(--primary))',
     withdrawals: 'hsl(var(--destructive))',
     profit: 'hsl(var(--accent))'
 };
+
+const statusVariant = {
+    Deposit: "secondary",
+    Withdrawal: "destructive",
+} as const;
 
 export default function AdminDashboardPage() {
     const router = useRouter();
@@ -52,6 +65,9 @@ export default function AdminDashboardPage() {
     });
     const [unreadChats, setUnreadChats] = useState<UnreadChat[]>([]);
     const [profitData, setProfitData] = useState<ProfitData[]>([]);
+    const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
+    const [sevenDayStats, setSevenDayStats] = useState({ deposits: 0, withdrawals: 0, profit: 0 });
+    const [loadingExtraStats, setLoadingExtraStats] = useState(true);
 
     useEffect(() => {
         setLoading(true);
@@ -91,16 +107,10 @@ export default function AdminDashboardPage() {
             setUnreadChats(chats);
         }));
 
-        // --- Profit Pie Chart Data Fetch ---
-        const fetchProfitData = async () => {
+        const fetchAllTimeProfitData = async () => {
             const depositsQuery = query(collection(db, "deposits"), where("status", "==", "Approved"));
             const withdrawalsQuery = query(collection(db, "withdrawals"), where("status", "==", "Approved"));
-
-            const [depositsSnapshot, withdrawalsSnapshot] = await Promise.all([
-                getDocs(depositsQuery),
-                getDocs(withdrawalsQuery),
-            ]);
-
+            const [depositsSnapshot, withdrawalsSnapshot] = await Promise.all([getDocs(depositsQuery), getDocs(withdrawalsQuery)]);
             const totalDeposits = depositsSnapshot.docs.reduce((sum, doc) => sum + parseFloat(doc.data().amount), 0);
             const totalWithdrawals = withdrawalsSnapshot.docs.reduce((sum, doc) => sum + parseFloat(doc.data().amount), 0);
             const netProfit = totalDeposits - totalWithdrawals;
@@ -108,13 +118,57 @@ export default function AdminDashboardPage() {
             const data: ProfitData[] = [
                 { name: 'Total Deposits', value: totalDeposits, fill: COLORS.deposits },
                 { name: 'Total Withdrawals', value: totalWithdrawals, fill: COLORS.withdrawals },
-                { name: 'Net Profit', value: netProfit, fill: COLORS.profit },
+                { name: 'Net Profit', value: Math.max(0, netProfit), fill: COLORS.profit },
             ];
-            
-            setProfitData(data.filter(d => d.value > 0)); // Only show positive values in pie chart
+            setProfitData(data.filter(d => d.value > 0));
         };
 
-        fetchProfitData();
+        const fetchExtraStats = async () => {
+            setLoadingExtraStats(true);
+            const userCache = new Map();
+            const getUserName = async (userId: string) => {
+                if (userCache.has(userId)) return userCache.get(userId);
+                try {
+                    const userDoc = await getDoc(doc(db, 'users', userId));
+                    if (userDoc.exists()) {
+                        const name = userDoc.data().fullName;
+                        userCache.set(userId, name);
+                        return name;
+                    }
+                } catch (e) { console.error("Could not fetch user", e); }
+                return 'Unknown User';
+            };
+
+            // Recent Transactions
+            const depositsQuery = query(collection(db, "deposits"), where("status", "==", "Approved"), orderBy("createdAt", "desc"), limit(5));
+            const withdrawalsQuery = query(collection(db, "withdrawals"), where("status", "==", "Approved"), orderBy("createdAt", "desc"), limit(5));
+            const [depositsSnapshot, withdrawalsSnapshot] = await Promise.all([getDocs(depositsQuery), getDocs(withdrawalsQuery)]);
+
+            const deposits = Promise.all(depositsSnapshot.docs.map(async doc => ({ id: doc.id, type: 'Deposit', userName: await getUserName(doc.data().userId), ...doc.data() } as Transaction)));
+            const withdrawals = Promise.all(withdrawalsSnapshot.docs.map(async doc => ({ id: doc.id, type: 'Withdrawal', userName: await getUserName(doc.data().userId), ...doc.data() } as Transaction)));
+            const combined = [...await deposits, ...await withdrawals];
+            combined.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
+            setRecentTransactions(combined.slice(0, 5));
+            
+            // 7-Day Stats
+            const sevenDaysAgo = subDays(new Date(), 7);
+            const sevenDayDepositsQuery = query(collection(db, "deposits"), where("status", "==", "Approved"), where("createdAt", ">=", sevenDaysAgo));
+            const sevenDayWithdrawalsQuery = query(collection(db, "withdrawals"), where("status", "==", "Approved"), where("createdAt", ">=", sevenDaysAgo));
+            const [sevenDayDepositsSnap, sevenDayWithdrawalsSnap] = await Promise.all([getDocs(sevenDayDepositsQuery), getDocs(sevenDayWithdrawalsQuery)]);
+            
+            const total7DayDeposits = sevenDayDepositsSnap.docs.reduce((sum, doc) => sum + parseFloat(doc.data().amount), 0);
+            const total7DayWithdrawals = sevenDayWithdrawalsSnap.docs.reduce((sum, doc) => sum + parseFloat(doc.data().amount), 0);
+            setSevenDayStats({
+                deposits: total7DayDeposits,
+                withdrawals: total7DayWithdrawals,
+                profit: total7DayDeposits - total7DayWithdrawals
+            });
+
+            setLoadingExtraStats(false);
+        };
+        
+        fetchAllTimeProfitData();
+        fetchExtraStats();
         setLoading(false);
 
         return () => {
@@ -204,8 +258,8 @@ export default function AdminDashboardPage() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="font-headline">Profit Overview</CardTitle>
-                        <CardDescription>Summary of approved deposits and withdrawals.</CardDescription>
+                        <CardTitle className="font-headline">All-Time Profit Overview</CardTitle>
+                        <CardDescription>Summary of all approved deposits and withdrawals.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <ResponsiveContainer width="100%" height={250}>
@@ -247,6 +301,89 @@ export default function AdminDashboardPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                <Card className="lg:col-span-3">
+                    <CardHeader>
+                        <CardTitle className="font-headline">Recent Transactions</CardTitle>
+                        <CardDescription>The last 5 approved transactions.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {loadingExtraStats ? (
+                            <div className="flex justify-center items-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+                        ) : (
+                             <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>User</TableHead>
+                                        <TableHead>Type</TableHead>
+                                        <TableHead>Amount</TableHead>
+                                        <TableHead>Date</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {recentTransactions.length > 0 ? recentTransactions.map(tx => (
+                                        <TableRow key={tx.id}>
+                                            <TableCell>{tx.userName}</TableCell>
+                                            <TableCell><Badge variant={statusVariant[tx.type]}>{tx.type}</Badge></TableCell>
+                                            <TableCell className="font-mono">PKR {tx.amount.toLocaleString()}</TableCell>
+                                            <TableCell>{format(tx.createdAt.toDate(), 'PP')}</TableCell>
+                                        </TableRow>
+                                    )) : (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="text-center text-muted-foreground">No recent transactions found.</TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        )}
+                    </CardContent>
+                </Card>
+
+                <Card className="lg:col-span-2">
+                    <CardHeader>
+                        <CardTitle className="font-headline">Last 7 Days Profit</CardTitle>
+                        <CardDescription>Profit summary for the past week.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {loadingExtraStats ? (
+                            <div className="flex justify-center items-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+                        ) : (
+                            <>
+                                <Card>
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                        <CardTitle className="text-sm font-medium">Total Deposits</CardTitle>
+                                        <ArrowDownLeft className="h-4 w-4 text-green-500" />
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-2xl font-bold">PKR {sevenDayStats.deposits.toLocaleString()}</div>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                        <CardTitle className="text-sm font-medium">Total Withdrawals</CardTitle>
+                                        <ArrowUpRight className="h-4 w-4 text-red-500" />
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-2xl font-bold">PKR {sevenDayStats.withdrawals.toLocaleString()}</div>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                        <CardTitle className="text-sm font-medium">Net Profit</CardTitle>
+                                        <TrendingUp className="h-4 w-4 text-primary" />
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-2xl font-bold">PKR {sevenDayStats.profit.toLocaleString()}</div>
+                                    </CardContent>
+                                </Card>
+                            </>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     )
 }
+
+    
