@@ -3,255 +3,123 @@
 
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Bar, BarChart, CartesianGrid, Legend, Tooltip, XAxis, YAxis, AreaChart, Area } from "recharts"
-import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
-import { DollarSign, Users, Landmark, Send, Loader2, ArrowDownLeft, ArrowUpRight, TrendingUp, Database, UserCheck } from "lucide-react"
-import { db, auth } from "@/lib/firebase/config"
-import { collection, getDocs, query, where, Timestamp, onSnapshot, DocumentData, orderBy, limit, addDoc, serverTimestamp, doc, updateDoc } from "firebase/firestore"
-import { useAuthState } from "react-firebase-hooks/auth"
-import { subMonths, format, addMonths, startOfDay, subDays, endOfDay } from 'date-fns'
-import { Table, TableBody, TableCell, TableRow, TableHead, TableHeader } from "@/components/ui/table"
+import { Pie, PieChart, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts"
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import { DollarSign, Users, Landmark, Loader2, UserCheck, MessageSquare, ArrowRight } from "lucide-react"
+import { db } from "@/lib/firebase/config"
+import { collection, getDocs, query, where, Timestamp, onSnapshot, DocumentData, orderBy } from "firebase/firestore"
+import { formatDistanceToNow } from 'date-fns'
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { useToast } from "@/hooks/use-toast"
+import { useRouter } from "next/navigation"
 
-
-const depositsChartConfig = {
-  pending: { label: "Pending", color: "hsl(var(--primary))" },
-  approved: { label: "Approved", color: "hsl(var(--accent))" },
-} satisfies ChartConfig;
-
-const withdrawalsChartConfig = {
-    pending: { label: "Pending", color: "hsl(var(--primary))" },
-    approved: { label: "Approved", color: "hsl(var(--destructive))" },
-} satisfies ChartConfig;
-
-interface MonthlyData {
-    month: string;
-    [key: string]: any;
+interface OverviewData {
+    totalUsers: number;
+    pendingDeposits: number;
+    pendingWithdrawals: number;
+    pendingUsers: number;
 }
 
-interface Transaction {
-  id: string;
-  type: 'Deposit' | 'Withdrawal';
-  amount: number;
-  date: string;
-  userName: string;
+interface UnreadChat {
+    id: string;
+    userName: string;
+    lastMessage: string;
+    timestamp: string;
 }
 
-interface DailyProfit {
-    date: string;
-    profit: number;
+interface ProfitData {
+    name: string;
+    value: number;
+    fill: string;
 }
+
+const COLORS = {
+    deposits: 'hsl(var(--primary))',
+    withdrawals: 'hsl(var(--destructive))',
+    profit: 'hsl(var(--accent))'
+};
 
 export default function AdminDashboardPage() {
-    const [user] = useAuthState(auth);
-    const { toast } = useToast();
+    const router = useRouter();
     const [loading, setLoading] = useState(true);
-    const [overviewData, setOverviewData] = useState({
+    const [overviewData, setOverviewData] = useState<OverviewData>({
         totalUsers: 0,
         pendingDeposits: 0,
         pendingWithdrawals: 0,
-        totalProfit: 0,
+        pendingUsers: 0,
     });
-    const [depositsData, setDepositsData] = useState<MonthlyData[]>([]);
-    const [withdrawalsData, setWithdrawalsData] = useState<MonthlyData[]>([]);
-    const [profitTransactions, setProfitTransactions] = useState<Transaction[]>([]);
-    const [dailyProfitData, setDailyProfitData] = useState<DailyProfit[]>([]);
+    const [unreadChats, setUnreadChats] = useState<UnreadChat[]>([]);
+    const [profitData, setProfitData] = useState<ProfitData[]>([]);
 
-
-     useEffect(() => {
+    useEffect(() => {
         setLoading(true);
-
-        const processChartData = (docs: DocumentData[], statuses: string[]): MonthlyData[] => {
-            const monthlyTotals: { [key: string]: { [key: string]: number } } = {};
-            const sixMonthsAgo = subMonths(new Date(), 5);
-            
-            for (let i = 0; i < 6; i++) {
-                const monthDate = addMonths(sixMonthsAgo, i);
-                const month = format(monthDate, 'MMM');
-                monthlyTotals[month] = {};
-                statuses.forEach(status => monthlyTotals[month][status.toLowerCase()] = 0);
-            }
-
-            docs.forEach((doc) => {
-                const data = doc.data();
-                const date = (data.createdAt as Timestamp)?.toDate() || new Date(data.date);
-                 if (date >= sixMonthsAgo) {
-                    const month = format(date, 'MMM');
-                    const status = data.status.toLowerCase();
-                    if (monthlyTotals[month] && statuses.map(s => s.toLowerCase()).includes(status)) {
-                         monthlyTotals[month][status] = (monthlyTotals[month][status] || 0) + 1;
-                    }
-                }
-            });
-
-             return Object.entries(monthlyTotals).map(([month, values]) => ({
-                month,
-                ...values
-            }));
-        };
-
-        const setupProfitListener = () => {
-             const depositsQuery = query(
-                collection(db, 'deposits'),
-                where('status', '==', 'Approved'),
-                orderBy('createdAt', 'desc'),
-                limit(3)
-            );
-            const withdrawalsQuery = query(
-                collection(db, 'withdrawals'),
-                where('status', '==', 'Approved'),
-                orderBy('createdAt', 'desc'),
-                limit(3)
-            );
-
-            const userCache = new Map<string, string>();
-            const getUserName = async (userId: string) => {
-                if (userCache.has(userId)) return userCache.get(userId);
-                try {
-                    const userDoc = await getDocs(query(collection(db, 'users'), where('uid', '==', userId)));
-                    if (!userDoc.empty) {
-                        const name = userDoc.docs[0].data().fullName;
-                        userCache.set(userId, name);
-                        return name;
-                    }
-                } catch (e) { console.error(e); }
-                return 'Unknown User';
-            };
-
-            const processTransactions = async (
-                depositsSnapshot: DocumentData,
-                withdrawalsSnapshot: DocumentData
-            ) => {
-                const deposits = await Promise.all(depositsSnapshot.docs.map(async (doc: DocumentData) => ({
-                    id: doc.id,
-                    type: 'Deposit' as const,
-                    amount: parseFloat(doc.data().amount),
-                    date: format((doc.data().createdAt as Timestamp).toDate(), 'PP'),
-                    userName: await getUserName(doc.data().userId),
-                })));
-                const withdrawals = await Promise.all(withdrawalsSnapshot.docs.map(async (doc: DocumentData) => ({
-                    id: doc.id,
-                    type: 'Withdrawal' as const,
-                    amount: parseFloat(doc.data().amount),
-                    date: format((doc.data().createdAt as Timestamp).toDate(), 'PP'),
-                    userName: await getUserName(doc.data().userId),
-                })));
-
-                setProfitTransactions([...deposits, ...withdrawals].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0,3));
-            }
-
-            const unsubDeposits = onSnapshot(depositsQuery, (depositsSnapshot) => {
-                getDocs(withdrawalsQuery).then(withdrawalsSnapshot => processTransactions(depositsSnapshot, withdrawalsSnapshot));
-            });
-            const unsubWithdrawals = onSnapshot(withdrawalsQuery, (withdrawalsSnapshot) => {
-                getDocs(depositsQuery).then(depositsSnapshot => processTransactions(depositsSnapshot, withdrawalsSnapshot));
-            });
-
-            return [unsubDeposits, unsubWithdrawals];
-        }
-
         const unsubscribes: (() => void)[] = [];
 
-        // Profit Listener
-        const [unsubDeposits, unsubWithdrawals] = setupProfitListener();
-        unsubscribes.push(unsubDeposits, unsubWithdrawals);
+        // --- Overview Cards Listeners ---
+        const setupListener = (
+            collectionName: string, 
+            stateKey: keyof OverviewData,
+            conditions: [string, any, any][] = []
+        ) => {
+            let q = query(collection(db, collectionName));
+            conditions.forEach(cond => {
+                q = query(q, where(cond[0], cond[1], cond[2]));
+            });
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                setOverviewData(prev => ({ ...prev, [stateKey]: snapshot.size }));
+            }, (error) => console.error(`Error fetching ${stateKey}:`, error));
+            unsubscribes.push(unsubscribe);
+        };
         
-        // 7-day profit
-        const fetchSevenDayProfit = async () => {
-            const sevenDaysAgo = startOfDay(subDays(new Date(), 6));
-            
-            const depositsQuery = query(
-                collection(db, "deposits"),
-                where("status", "==", "Approved"),
-                where("createdAt", ">=", Timestamp.fromDate(sevenDaysAgo))
-            );
-            const withdrawalsQuery = query(
-                collection(db, "withdrawals"),
-                where("status", "==", "Approved"),
-                where("createdAt", ">=", Timestamp.fromDate(sevenDaysAgo))
-            );
+        setupListener('users', 'totalUsers');
+        setupListener('users', 'pendingUsers', [['emailVerified', '==', false]]);
+        setupListener('deposits', 'pendingDeposits', [['status', '==', 'Pending']]);
+        setupListener('withdrawals', 'pendingWithdrawals', [['status', '==', 'Pending']]);
+
+
+        // --- Unread Chats Listener ---
+        const chatsQuery = query(collection(db, 'chats'), where('adminRead', '==', false), orderBy('lastMessageTimestamp', 'desc'));
+        unsubscribes.push(onSnapshot(chatsQuery, (snapshot) => {
+            const chats = snapshot.docs.map(doc => ({
+                id: doc.id,
+                userName: doc.data().userName,
+                lastMessage: doc.data().lastMessage,
+                timestamp: doc.data().lastMessageTimestamp ? formatDistanceToNow(doc.data().lastMessageTimestamp.toDate(), { addSuffix: true }) : 'N/A'
+            }));
+            setUnreadChats(chats);
+        }));
+
+        // --- Profit Pie Chart Data Fetch ---
+        const fetchProfitData = async () => {
+            const depositsQuery = query(collection(db, "deposits"), where("status", "==", "Approved"));
+            const withdrawalsQuery = query(collection(db, "withdrawals"), where("status", "==", "Approved"));
 
             const [depositsSnapshot, withdrawalsSnapshot] = await Promise.all([
                 getDocs(depositsQuery),
                 getDocs(withdrawalsQuery),
             ]);
 
-            const dailyData: { [key: string]: { deposits: number, withdrawals: number } } = {};
+            const totalDeposits = depositsSnapshot.docs.reduce((sum, doc) => sum + parseFloat(doc.data().amount), 0);
+            const totalWithdrawals = withdrawalsSnapshot.docs.reduce((sum, doc) => sum + parseFloat(doc.data().amount), 0);
+            const netProfit = totalDeposits - totalWithdrawals;
 
-            for (let i = 0; i < 7; i++) {
-                const date = format(subDays(new Date(), i), 'yyyy-MM-dd');
-                dailyData[date] = { deposits: 0, withdrawals: 0 };
-            }
-
-            depositsSnapshot.forEach(doc => {
-                const data = doc.data();
-                const date = format((data.createdAt as Timestamp).toDate(), 'yyyy-MM-dd');
-                if (dailyData[date]) {
-                    dailyData[date].deposits += parseFloat(data.amount);
-                }
-            });
+            const data: ProfitData[] = [
+                { name: 'Total Deposits', value: totalDeposits, fill: COLORS.deposits },
+                { name: 'Total Withdrawals', value: totalWithdrawals, fill: COLORS.withdrawals },
+                { name: 'Net Profit', value: netProfit, fill: COLORS.profit },
+            ];
             
-            withdrawalsSnapshot.forEach(doc => {
-                const data = doc.data();
-                const date = format((data.createdAt as Timestamp).toDate(), 'yyyy-MM-dd');
-                if (dailyData[date]) {
-                    dailyData[date].withdrawals += parseFloat(data.amount);
-                }
-            });
-
-            const profitData = Object.entries(dailyData)
-                .map(([date, {deposits, withdrawals}]) => ({
-                    date: format(new Date(date), 'MMM d'),
-                    profit: deposits - withdrawals,
-                }))
-                .sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-            setDailyProfitData(profitData);
-        }
-        
-        fetchSevenDayProfit();
-
-
-        // Total Users
-        const usersQuery = query(collection(db, "users"));
-        unsubscribes.push(onSnapshot(usersQuery, (snapshot) => {
-            setOverviewData(prev => ({ ...prev, totalUsers: snapshot.size }));
-        }, (error) => console.error("Error fetching users count:", error)));
-
-        // Pending counts
-        const setupPendingListener = (collectionName: string, statusField: 'pendingDeposits' | 'pendingWithdrawals') => {
-            const q = query(collection(db, collectionName), where('status', '==', 'Pending'));
-            return onSnapshot(q, (snapshot) => {
-                setOverviewData(prev => ({ ...prev, [statusField]: snapshot.size }));
-            }, (error) => console.error(`Error fetching pending ${collectionName}:`, error));
-        };
-        unsubscribes.push(setupPendingListener('deposits', 'pendingDeposits'));
-        unsubscribes.push(setupPendingListener('withdrawals', 'pendingWithdrawals'));
-        
-        // Chart Data Listeners
-        const setupChartListener = (
-            collectionName: string, 
-            setData: React.Dispatch<React.SetStateAction<MonthlyData[]>>,
-            statuses: string[]
-        ) => {
-            const q = query(collection(db, collectionName));
-            return onSnapshot(q, (snapshot) => {
-                setData(processChartData(snapshot.docs, statuses));
-            }, (error) => console.error(`Error fetching chart data for ${collectionName}:`, error));
+            setProfitData(data.filter(d => d.value > 0)); // Only show positive values in pie chart
         };
 
-        unsubscribes.push(setupChartListener('deposits', setDepositsData, ['Pending', 'Approved']));
-        unsubscribes.push(setupChartListener('withdrawals', setWithdrawalsData, ['Pending', 'Approved']));
-
+        fetchProfitData();
         setLoading(false);
 
         return () => {
             unsubscribes.forEach(unsub => unsub());
         };
-
     }, []);
 
     if (loading) {
@@ -262,144 +130,123 @@ export default function AdminDashboardPage() {
         );
     }
 
+    return (
+        <div className="max-w-7xl mx-auto grid gap-8 animate-fade-in">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium font-headline">Total Users</CardTitle>
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-3xl font-bold">{overviewData.totalUsers}</div>
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium font-headline">Pending Users</CardTitle>
+                        <UserCheck className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-3xl font-bold">{overviewData.pendingUsers}</div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium font-headline">Pending Deposits</CardTitle>
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-3xl font-bold">{overviewData.pendingDeposits}</div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium font-headline">Pending Withdrawals</CardTitle>
+                        <Landmark className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-3xl font-bold">{overviewData.pendingWithdrawals}</div>
+                    </CardContent>
+                </Card>
+            </div>
 
-  return (
-    <div className="max-w-7xl mx-auto grid gap-8 animate-fade-in">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium font-headline">Total Users</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-3xl font-bold">{overviewData.totalUsers}</div>
-                    <p className="text-xs text-muted-foreground">Registered users in the system</p>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium font-headline">Pending Deposits</CardTitle>
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-3xl font-bold">{overviewData.pendingDeposits}</div>
-                    <p className="text-xs text-muted-foreground">Require approval</p>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium font-headline">Pending Withdrawals</CardTitle>
-                    <Landmark className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-3xl font-bold">{overviewData.pendingWithdrawals}</div>
-                    <p className="text-xs text-muted-foreground">Require approval</p>
-                </CardContent>
-            </Card>
-        </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="font-headline flex items-center gap-2">
+                            <MessageSquare className="h-5 w-5 text-primary" /> Unread Messages
+                            {unreadChats.length > 0 && <Badge variant="destructive">{unreadChats.length}</Badge>}
+                        </CardTitle>
+                        <CardDescription>New messages from users requiring a response.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {unreadChats.length > 0 ? (
+                            <div className="space-y-4">
+                                {unreadChats.map(chat => (
+                                    <div key={chat.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50">
+                                        <div>
+                                            <p className="font-semibold">{chat.userName}</p>
+                                            <p className="text-sm text-muted-foreground truncate max-w-xs">{chat.lastMessage}</p>
+                                            <p className="text-xs text-muted-foreground">{chat.timestamp}</p>
+                                        </div>
+                                        <Button variant="ghost" size="icon" onClick={() => router.push(`/admin/chat/${chat.id}`)}>
+                                            <ArrowRight className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-center text-muted-foreground p-8">No unread messages.</p>
+                        )}
+                    </CardContent>
+                </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-             <Card>
-                <CardHeader>
-                    <CardTitle className="font-headline flex items-center gap-2"><ArrowDownLeft className="h-5 w-5 text-green-500" />Deposit Trends</CardTitle>
-                    <CardDescription>Pending vs. Approved deposits over the last 6 months.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                   <div className="w-full overflow-x-auto">
-                    <ChartContainer config={depositsChartConfig} className="h-[250px] min-w-[600px] w-full">
-                        <BarChart data={depositsData}>
-                            <CartesianGrid vertical={false} />
-                            <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
-                            <YAxis />
-                            <Tooltip content={<ChartTooltipContent />} />
-                            <Legend />
-                            <Bar dataKey="pending" stackId="a" fill="var(--color-pending)" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="approved" stackId="a" fill="var(--color-approved)" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                    </ChartContainer>
-                   </div>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader>
-                     <CardTitle className="font-headline flex items-center gap-2"><ArrowUpRight className="h-5 w-5 text-red-500" />Withdrawal Trends</CardTitle>
-                    <CardDescription>Pending vs. Approved withdrawals over the last 6 months.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="w-full overflow-x-auto">
-                    <ChartContainer config={withdrawalsChartConfig} className="h-[250px] min-w-[600px] w-full">
-                        <BarChart data={withdrawalsData}>
-                            <CartesianGrid vertical={false} />
-                            <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} />
-                            <YAxis />
-                            <Tooltip content={<ChartTooltipContent />} />
-                            <Legend />
-                            <Bar dataKey="pending" stackId="a" fill="var(--color-pending)" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="approved" stackId="a" fill="var(--color-approved)" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                    </ChartContainer>
-                  </div>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader>
-                     <CardTitle className="font-headline flex items-center gap-2"><TrendingUp className="h-5 w-5 text-primary" />Last 7 Days Profit</CardTitle>
-                    <CardDescription>Daily net profit from the last week.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Date</TableHead>
-                                <TableHead className="text-right">Profit (PKR)</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {dailyProfitData.map(item => (
-                                <TableRow key={item.date}>
-                                    <TableCell>{item.date}</TableCell>
-                                    <TableCell className="text-right font-mono">{item.profit.toFixed(2)}</TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                    <div className="flex justify-end mt-4">
-                        <Button variant="outline" asChild>
-                            <Link href="/admin/profit-stats">View All Stats</Link>
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
-             <Card>
-                <CardHeader>
-                     <CardTitle className="font-headline flex items-center gap-2"><TrendingUp className="h-5 w-5 text-primary" />Recent Transactions</CardTitle>
-                    <CardDescription>Recent approved deposits and withdrawals.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableBody>
-                            {profitTransactions.map(tx => (
-                                <TableRow key={tx.id}>
-                                    <TableCell>
-                                        <div className="font-medium">{tx.userName}</div>
-                                        <div className="text-sm text-muted-foreground">{tx.date}</div>
-                                    </TableCell>
-                                    <TableCell>
-                                         <Badge variant={tx.type === 'Deposit' ? 'secondary' : 'destructive'}>{tx.type}</Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right font-mono">
-                                        PKR {tx.amount.toFixed(2)}
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                     {profitTransactions.length === 0 && (
-                        <p className="text-center text-muted-foreground p-4">No recent approved transactions.</p>
-                     )}
-                </CardContent>
-            </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="font-headline">Profit Overview</CardTitle>
+                        <CardDescription>Summary of approved deposits and withdrawals.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <ResponsiveContainer width="100%" height={250}>
+                            <PieChart>
+                                <Tooltip
+                                    content={({ active, payload }) => {
+                                        if (active && payload && payload.length) {
+                                            return (
+                                                <div className="rounded-lg border bg-background p-2 shadow-sm">
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[0.70rem] uppercase text-muted-foreground">
+                                                                {payload[0].name}
+                                                            </span>
+                                                            <span className="font-bold text-muted-foreground">
+                                                                PKR {payload[0].value?.toLocaleString()}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )
+                                        }
+                                        return null
+                                    }}
+                                />
+                                <Legend />
+                                <Pie data={profitData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} stroke="hsl(var(--border))" labelLine={false}>
+                                    {profitData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                                    ))}
+                                </Pie>
+                            </PieChart>
+                        </ResponsiveContainer>
+                         <div className="flex justify-end mt-4">
+                            <Button variant="outline" asChild>
+                                <Link href="/admin/profit-stats">View Detailed Stats</Link>
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
-    </div>
-  )
+    )
 }
