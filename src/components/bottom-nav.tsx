@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, DollarSign, Landmark, ExternalLink } from 'lucide-react';
+import { Home, DollarSign, Landmark, ExternalLink, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -10,6 +10,7 @@ const navItems = [
     { href: '/dashboard/deposit', label: 'Deposit', icon: DollarSign },
     { href: '/dashboard/withdraw', label: 'Withdraw', icon: Landmark },
     { href: '/dashboard/bpexch-login', label: 'BPExch Login', icon: ExternalLink },
+    { href: '/dashboard/deposit/history', label: 'History', icon: History },
 ];
 
 export const BottomNav = () => {
@@ -18,9 +19,9 @@ export const BottomNav = () => {
     return (
         <nav className="fixed bottom-0 left-0 right-0 bg-card border-t shadow-top z-40">
             {/* Mobile Nav */}
-            <div className="flex justify-around items-center h-16 max-w-lg mx-auto md:hidden">
+            <div className="grid grid-cols-5 h-16 max-w-lg mx-auto md:hidden">
                 {navItems.map((item) => {
-                    const isActive = pathname === item.href;
+                    const isActive = pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard');
                     return (
                         <Link
                             href={item.href}
@@ -48,9 +49,9 @@ export const BottomNav = () => {
             </div>
 
             {/* Desktop Nav */}
-            <div className="hidden md:flex justify-between items-center h-20 w-full gap-[250px] px-[6%]">
+             <div className="hidden md:flex justify-around items-center h-20 w-full">
                 {navItems.map((item) => {
-                    const isActive = pathname === item.href;
+                    const isActive = pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard');
                     return (
                         <Link
                             href={item.href}

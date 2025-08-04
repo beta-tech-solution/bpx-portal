@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetHeader, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { LogOut, Settings, Wallet, ChevronRight, User } from 'lucide-react';
+import { LogOut, Settings, Wallet, ChevronRight, User, History } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
@@ -15,6 +15,7 @@ import { AppLogo } from './app-logo';
 
 const navLinks = [
     { href: "/dashboard/settings", label: "My Profile", icon: Settings },
+    { href: "/dashboard/deposit/history", label: "Deposit History", icon: History },
 ];
 
 export const DashboardHeader = ({ user, userData }: { user: any, userData: any }) => {
@@ -33,6 +34,9 @@ export const DashboardHeader = ({ user, userData }: { user: any, userData: any }
     const getPageTitle = () => {
         if (pathname === '/dashboard') {
             return `${greeting},`;
+        }
+        if (pathname === '/dashboard/deposit/history') {
+            return 'Deposit History';
         }
         const parts = pathname.split('/').pop()?.replace(/-/g, ' ') ?? [];
         return parts.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
@@ -97,7 +101,7 @@ export const DashboardHeader = ({ user, userData }: { user: any, userData: any }
                              ))}
                         </div>
                         <div className="p-4 mt-auto">
-                            <Button variant="ghost" onClick={handleLogout} className="w-full justify-start gap-3 p-3 text-destructive hover:text-destructive hover:bg-destructive/10">
+                            <Button variant="destructive" onClick={handleLogout} className="w-full justify-center gap-3 p-3 text-base shadow-lg hover:shadow-xl transition-shadow drop-shadow-md hover:drop-shadow-lg">
                                 <LogOut className="h-5 w-5"/>
                                 <span className="font-semibold">Logout</span>
                             </Button>
