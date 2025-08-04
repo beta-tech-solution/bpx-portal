@@ -21,7 +21,6 @@ interface Transaction {
     amount: string;
     status: "Approved" | "Pending" | "Rejected";
     createdAt: Timestamp;
-    // Optional fields for withdrawal details
     bankName?: string;
     accountNumber?: string;
     accountHolder?: string;
@@ -50,8 +49,6 @@ export default function DashboardPage() {
                     setLoading(false);
                 });
 
-                // Set up transaction listeners
-                // Removed orderBy from deposits query to prevent index error
                 const depositsQuery = query(collection(db, "deposits"), where("userId", "==", currentUser.uid), limit(5));
                 const unsubDeposits = onSnapshot(depositsQuery, (snapshot) => {
                     const deposits = snapshot.docs.map(doc => ({ id: doc.id, type: 'Deposit', ...doc.data() } as Transaction));
@@ -60,7 +57,6 @@ export default function DashboardPage() {
                     console.error("Error fetching deposits:", error);
                 });
 
-                // Removed orderBy from withdrawals to prevent index error, will sort client-side
                 const withdrawalsQuery = query(collection(db, "withdrawals"), where("userId", "==", currentUser.uid), limit(5));
                 const unsubWithdrawals = onSnapshot(withdrawalsQuery, (snapshot) => {
                     const withdrawals = snapshot.docs.map(doc => ({ id: doc.id, type: 'Withdrawal', ...doc.data() } as Transaction));
@@ -69,7 +65,6 @@ export default function DashboardPage() {
                     console.error("Error fetching withdrawals:", error);
                 });
 
-                // Set up global announcement listener
                 const announcementDocRef = doc(db, "settings", "globalAnnouncement");
                 const unsubscribeAnnouncement = onSnapshot(announcementDocRef, (docSnap) => {
                     if(docSnap.exists() && docSnap.data().message) {
@@ -103,7 +98,7 @@ export default function DashboardPage() {
                 const dateB = b.createdAt?.toDate() ?? new Date(0);
                 return dateB.getTime() - dateA.getTime();
             });
-        setRecentTransactions(allTransactions.slice(0, 10)); // Ensure we only show a max of 10 total
+        setRecentTransactions(allTransactions.slice(0, 10));
     }, [depositsData, withdrawalsData]);
     
     const handleCopy = (text: string, label: string) => {
@@ -128,9 +123,8 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-4 md:space-y-6">
-        {/* Member Since Card */}
-        <Card className="shadow-md">
+    <>
+        <Card>
             <CardContent className="p-4 flex items-center justify-between">
                 <div>
                     <p className="text-sm text-muted-foreground">Member Since</p>
@@ -142,8 +136,7 @@ export default function DashboardPage() {
             </CardContent>
         </Card>
         
-        {/* BPExch Account Card */}
-        <Card className="shadow-md bg-slate-800 text-white">
+        <Card className="bg-slate-800 text-white">
             <CardHeader className="p-4 flex-row items-center justify-between">
                 <CardTitle className="text-base font-semibold">BPExch Account</CardTitle>
                 <Badge variant={userData?.bpexchUsername ? "secondary" : "destructive"}>
@@ -178,9 +171,8 @@ export default function DashboardPage() {
             </CardContent>
         </Card>
 
-        {/* Global Announcement Card */}
         {globalAnnouncement && (
-            <Card className="shadow-md bg-amber-400 overflow-hidden">
+            <Card className="bg-amber-400 overflow-hidden">
                 <CardContent className="p-3 flex items-center gap-4">
                     <div className="bg-amber-500 p-2 rounded-md">
                         <Megaphone className="h-5 w-5 text-white" />
@@ -192,16 +184,14 @@ export default function DashboardPage() {
             </Card>
         )}
 
-        {/* BPEXCH.COM Link Card */}
-        <Card className="shadow-md bg-slate-800 text-white">
+        <Card className="bg-slate-800 text-white">
              <Link href="https://bpexch.net/Users/Login" target="_blank" className="flex items-center justify-center p-3">
                 <ExternalLink className="h-4 w-4 mr-2" />
                 <span className="font-semibold text-sm">BPEXCH.COM</span>
             </Link>
         </Card>
         
-        {/* Recent Transactions Card */}
-        <Card className="shadow-md">
+        <Card>
             <CardHeader className="p-4">
                 <CardTitle className="text-base font-semibold">Recent Transactions</CardTitle>
             </CardHeader>
@@ -240,28 +230,6 @@ export default function DashboardPage() {
                 </CardFooter>
             )}
         </Card>
-        
-         {/* Download App Card */}
-         <Card className="shadow-md relative overflow-hidden text-white bg-gradient-to-tr from-cyan-400 to-blue-600">
-            <div className="absolute top-0 left-0 h-[3px] w-full bg-gradient-to-r from-blue-500 via-blue-400 to-cyan-400 animate-shine" />
-             <CardContent className="p-6 flex flex-col items-center text-center">
-                 <div className="p-3 bg-white/20 rounded-2xl mb-4">
-                    <Image src="/images/logo.png" width={40} height={40} alt="App Logo" className="rounded-lg" unoptimized />
-                 </div>
-                 <h3 className="font-bold text-xl">Download Our App</h3>
-                 <p className="text-sm text-white/80 mt-1 mb-6 max-w-xs">Get the fastest and safest payment experience right from your phone.</p>
-                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                    <Link href="#" passHref>
-                        <Image src="/images/appstore.png" alt="Download on the App Store" width={150} height={50} className="object-contain" unoptimized/>
-                    </Link>
-                    <Link href="#" passHref>
-                        <Image src="/images/play.png" alt="Get it on Google Play" width={150} height={50} className="object-contain" unoptimized/>
-                    </Link>
-                 </div>
-             </CardContent>
-         </Card>
-    </div>
+    </>
   )
 }
-
-  

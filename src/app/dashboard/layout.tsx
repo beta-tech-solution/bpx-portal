@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -10,6 +11,7 @@ import Preloader from "@/components/preloader";
 import ChatWidget from "@/components/chat-widget";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { BottomNav } from "@/components/bottom-nav";
+import AppDownloadCard from "@/components/app-download-card";
 
 interface UserData {
   fullName: string;
@@ -110,8 +112,11 @@ export default function DashboardLayout({
   return (
     <div className="flex flex-col min-h-screen bg-muted/30">
       <DashboardHeader user={user} userData={userData} />
-      <main className="flex-1 p-4 md:p-6 pb-[100px] md:pb-[100px]">
-      {children}
+      <main className="flex-1 p-4 md:p-6 pb-28 md:pb-28">
+          <div className="space-y-6">
+            {children}
+            <AppDownloadCard />
+          </div>
       </main>
       {user && <ChatWidget />}
       <BottomNav />
