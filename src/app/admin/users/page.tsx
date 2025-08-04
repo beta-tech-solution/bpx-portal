@@ -36,7 +36,7 @@ interface User {
   phone?: string;
   gender?: string;
   balance: number;
-  status: 'Active' | 'Suspended';
+  status: 'Active' | 'Suspended' | 'Pending';
   role: 'Admin' | 'User';
   lastSeen?: Timestamp;
   createdAt?: Timestamp;
@@ -160,7 +160,7 @@ export default function AdminUsersPage() {
                          {isUserOnline(user.lastSeen) && (
                             <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" title="Online"></div>
                          )}
-                         <Badge variant={user.status === 'Active' ? 'secondary' : 'destructive'}>{user.status}</Badge>
+                         <Badge variant={user.status === 'Active' ? 'secondary' : (user.status === 'Pending' ? 'default' : 'destructive')}>{user.status}</Badge>
                       </div>
                 </div>
                 <div className="flex items-center justify-end gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
@@ -201,7 +201,7 @@ export default function AdminUsersPage() {
                     <TableCell className="font-mono">PKR {user.balance.toFixed(2)}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                         <Badge variant={user.status === 'Active' ? 'secondary' : 'destructive'}>{user.status}</Badge>
+                         <Badge variant={user.status === 'Active' ? 'secondary' : (user.status === 'Pending' ? 'default' : 'destructive')}>{user.status}</Badge>
                          {isUserOnline(user.lastSeen) && (
                             <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" title="Online"></div>
                          )}
@@ -285,7 +285,7 @@ const UserFormSchema = z.object({
     fullName: z.string().min(1, "Full name is required"),
     email: z.string().email("Invalid email address"),
     balance: z.coerce.number().min(0, "Balance must be non-negative"),
-    status: z.enum(['Active', 'Suspended']),
+    status: z.enum(['Active', 'Suspended', 'Pending']),
     role: z.enum(['User', 'Admin']),
     password: z.string().optional(),
     bpexchUsername: z.string().optional(),
@@ -305,7 +305,7 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
             fullName: "",
             email: "",
             balance: 0,
-            status: 'Active',
+            status: 'Pending',
             role: 'User',
             password: "",
             bpexchUsername: "",
@@ -316,11 +316,27 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
 
      React.useEffect(() => {
         if(open) {
+            let initialStatus: 'Active' | 'Pending' | 'Suspended' = 'Pending';
+            if (user) {
+                if (user.bpexchUsername && user.bpexchPassword) {
+                    initialStatus = 'Active';
+                }
+                // Allow admin's manual setting to persist if it's 'Suspended'
+                if (user.status === 'Suspended') {
+                    initialStatus = 'Suspended';
+                } else if (user.status === 'Active' && (user.bpexchUsername && user.bpexchPassword)) {
+                    initialStatus = 'Active';
+                } else if (user.status === 'Pending') {
+                    initialStatus = 'Pending';
+                }
+            }
+
+
             form.reset({
                 fullName: user?.fullName || "",
                 email: user?.email || "",
                 balance: user?.balance || 0,
-                status: user?.status || 'Active',
+                status: user?.status || initialStatus,
                 role: user?.role || 'User',
                 password: "",
                 bpexchUsername: user?.bpexchUsername || "",
@@ -333,6 +349,11 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
 
     const handleSubmit = async (data: UserFormValues) => {
         setIsLoading(true);
+        
+        let finalStatus = data.status;
+        if (data.status !== 'Suspended') {
+            finalStatus = (data.bpexchUsername && data.bpexchPassword) ? 'Active' : 'Pending';
+        }
 
         try {
             if (user) { // Editing existing user
@@ -341,7 +362,7 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                     fullName: data.fullName, 
                     email: data.email, 
                     balance: data.balance, 
-                    status: data.status, 
+                    status: finalStatus, 
                     role: data.role,
                     bpexchUsername: data.bpexchUsername,
                     bpexchPassword: data.bpexchPassword,
@@ -364,7 +385,7 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                     fullName: data.fullName,
                     email: data.email,
                     balance: data.balance,
-                    status: data.status,
+                    status: finalStatus,
                     role: data.role,
                     createdAt: new Date(),
                     bpexchUsername: data.bpexchUsername,
@@ -463,6 +484,7 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                                         </FormControl>
                                         <SelectContent>
                                             <SelectItem value="Active">Active</SelectItem>
+                                            <SelectItem value="Pending">Pending</SelectItem>
                                             <SelectItem value="Suspended">Suspended</SelectItem>
                                         </SelectContent>
                                         </Select>
