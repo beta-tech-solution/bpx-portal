@@ -270,27 +270,30 @@ export default function DepositPage() {
                             </ol>
                         </div>
                         <div className="text-right">
-                             <h4 className="font-bold mb-2">ہدایات (Urdu):</h4>
-                            <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground font-code">
-                                <li>اوپر دیے گئے اکاؤنٹ پر ادائیگی بھیجیں</li>
-                                <li>ادائیگی کا ثبوت اپ لوڈ کریں اور جمع کروائیں</li>
-                                <li>ادائیگی کی منظوری 30 منٹ میں دی جائے گی</li>
-                                <li>بائننس USDT کی ادائیگی کے لیے اپنے بائنانس اکاؤنٹ کے ساتھ وابستہ Pay ID یا ای میل کا استعمال کریں</li>
-                                <li>ادائیگی میں تاخیر سے بچنے کے لیے درست رقم درج کریں</li>
-                                <li>آپ کو ملنے والی رقم آپ کے جمع کروانے کے وقت USDT کی موجودہ شرح کے مطابق ہوگی</li>
-                            </ol>
-                        </div>
-                        <div className="text-right">
-                             <h4 className="font-bold mb-2">تعليمات (Arabic):</h4>
-                            <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground font-code">
-                                <li>أرسل الدفعة إلى الحساب أعلاه</li>
-                                <li>قم بتحميل إثبات الدفع وقدم الطلب</li>
-                                <li>سيتم الموافقة على الدفعة خلال 30 دقيقة</li>
-                                <li>لدفع USDT عبر بينانس، استخدم معرف الدفع (Pay ID) أو البريد الإلكتروني المرتبط بحسابك في بينانس</li>
-                                <li>أدخل المبلغ الصحيح لتجنب تأخير الدفعة</li>
-                                <li>سيتم احتساب المبلغ الذي ستحصل عليه وفقًا لسعر USDT الحالي في وقت إيداعك</li>
-                            </ol>
-                        </div>
+  <h4 className="font-bold mb-2">ہدایات (Urdu):</h4>
+  <ol dir="rtl" className="list-decimal pr-6 space-y-2 text-sm text-muted-foreground font-code">
+    <li>اوپر دیے گئے اکاؤنٹ پر ادائیگی بھیجیں</li>
+    <li>ادائیگی کا ثبوت اپ لوڈ کریں اور جمع کروائیں</li>
+    <li>ادائیگی کی منظوری 30 منٹ میں دی جائے گی</li>
+    <li>بائننس USDT کی ادائیگی کے لیے اپنے بائنانس اکاؤنٹ کے ساتھ وابستہ Pay ID یا ای میل کا استعمال کریں</li>
+    <li>ادائیگی میں تاخیر سے بچنے کے لیے درست رقم درج کریں</li>
+    <li>آپ کو ملنے والی رقم آپ کے جمع کروانے کے وقت USDT کی موجودہ شرح کے مطابق ہوگی</li>
+  </ol>
+</div>
+
+<div className="text-right">
+  <h4 className="font-bold mb-2">تعليمات (Arabic):</h4>
+  <ol dir="rtl" className="list-decimal pr-6 space-y-2 text-sm text-muted-foreground font-code">
+    <li>أرسل الدفعة إلى الحساب أعلاه</li>
+    <li>قم بتحميل إثبات الدفع وقدم الطلب</li>
+    <li>سيتم الموافقة على الدفعة خلال 30 دقيقة</li>
+    <li>لدفع USDT عبر بينانس، استخدم معرف الدفع (Pay ID) أو البريد الإلكتروني المرتبط بحسابك في بينانس</li>
+    <li>أدخل المبلغ الصحيح لتجنب تأخير الدفعة</li>
+    <li>سيتم احتساب المبلغ الذي ستحصل عليه وفقًا لسعر USDT الحالي في وقت إيداعك</li>
+  </ol>
+</div>
+
+
                     </div>
                 </CardContent>
                 <CardFooter className="p-6 pt-0">
