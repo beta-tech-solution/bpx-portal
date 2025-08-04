@@ -8,7 +8,7 @@ import Image from "next/image";
 
 export default function AccountActivationPage() {
     return (
-        <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
+        <div className="space-y-6 animate-fade-in">
             <Card className="w-full transition-shadow hover:shadow-lg">
                 <CardHeader>
                     <CardTitle className="font-headline text-xl">Don't have a BPExch Account?</CardTitle>
