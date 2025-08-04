@@ -42,7 +42,6 @@ export default function DashboardPage() {
             if (currentUser) {
                 setUser(currentUser);
                 
-                // Set up user data listener
                 const userDocRef = doc(db, "users", currentUser.uid);
                 const unsubscribeUser = onSnapshot(userDocRef, (doc) => {
                     if (doc.exists()) {
@@ -58,10 +57,13 @@ export default function DashboardPage() {
                     setDepositsData(deposits);
                 });
 
-                const withdrawalsQuery = query(collection(db, "withdrawals"), where("userId", "==", currentUser.uid), orderBy("createdAt", "desc"), limit(5));
+                // Corrected withdrawals query: remove orderBy to prevent index error, will sort client-side
+                const withdrawalsQuery = query(collection(db, "withdrawals"), where("userId", "==", currentUser.uid), limit(5));
                 const unsubWithdrawals = onSnapshot(withdrawalsQuery, (snapshot) => {
                     const withdrawals = snapshot.docs.map(doc => ({ id: doc.id, type: 'Withdrawal', ...doc.data() } as Transaction));
                     setWithdrawalsData(withdrawals);
+                }, (error) => {
+                    console.error("Error fetching withdrawals:", error); // Log potential errors
                 });
 
                 // Set up global announcement listener
@@ -98,7 +100,7 @@ export default function DashboardPage() {
                 const dateB = b.createdAt?.toDate() ?? new Date(0);
                 return dateB.getTime() - dateA.getTime();
             });
-        setRecentTransactions(allTransactions);
+        setRecentTransactions(allTransactions.slice(0, 10)); // Ensure we only show a max of 10 total
     }, [depositsData, withdrawalsData]);
     
     const handleCopy = (text: string, label: string) => {
@@ -258,5 +260,3 @@ export default function DashboardPage() {
     </div>
   )
 }
-
-    
