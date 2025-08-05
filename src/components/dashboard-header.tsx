@@ -106,7 +106,10 @@ export const DashboardHeader = ({ user, userData }: { user: any, userData: any }
             <div className="flex items-center justify-between">
                 {/* Mobile View */}
                 <div className="flex items-center gap-3 md:hidden flex-1">
-                     <div>
+                    <Link href="/dashboard">
+                        <AppLogo className="h-10 w-auto flex-shrink-0" />
+                    </Link>
+                    <div>
                         <h1 className="text-xl font-bold">{getPageTitle()}</h1>
                         {pathname === '/dashboard' && <p className="text-base font-semibold">{userData?.fullName}</p>}
                     </div>
@@ -119,8 +122,8 @@ export const DashboardHeader = ({ user, userData }: { user: any, userData: any }
                         {pathname === '/dashboard' && <p className="text-base font-semibold">{userData?.fullName}</p>}
                     </div>
                 </div>
-
-                <div className="flex justify-center flex-shrink-0 mx-4">
+                
+                <div className="hidden md:flex justify-center flex-shrink-0 md:absolute md:left-1/2 md:-translate-x-1/2">
                     <Link href="/dashboard">
                         <AppLogo className="h-10 md:h-[60px] w-auto" />
                     </Link>
