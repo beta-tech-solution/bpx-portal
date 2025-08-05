@@ -19,7 +19,7 @@ export const BottomNav = () => {
     return (
         <nav className="fixed bottom-0 left-0 right-0 bg-card border-t shadow-top z-40">
             {/* Mobile Nav */}
-            <div className="grid grid-cols-5 h-16 max-w-lg mx-auto md:hidden">
+            <div className="flex justify-around items-center h-16 max-w-lg mx-auto md:hidden">
                 {navItems.map((item) => {
                     const isActive = (item.href === '/dashboard' && pathname === '/dashboard') || (item.href !== '/dashboard' && pathname.startsWith(item.href));
                     return (
