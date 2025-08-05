@@ -103,21 +103,21 @@ export const DashboardHeader = ({ user, userData }: { user: any, userData: any }
 
     return (
         <header className="bg-slate-800 text-white rounded-b-3xl shadow-lg p-4 md:px-6 sticky top-0 z-40">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                     <Link href="/dashboard" className="block md:hidden">
-                        <AppLogo className="h-10 w-auto" />
-                    </Link>
+            <div className="grid grid-cols-3 items-center">
+                <div className="flex-1">
                     <div>
                         <h1 className="text-xl md:text-2xl font-bold">{getPageTitle()}</h1>
                         {pathname === '/dashboard' && <p className="text-base font-semibold">{userData?.fullName}</p>}
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <Link href="/dashboard" className="hidden md:block">
-                        <AppLogo className="h-12 w-auto" />
+                <div className="flex justify-center">
+                    <Link href="/dashboard">
+                        <AppLogo className="h-10 w-auto" />
                     </Link>
+                </div>
+
+                <div className="flex-1 flex items-center justify-end">
                     <Sheet>
                         <SheetTrigger asChild>
                              <Avatar className="cursor-pointer h-10 w-10 border-2 border-white/50">
