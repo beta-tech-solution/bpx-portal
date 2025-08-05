@@ -19,8 +19,8 @@ import { collection, query, onSnapshot, doc, getDoc, updateDoc, increment, write
 import { format, subDays } from 'date-fns';
 import { useMediaQuery } from '@/hooks/use-media-query';
 
-const CLOUDINARY_CLOUD_NAME = "datq7sbdp";
-const CLOUDINARY_UPLOAD_PRESET = "bpxmaster";
+const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
 type WithdrawalStatus = 'Pending' | 'Approved' | 'Rejected';
 
@@ -240,7 +240,7 @@ function WithdrawalContent({ data, loading }: { data: Withdrawal[], loading: boo
         try {
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+            formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET!);
 
             const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
                 method: 'POST', body: formData,
