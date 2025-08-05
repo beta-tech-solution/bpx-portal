@@ -16,6 +16,7 @@ import Link from "next/link";
 import { AppLogo } from "@/components/app-logo";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { PhoneMockup } from "@/components/phone-mockup";
+import Head from 'next/head';
 
 
 const sliderItems = [
@@ -392,6 +393,27 @@ export default function LandingPage() {
 
   return (
     <div className="w-full min-h-screen text-white overflow-x-hidden">
+      <Head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "name": "BPX Master",
+            "url": "https://www.bpxmaster.com",
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": {
+                "@type": "EntryPoint",
+                "urlTemplate": "https://www.bpxmaster.com/search?q={search_term_string}"
+              },
+              "query-input": "required name=search_term_string"
+            },
+            "description": "The ultimate portal for secure and fast financial transactions in Pakistan. Manage deposits, withdrawals, and access your BPExch account seamlessly.",
+            "keywords": "BPX Master, secure deposits Pakistan, fast withdrawals Pakistan, online financial portal, BPExch login, digital wallet Pakistan"
+          }) }}
+        />
+      </Head>
       <div className="fixed inset-0 -z-20">
           <Image
               src="/images/sliderhero.jpg"

@@ -105,13 +105,13 @@ export const DashboardHeader = ({ user, userData }: { user: any, userData: any }
         <header className="bg-slate-800 text-white rounded-b-3xl shadow-lg p-4 md:px-6 sticky top-0 z-40">
             <div className="flex items-center justify-between">
                 {/* Mobile View */}
-                <div className="flex items-center gap-3 md:hidden flex-1">
-                    <Link href="/dashboard">
-                        <AppLogo className="h-10 w-auto flex-shrink-0" />
+                <div className="flex items-center gap-2 md:hidden flex-1 min-w-0">
+                    <Link href="/dashboard" className="flex-shrink-0">
+                        <AppLogo className="h-10 w-auto" />
                     </Link>
-                    <div>
-                        <h1 className="text-xl font-bold">{getPageTitle()}</h1>
-                        {pathname === '/dashboard' && <p className="text-base font-semibold">{userData?.fullName}</p>}
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-xl font-bold truncate">{getPageTitle()}</h1>
+                        {pathname === '/dashboard' && <p className="text-base font-semibold truncate">{userData?.fullName}</p>}
                     </div>
                 </div>
 
