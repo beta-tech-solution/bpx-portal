@@ -113,7 +113,7 @@ export const DashboardHeader = ({ user, userData }: { user: any, userData: any }
 
                 <div className="flex justify-center">
                     <Link href="/dashboard">
-                        <AppLogo className="h-10 w-auto" />
+                        <AppLogo className="h-10 md:h-[60px] w-auto" />
                     </Link>
                 </div>
 
