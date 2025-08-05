@@ -29,16 +29,13 @@ import {
   DollarSign,
   Landmark,
   LogOut,
-  Users,
   Settings,
   Shield,
   LayoutDashboard,
   Activity,
   Loader2,
-  MoreVertical,
   MessageSquare,
-  BarChart2,
-  Megaphone
+  BarChart2
 } from "lucide-react";
 import { db, auth } from "@/lib/firebase/config";
 import { collection, onSnapshot, query, where, doc } from "firebase/firestore";
@@ -52,9 +49,7 @@ const navItems = [
     { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, countKey: null },
     { href: "/admin/deposits", label: "Deposits", icon: DollarSign, countKey: 'deposits' },
     { href: "/admin/withdrawals", label: "Withdrawals", icon: Landmark, countKey: 'withdrawals' },
-    { href: "/admin/users", label: "Users", icon: Users, countKey: null },
     { href: "/admin/profit-stats", label: "Profit Stats", icon: BarChart2, countKey: null },
-    { href: "/admin/announcement", label: "Announcement", icon: Megaphone, countKey: null },
 ];
 
 const mobileHeaderItems = [

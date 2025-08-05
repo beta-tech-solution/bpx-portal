@@ -104,58 +104,68 @@ export const DashboardHeader = ({ user, userData }: { user: any, userData: any }
     return (
         <header className="bg-slate-800 text-white rounded-b-3xl shadow-lg p-4 md:px-6 sticky top-0 z-40">
             <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-xl md:text-2xl font-bold">{getPageTitle()}</h1>
-                    {pathname === '/dashboard' && <p className="text-base font-semibold">{userData?.fullName}</p>}
+                <div className="flex items-center gap-4">
+                     <Link href="/dashboard" className="block md:hidden">
+                        <AppLogo className="h-10 w-auto" />
+                    </Link>
+                    <div>
+                        <h1 className="text-xl md:text-2xl font-bold">{getPageTitle()}</h1>
+                        {pathname === '/dashboard' && <p className="text-base font-semibold">{userData?.fullName}</p>}
+                    </div>
                 </div>
 
-                <Sheet>
-                    <SheetTrigger asChild>
-                         <Avatar className="cursor-pointer h-10 w-10 border-2 border-white/50">
-                            <AvatarImage src={userData?.photoURL} alt={userData?.fullName} />
-                            <AvatarFallback>{getInitials(userData?.fullName)}</AvatarFallback>
-                        </Avatar>
-                    </SheetTrigger>
-                    <SheetContent className="bg-muted/95 p-0 flex flex-col">
-                        <SheetHeader className="p-4 bg-slate-800 text-white text-left">
-                             <div className="flex items-center gap-3">
-                                 <Avatar className="h-12 w-12 border-2 border-white/50">
-                                    <AvatarImage src={userData?.photoURL} alt={userData?.fullName} />
-                                    <AvatarFallback>{getInitials(userData?.fullName)}</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <p className="font-bold text-lg">{userData?.fullName}</p>
-                                    <p className="text-xs text-white/70">{userData?.email}</p>
+                <div className="flex items-center gap-4">
+                    <Link href="/dashboard" className="hidden md:block">
+                        <AppLogo className="h-12 w-auto" />
+                    </Link>
+                    <Sheet>
+                        <SheetTrigger asChild>
+                             <Avatar className="cursor-pointer h-10 w-10 border-2 border-white/50">
+                                <AvatarImage src={userData?.photoURL} alt={userData?.fullName} />
+                                <AvatarFallback>{getInitials(userData?.fullName)}</AvatarFallback>
+                            </Avatar>
+                        </SheetTrigger>
+                        <SheetContent className="bg-muted/95 p-0 flex flex-col">
+                            <SheetHeader className="p-4 bg-slate-800 text-white text-left">
+                                 <div className="flex items-center gap-3">
+                                     <Avatar className="h-12 w-12 border-2 border-white/50">
+                                        <AvatarImage src={userData?.photoURL} alt={userData?.fullName} />
+                                        <AvatarFallback>{getInitials(userData?.fullName)}</AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <p className="font-bold text-lg">{userData?.fullName}</p>
+                                        <p className="text-xs text-white/70">{userData?.email}</p>
+                                    </div>
+                                </div>
+                            </SheetHeader>
+                            <div className="flex-1 p-4 space-y-2 overflow-y-auto">
+                                {navLinks.map(link => (
+                                   <Link href={link.href} key={link.href} className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+                                       <div className="flex items-center gap-3">
+                                           <link.icon className="h-5 w-5 text-primary" />
+                                           <span className="font-semibold">{link.label}</span>
+                                       </div>
+                                       <ChevronRight className="h-5 w-5 text-muted-foreground"/>
+                                   </Link>
+                                ))}
+                                 <div className="pt-4 mt-4 border-t">
+                                    <h3 className="px-3 py-2 font-headline text-muted-foreground text-sm">Your Information</h3>
+                                    <InfoRow label="Full Name" value={userData?.fullName} icon={User} />
+                                    <InfoRow label="Email" value={userData?.email} icon={Mail} />
+                                    <InfoRow label="Phone" value={userData?.phone} icon={Phone} />
+                                    <InfoRow label="BPExch Username" value={userData?.bpexchUsername} icon={User} />
+                                    <InfoRow label="BPExch Password" value={userData?.bpexchPassword} icon={KeyRound} isPassword={true} />
                                 </div>
                             </div>
-                        </SheetHeader>
-                        <div className="flex-1 p-4 space-y-2 overflow-y-auto">
-                            {navLinks.map(link => (
-                               <Link href={link.href} key={link.href} className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
-                                   <div className="flex items-center gap-3">
-                                       <link.icon className="h-5 w-5 text-primary" />
-                                       <span className="font-semibold">{link.label}</span>
-                                   </div>
-                                   <ChevronRight className="h-5 w-5 text-muted-foreground"/>
-                               </Link>
-                            ))}
-                             <div className="pt-4 mt-4 border-t">
-                                <h3 className="px-3 py-2 font-headline text-muted-foreground text-sm">Your Information</h3>
-                                <InfoRow label="Full Name" value={userData?.fullName} icon={User} />
-                                <InfoRow label="Email" value={userData?.email} icon={Mail} />
-                                <InfoRow label="Phone" value={userData?.phone} icon={Phone} />
-                                <InfoRow label="BPExch Username" value={userData?.bpexchUsername} icon={User} />
-                                <InfoRow label="BPExch Password" value={userData?.bpexchPassword} icon={KeyRound} isPassword={true} />
+                            <div className="p-4 mt-auto">
+                                <Button variant="destructive" onClick={handleLogout} className="w-full justify-center gap-3 p-3 text-base shadow-lg hover:shadow-xl transition-shadow drop-shadow-md hover:drop-shadow-lg">
+                                    <LogOut className="h-5 w-5"/>
+                                    <span className="font-semibold">Logout</span>
+                                </Button>
                             </div>
-                        </div>
-                        <div className="p-4 mt-auto">
-                            <Button variant="destructive" onClick={handleLogout} className="w-full justify-center gap-3 p-3 text-base shadow-lg hover:shadow-xl transition-shadow drop-shadow-md hover:drop-shadow-lg">
-                                <LogOut className="h-5 w-5"/>
-                                <span className="font-semibold">Logout</span>
-                            </Button>
-                        </div>
-                    </SheetContent>
-                </Sheet>
+                        </SheetContent>
+                    </Sheet>
+                </div>
             </div>
         </header>
     );

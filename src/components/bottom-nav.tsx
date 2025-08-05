@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, DollarSign, Landmark, ExternalLink, History } from 'lucide-react';
+import { Home, DollarSign, Landmark, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -11,7 +11,6 @@ const navItems = [
     { href: '/dashboard/deposit', label: 'Deposit', icon: DollarSign },
     { href: '/dashboard/withdraw', label: 'Withdraw', icon: Landmark },
     { href: '/dashboard/bpexch-login', label: 'BPExch Login', icon: ExternalLink },
-    { href: '/dashboard/settings', label: 'Profile', icon: History },
 ];
 
 export const BottomNav = () => {
