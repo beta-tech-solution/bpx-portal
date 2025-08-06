@@ -23,28 +23,28 @@ const sliderItems = [
   {
     title: "All-in-One Dashboard",
     description: "Your complete financial overview in one place.",
-    screen: "/images/dash.png",
+    screen: "/images/dase.png",
     alt: "Dashboard Mockup",
     features: [
       {
         Icon: TrendingUp,
-        title: "Total Deposits",
-        description: "See your total approved deposits at a glance.",
-        position: { top: "30%", left: "5%" },
+        title: "Member Since",
+        description: "See your total journey with us at a glance.",
+        position: { top: "12%", left: "5%" },
         align: "right"
       },
       {
         Icon: TrendingDown,
-        title: "Total Withdrawals",
-        description: "Monitor your all-time withdrawals from your account.",
-        position: { top: "45%", left: "5%" },
+        title: "BPExch Credentials ",
+        description: "Monitor your Login Details from your account.",
+        position: { top: "37%", left: "5%" },
         align: "right"
       },
        {
         Icon: BarChart2,
         title: "Realtime Deposit History",
         description: "Your financial data is protected with robust security measures.",
-        position: { top: "65%", right: "5%" },
+        position: { top: "75%", right: "5%" },
         align: "left"
       },
     ],
@@ -52,21 +52,21 @@ const sliderItems = [
   {
     title: "Seamless Deposits",
     description: "Easily add funds to your account with our simple deposit system.",
-    screen: "/images/deposit.png",
+    screen: "/images/depss.png",
     alt: "Deposit Page Mockup",
     features: [
       {
         Icon: DollarSign,
         title: "Enter Amount",
         description: "Quickly input the amount you wish to deposit.",
-        position: { top: "24%", left: "5%" },
+        position: { top: "15%", left: "5%" },
         align: "right"
       },
       {
         Icon: Landmark,
         title: "Bank Details",
         description: "Clear instructions and account details for your transfer.",
-        position: { top: "48%", left: "5%" },
+        position: { top: "40%", left: "5%" },
         align: "right"
       },
       {
@@ -81,14 +81,14 @@ const sliderItems = [
     {
     title: "Effortless Withdrawals",
     description: "Request withdrawals to your bank account with just a few clicks.",
-    screen: "/images/withdraw.png",
+    screen: "/images/withddsec.png",
     alt: "Withdraw Page Mockup",
     features: [
       {
         Icon: Wallet,
         title: "Total Withdrawn",
         description: "Track your all-time approved withdrawals.",
-        position: { top: "25%", left: "5%" },
+        position: { top: "13%", left: "5%" },
         align: "right"
       },
       {
@@ -110,21 +110,21 @@ const sliderItems = [
   {
     title: "Secure BPExch Login",
     description: "Access your BPExch account safely, with all attempts logged.",
-    screen: "/images/bpexchlogin.png",
+    screen: "/images/bpexch.png",
     alt: "BPExch Login Mockup",
     features: [
         {
             Icon: KeyRound,
             title: "Your Credentials",
             description: "Admin-provided username and password for BPExch.",
-            position: { top: "45%", right: "5%" },
+            position: { top: "65%", right: "5%" },
             align: "left"
         },
         {
             Icon: Shield,
             title: "Block Suspicious IPs",
             description: "Instantly block any unrecognized IP address from your history.",
-            position: { top: "70%", right: "5%" },
+            position: { top: "20%", right: "5%" },
             align: "left"
         },
         {
@@ -139,7 +139,7 @@ const sliderItems = [
   {
     title: "Instant Support Chat",
     description: "Get your questions answered in real-time by our support team.",
-    screen: "/images/chat.png",
+    screen: "/images/chatt.png",
     alt: "Chat Mockup",
     features: [
         {
@@ -282,19 +282,19 @@ const depositFeatures = [
     {
         Icon: DollarSign,
         title: "Enter Amount",
-        position: { top: '23%', left: '15%' },
+        position: { top: '13%', left: '15%' },
         align: 'right'
     },
     {
         Icon: Landmark,
         title: "Bank Details",
-        position: { top: '48%', left: '15%' },
+        position: { top: '40%', left: '15%' },
         align: 'right'
     },
     {
         Icon: UploadCloud,
         title: "Upload Proof",
-        position: { top: '65%', right: '15%' },
+        position: { top: '57%', right: '15%' },
         align: 'left'
     }
 ];
@@ -526,11 +526,11 @@ export default function LandingPage() {
                     unoptimized
                 />
                 <Image 
-                    src="/images/deposec.png"
+                    src="/images/deposection.png"
                     alt="Deposit Section Mockup"
-                    width={600}
-                    height={600}
-                    style={{ width: "auto", height: "600px" }}
+                    width={228}
+                    height={500}
+                    style={{ width: "auto", height: "500px" }}
                     unoptimized
                     className="relative z-10 animate-fade-in object-contain"
                 />
@@ -571,7 +571,7 @@ export default function LandingPage() {
                     unoptimized
                 />
                 <Image 
-                    src="/images/with.png"
+                    src="/images/withddsec.png"
                     alt="Withdrawal Section Mockup"
                     width={500}
                     height={500}
@@ -604,36 +604,38 @@ export default function LandingPage() {
             </p>
             
              <div className="relative mt-12 flex justify-center items-center h-[550px] lg:h-[600px] animate-fade-in" style={{animationDelay: '0.6s'}}>
-                <PhoneMockup className="max-w-[280px] md:max-w-[320px]">
-                    <Image
-                      src="/images/bpexchlogin.png"
-                      alt="BPExch Login on phone"
-                      width={320}
-                      height={650}
-                      className="w-full h-full object-cover"
-                      unoptimized
-                    />
-                </PhoneMockup>
+                
+             <Image
+  src="/images/bpp.png"
+  alt="BPExch Login on phone"
+  width={400} // or any desired value
+  height={650}
+  className="w-auto h-[650px] object-cover"
+  unoptimized
+/>
+
+
+               
 
                 <BpexchFeatureHotspot 
                     icon={KeyRound}
                     title="Your Credentials"
                     description="Admin-provided username and password for BPExch."
-                    position={{ top: '35%', right: '15%'}}
+                    position={{ top: '55%', right: '15%'}}
                     align="left"
                 />
                 <BpexchFeatureHotspot 
                     icon={Shield}
                     title="Block Suspicious IPs"
                     description="Instantly block any unrecognized IP address."
-                    position={{ top: '70%', left: '15%'}}
+                    position={{ top: '10%', left: '15%'}}
                     align="right"
                 />
                 <BpexchFeatureHotspot 
                     icon={Activity}
                     title="Login History"
                     description="Review all login attempts for enhanced security."
-                    position={{ top: '55%', right: '20%'}}
+                    position={{ top: '85%', right: '20%'}}
                     align="left"
                 />
             </div>
@@ -684,16 +686,19 @@ export default function LandingPage() {
                         className="absolute -z-10 opacity-70 animate-spin-slow rounded-full"
                         unoptimized
                     />
-                   <PhoneMockup className="max-w-[320px]">
-                      <Image
-                          src="/images/dob.png"
-                          alt="App dashboard on phone"
-                          width={320}
-                          height={650}
-                          className="w-full h-full object-cover"
-                          unoptimized
-                      />
-                  </PhoneMockup>
+                   
+                   <Image
+  src="/images/whyy.png"
+  alt="App dashboard on phone"
+  width={280}
+  height={500}
+  className="h-[500px] w-auto object-cover"
+  unoptimized
+/>
+
+
+
+                 
               </div>
           </div>
       </section>
