@@ -1,0 +1,68 @@
+# codemagic.yaml
+# This file defines the build workflow for Codemagic.
+# It tells the cloud service how to build your Android and iOS apps.
+
+workflows:
+  capacitor-android-build:
+    name: Capacitor Android Build
+    instance_type: mac_mini_m1
+    environment:
+      node: 20.11.1 # Use a specific LTS version of Node.js
+    scripts:
+      - name: Install npm dependencies
+        script: |
+          npm install
+      - name: Setup Capacitor platforms
+        script: |
+          npx cap add android
+          npx cap add ios
+      - name: Build and Sync Web App for Mobile
+        script: |
+          # This runs prebuild:mobile, build:mobile, and postbuild:mobile
+          npm run mobile:sync
+      - name: Build Android App
+        script: |
+          cd android
+          ./gradlew assembleDebug # For a debug build to test
+          # Use './gradlew bundleRelease' for a production release
+    artifacts:
+      - android/app/build/outputs/apk/debug/**/*.apk
+      - android/app/build/outputs/bundle/release/**/*.aab
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com # Optional: Get an email when the build is done
+        notify:
+          success: true
+          failure: true
+
+  capacitor-ios-build:
+    name: Capacitor iOS Build
+    instance_type: mac_mini_m1
+    environment:
+      node: 20.11.1
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Install npm dependencies
+        script: |
+          npm install
+      - name: Setup Capacitor platforms
+        script: |
+          npx cap add android
+          npx cap add ios
+      - name: Build and Sync Web App for Mobile
+        script: |
+          npm run mobile:sync
+      - name: Build iOS App
+        script: |
+          npx cap build ios --prod --release
+    artifacts:
+      - build/ios/ipa/**/*.ipa
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com # Optional
+        notify:
+          success: true
+          failure: true
