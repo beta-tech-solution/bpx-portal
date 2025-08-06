@@ -16,7 +16,7 @@
     "android": "npx cap run android",
     "ios": "npx cap run ios",
     "mobile:setup": "npm run build:mobile && npx cap add android && npx cap add ios",
-    "mobile:sync": "npm run build:mobile && npx cap sync"
+    "mobile:sync": "npm run prebuild:mobile && npm run build:mobile && npm run postbuild:mobile && npx cap sync"
   },
   "dependencies": {
     "@capacitor/android": "^6.1.0",
