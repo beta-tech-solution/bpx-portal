@@ -7,7 +7,7 @@
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
     "build": "next build",
-    "build:mobile": "next build",
+    "build:mobile": "next build && next export -o out",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
@@ -77,3 +77,5 @@
     "typescript": "^5"
   }
 }
+
+    
