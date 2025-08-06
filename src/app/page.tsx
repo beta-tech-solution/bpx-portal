@@ -81,7 +81,7 @@ const sliderItems = [
     {
     title: "Effortless Withdrawals",
     description: "Request withdrawals to your bank account with just a few clicks.",
-    screen: "/images/withddsec.png",
+    screen: "/images/withdd.png",
     alt: "Withdraw Page Mockup",
     features: [
       {
@@ -478,7 +478,7 @@ export default function LandingPage() {
         </div>
       </main>
 
-       <section className="bg-muted/90 text-foreground flex items-center h-[290px]">
+       <section className="bg-muted/90 text-foreground flex items-center min-h-[290px] py-20 mt-12 md:mt-0 md:py-0 md:h-[290px]">
             <div className="container mx-auto px-[5%]">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-16 text-center">
                     {features.map((feature, index) => (
