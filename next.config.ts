@@ -27,23 +27,6 @@ const nextConfig: NextConfig = {
       }
     ],
   },
-  // Conditional configuration for mobile build
-  ...(isMobileBuild
-    ? {
-        output: 'export',
-        distDir: 'out',
-        // Redirect all admin paths to prevent them from being included in the static export
-        async redirects() {
-          return [
-            {
-              source: '/admin/:path*',
-              destination: '/',
-              permanent: false,
-            },
-          ];
-        },
-      }
-    : {}),
 };
 
 export default nextConfig;

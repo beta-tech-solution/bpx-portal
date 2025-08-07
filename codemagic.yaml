@@ -1,3 +1,4 @@
+
 # codemagic.yaml
 # This file defines the build workflow for Codemagic.
 # It tells the cloud service how to build your Android and iOS apps.
