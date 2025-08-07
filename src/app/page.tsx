@@ -519,7 +519,7 @@ export default function LandingPage() {
             </div>
              <div className="lg:col-span-7 relative flex justify-center items-center">
                 <Image
-                    src="/images/circle-art.png"
+                    src="/images/vec.png"
                     alt="Decorative circle art"
                     width={600}
                     height={600}
@@ -564,7 +564,7 @@ export default function LandingPage() {
             </div>
              <div className="lg:col-span-1 relative flex justify-center items-center">
                 <Image
-                    src="/images/circle-art.png"
+                    src="/images/neonl.png"
                     alt="Decorative circle art"
                     width={600}
                     height={600}

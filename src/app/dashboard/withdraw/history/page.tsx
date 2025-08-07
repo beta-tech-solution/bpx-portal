@@ -10,9 +10,9 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, CalendarIcon, Eye, ArrowLeft, ArrowRight, User, Phone, Mail, Copy } from "lucide-react"
+import { Loader2, CalendarIcon, Eye, ArrowLeft, ArrowRight } from "lucide-react"
 import { db, auth } from "@/lib/firebase/config"
-import { collection, query, where, Timestamp, onSnapshot, doc, orderBy } from "firebase/firestore"
+import { collection, query, where, Timestamp, onSnapshot, orderBy } from "firebase/firestore"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { cn } from "@/lib/utils"
@@ -32,13 +32,6 @@ interface Withdrawal {
   adminProofUrl?: string;
 }
 
-interface UserData {
-    fullName: string;
-    email: string;
-    phone: string;
-    bpexchUsername?: string;
-}
-
 const statusVariant = {
   Pending: "default",
   Approved: "secondary",
@@ -50,7 +43,6 @@ const ITEMS_PER_PAGE = 15;
 function WithdrawalHistoryContent() {
   const [user] = useAuthState(auth);
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([])
-  const [userData, setUserData] = useState<UserData | null>(null);
   const [date, setDate] = useState<DateRange | undefined>({ from: subDays(new Date(), 29), to: new Date() })
   const [loading, setLoading] = useState(true);
   const isMobile = useMediaQuery("(max-width: 768px)")
@@ -65,20 +57,12 @@ function WithdrawalHistoryContent() {
 
     setLoading(true);
 
-    const userDocRef = doc(db, 'users', user.uid);
-    const unsubscribeUser = onSnapshot(userDocRef, (docSnap) => {
-        if(docSnap.exists()){
-            setUserData(docSnap.data() as UserData);
-        }
-    });
-
-    const q = query(collection(db, "withdrawals"), where("userId", "==", user.uid));
+    const q = query(collection(db, "withdrawals"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
     const unsubscribeWithdrawals = onSnapshot(q, (querySnapshot) => {
         const data = querySnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
         } as Withdrawal));
-        data.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
         setWithdrawals(data);
         setLoading(false);
     }, (error) => {
@@ -88,7 +72,6 @@ function WithdrawalHistoryContent() {
     });
 
     return () => {
-        unsubscribeUser();
         unsubscribeWithdrawals();
     }
   }, [user, toast]);
@@ -120,32 +103,6 @@ function WithdrawalHistoryContent() {
     }
   }
 
-  const InfoRow = ({ label, value, icon: Icon }: { label: string, value: string | undefined, icon: React.ElementType }) => {
-    const handleCopy = () => {
-        if (value) {
-            navigator.clipboard.writeText(value);
-            toast({ title: "Copied!", description: `${label} has been copied to your clipboard.` });
-        }
-    };
-
-    return (
-        <div className="flex items-center justify-between p-2 rounded-md bg-muted/30">
-            <div className="flex items-center gap-3">
-                <Icon className="h-4 w-4 text-primary" />
-                <div>
-                    <p className="text-xs text-muted-foreground">{label}</p>
-                    <p className="text-sm font-semibold">{value || 'N/A'}</p>
-                </div>
-            </div>
-            {value && (
-                <Button variant="ghost" size="icon" onClick={handleCopy}>
-                    <Copy className="h-4 w-4" />
-                </Button>
-            )}
-        </div>
-    );
-  };
-
   const renderContent = () => {
     if (loading) {
       return (
@@ -176,6 +133,11 @@ function WithdrawalHistoryContent() {
                     <p><span className="font-semibold">Account #:</span> {item.accountNumber}</p>
                     <p><span className="font-semibold">Holder:</span> {item.accountHolder}</p>
                 </div>
+                 {item.adminProofUrl && item.status === 'Approved' && (
+                    <div className="border-t pt-4 flex justify-end">
+                        <ProofDialog proofUrl={item.adminProofUrl} />
+                    </div>
+                )}
             </CardContent>
           </Card>
         ))}
@@ -191,19 +153,6 @@ function WithdrawalHistoryContent() {
           <CardDescription>
             Review all your past withdrawal records.
           </CardDescription>
-           {userData && (
-             <Card className="mt-4 bg-muted/50">
-                <CardHeader>
-                    <CardTitle className="text-lg">Your Information</CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm space-y-2">
-                    <InfoRow label="Full Name" value={userData.fullName} icon={User} />
-                    <InfoRow label="Email" value={userData.email} icon={Mail} />
-                    <InfoRow label="Phone Number" value={userData.phone} icon={Phone} />
-                    <InfoRow label="BPExch Username" value={userData.bpexchUsername} icon={User} />
-                </CardContent>
-             </Card>
-           )}
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-4 mb-6">

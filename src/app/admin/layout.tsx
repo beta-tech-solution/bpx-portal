@@ -35,7 +35,8 @@ import {
   Activity,
   Loader2,
   MessageSquare,
-  BarChart2
+  BarChart2,
+  Megaphone
 } from "lucide-react";
 import { db, auth } from "@/lib/firebase/config";
 import { collection, onSnapshot, query, where, doc } from "firebase/firestore";
@@ -50,11 +51,13 @@ const navItems = [
     { href: "/admin/deposits", label: "Deposits", icon: DollarSign, countKey: 'deposits' },
     { href: "/admin/withdrawals", label: "Withdrawals", icon: Landmark, countKey: 'withdrawals' },
     { href: "/admin/profit-stats", label: "Profit Stats", icon: BarChart2, countKey: null },
+    { href: "/admin/announcement", label: "Announcement", icon: Megaphone, countKey: null },
 ];
 
 const mobileHeaderItems = [
     { href: "/admin/bpexch-activity", label: "Login Activity", icon: Activity, countKey: null },
     { href: "/admin/settings", label: "Settings", icon: Settings, countKey: null },
+    { href: "/admin/announcement", label: "Announcement", icon: Megaphone, countKey: null },
 ]
 
 export default function AdminLayout({

@@ -13,15 +13,31 @@ import { auth, db } from '@/lib/firebase/config';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { collection, addDoc, serverTimestamp, query, where, onSnapshot, doc, updateDoc, increment } from 'firebase/firestore';
 
+interface UserData {
+    status: 'Active' | 'Pending' | 'Suspended';
+    bpexchUsername?: string;
+    bpexchPassword?: string;
+    balance: number;
+}
+
 export default function WithdrawPage() {
   const { toast } = useToast();
   const [user] = useAuthState(auth);
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [totalWithdrawals, setTotalWithdrawals] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [hasPendingWithdrawal, setHasPendingWithdrawal] = useState(false);
 
   useEffect(() => {
     if (!user) return;
+
+    // Listen for user data changes (status, credentials)
+    const userDocRef = doc(db, 'users', user.uid);
+    const unsubscribeUser = onSnapshot(userDocRef, (doc) => {
+        if(doc.exists()){
+            setUserData(doc.data() as UserData);
+        }
+    });
 
     // Check for pending withdrawals
     const pendingQuery = query(collection(db, 'withdrawals'), where('userId', '==', user.uid), where('status', '==', 'Pending'));
@@ -40,14 +56,22 @@ export default function WithdrawPage() {
     });
 
     return () => {
+        unsubscribeUser();
         unsubscribePending();
         unsubscribeApproved();
     }
   }, [user]);
+  
+  const isWithdrawalDisabled = 
+    hasPendingWithdrawal || 
+    !userData || 
+    userData.status === 'Pending' || 
+    !userData.bpexchUsername || 
+    !userData.bpexchPassword;
 
   const handleWithdraw = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!user) {
+    if (!user || !userData) {
         toast({ title: "Not Authenticated", description: "You must be logged in to make a withdrawal.", variant: "destructive" });
         return;
     }
@@ -61,6 +85,12 @@ export default function WithdrawPage() {
 
     if (isNaN(amount) || amount < 100) {
         toast({ title: "Invalid Amount", description: "Please enter a valid withdrawal amount of at least PKR 100.", variant: "destructive" });
+        setIsLoading(false);
+        return;
+    }
+
+    if(amount > userData.balance) {
+        toast({ title: "Insufficient Balance", description: "You do not have enough funds to complete this withdrawal.", variant: "destructive" });
         setIsLoading(false);
         return;
     }
@@ -108,6 +138,15 @@ export default function WithdrawPage() {
                 </AlertDescription>
             </Alert>
         )}
+       {userData && (userData.status === 'Pending' || !userData.bpexchUsername || !userData.bpexchPassword) && !hasPendingWithdrawal && (
+             <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Account Not Active for Withdrawals</AlertTitle>
+                <AlertDescription>
+                    Your account must be fully activated by an admin (with BPExch credentials assigned) before you can make a withdrawal request.
+                </AlertDescription>
+            </Alert>
+       )}
       <Card className="w-full transition-shadow hover:shadow-lg">
         <form onSubmit={handleWithdraw}>
         <CardContent className="p-6 flex flex-col gap-6">
@@ -158,7 +197,7 @@ export default function WithdrawPage() {
           </div>
         </CardContent>
         <CardFooter className="p-6 pt-0">
-          <Button type="submit" className="w-full h-12 text-base font-bold bg-slate-800 hover:bg-slate-700 text-white" disabled={isLoading || hasPendingWithdrawal}>
+          <Button type="submit" className="w-full h-12 text-base font-bold bg-slate-800 hover:bg-slate-700 text-white" disabled={isLoading || isWithdrawalDisabled}>
             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Landmark className="mr-2 h-4 w-4" />}
             WITHDRAW
           </Button>
