@@ -8,14 +8,14 @@
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
     "build": "next build",
     "prebuild:mobile": "mv src/app/page.tsx src/app/page.web.tsx && mv src/app/splash/page.tsx src/app/page.tsx",
-    "build:mobile": "next build",
+    "build:mobile": "npm run build",
     "postbuild:mobile": "mv src/app/page.tsx src/app/splash/page.tsx && mv src/app/page.web.tsx src/app/page.tsx",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "android": "npx cap run android",
     "ios": "npx cap run ios",
-    "mobile:setup": "npm run build:mobile && npx cap add android && npx cap add ios",
+    "mobile:setup": "npm run mobile:sync && npx cap add android && npx cap add ios",
     "mobile:sync": "npm run prebuild:mobile && npm run build:mobile && npm run postbuild:mobile && npx cap sync"
   },
   "dependencies": {

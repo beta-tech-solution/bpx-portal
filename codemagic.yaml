@@ -10,14 +10,12 @@ workflows:
       node: 20.11.1
       groups:
         - firebase_secrets # This line is critical. It loads your Firebase keys.
+      vars:
+        BUILD_TARGET: mobile # Set the build target for mobile
     scripts:
       - name: Install npm dependencies
         script: |
           npm install
-      - name: Setup Capacitor platforms
-        script: |
-          npx cap add android
-          npx cap add ios
       - name: Build and Sync Web App for Mobile
         script: |
           npm run mobile:sync
@@ -46,14 +44,12 @@ workflows:
       cocoapods: default
       groups:
         - firebase_secrets # This line is critical. It loads your Firebase keys.
+      vars:
+        BUILD_TARGET: mobile # Set the build target for mobile
     scripts:
       - name: Install npm dependencies
         script: |
           npm install
-      - name: Setup Capacitor platforms
-        script: |
-          npx cap add android
-          npx cap add ios
       - name: Build and Sync Web App for Mobile
         script: |
           npm run mobile:sync

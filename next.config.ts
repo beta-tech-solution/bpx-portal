@@ -1,10 +1,9 @@
 
 import type {NextConfig} from 'next';
 
+const isMobileBuild = process.env.BUILD_TARGET === 'mobile';
+
 const nextConfig: NextConfig = {
-  /* config options here */
-  output: 'export',
-  distDir: 'out',
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -28,6 +27,23 @@ const nextConfig: NextConfig = {
       }
     ],
   },
+  // Conditional configuration for mobile build
+  ...(isMobileBuild
+    ? {
+        output: 'export',
+        distDir: 'out',
+        // Redirect all admin paths to prevent them from being included in the static export
+        async redirects() {
+          return [
+            {
+              source: '/admin/:path*',
+              destination: '/',
+              permanent: false,
+            },
+          ];
+        },
+      }
+    : {}),
 };
 
 export default nextConfig;
