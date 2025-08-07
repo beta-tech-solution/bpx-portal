@@ -14,7 +14,7 @@
     "typecheck": "tsc --noEmit",
     "android": "npx cap run android",
     "ios": "npx cap run ios",
-    "mobile:setup": "npm run mobile:sync && npx cap add android && npx cap add ios",
+    "mobile:setup": "npx cap add android && npx cap add ios",
     "mobile:sync": "npm run build:mobile && npx cap sync"
   },
   "dependencies": {
