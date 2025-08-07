@@ -11,8 +11,6 @@ workflows:
       node: 20.11.1
       groups:
         - firebase_secrets # This line is critical. It loads your Firebase keys.
-      vars:
-        BUILD_TARGET: mobile # Set the build target for mobile
     scripts:
       - name: Install npm dependencies
         script: |
@@ -45,8 +43,6 @@ workflows:
       cocoapods: default
       groups:
         - firebase_secrets # This line is critical. It loads your Firebase keys.
-      vars:
-        BUILD_TARGET: mobile # Set the build target for mobile
     scripts:
       - name: Install npm dependencies
         script: |
