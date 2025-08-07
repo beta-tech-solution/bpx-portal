@@ -21,6 +21,13 @@ import { Textarea } from "@/components/ui/textarea";
 
 export const dynamic = 'force-dynamic';
 
+export async function generateStaticParams() {
+  // This tells Next.js not to pre-render any specific chat pages during the build.
+  // It's required for `output: 'export'` to work with dynamic routes.
+  return [];
+}
+
+
 const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 

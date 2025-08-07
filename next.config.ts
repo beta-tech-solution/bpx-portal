@@ -3,21 +3,11 @@ import type {NextConfig} from 'next';
 
 const isMobileBuild = process.env.BUILD_TARGET === 'mobile';
 
+/** @type {import('next').NextConfig} */
 const nextConfig: NextConfig = {
-  // If this is a mobile build, use 'export'
   output: isMobileBuild ? 'export' : undefined,
-
-  // If this is a mobile build, output to 'out' directory
   distDir: isMobileBuild ? 'out' : '.next',
-
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   images: {
-    // Unoptimized images are required for static export
     unoptimized: isMobileBuild ? true : undefined,
     remotePatterns: [
       {
@@ -33,6 +23,12 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       }
     ],
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
   },
 };
 

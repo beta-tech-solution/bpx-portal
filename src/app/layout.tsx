@@ -4,6 +4,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { Analytics } from "@vercel/analytics/react"
 import { Suspense } from 'react';
+import SplashScreen from './splash/page';
 
 export const metadata: Metadata = {
   title: 'BPX Portal',
@@ -12,9 +13,16 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
+  searchParams
 }: Readonly<{
   children: React.ReactNode;
+  searchParams?: { [key: string]: string | string[] | undefined };
 }>) {
+
+  if (searchParams?.splash === 'true') {
+    return <SplashScreen />;
+  }
+  
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
