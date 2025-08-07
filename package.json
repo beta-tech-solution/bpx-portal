@@ -1,22 +1,20 @@
 {
   "name": "nextn",
   "version": "0.1.0",
-  "private": true,
+  "private": "true",
   "scripts": {
     "dev": "next dev --turbopack -p 9002",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
     "build": "next build",
-    "prebuild:mobile": "mv src/app/page.tsx src/app/page.web.tsx && mv src/app/splash/page.tsx src/app/page.tsx",
-    "build:mobile": "npm run build",
-    "postbuild:mobile": "mv src/app/page.tsx src/app/splash/page.tsx && mv src/app/page.web.tsx src/app/page.tsx",
+    "build:mobile": "next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "android": "npx cap run android",
     "ios": "npx cap run ios",
     "mobile:setup": "npm run mobile:sync && npx cap add android && npx cap add ios",
-    "mobile:sync": "npm run prebuild:mobile && npm run build:mobile && npm run postbuild:mobile && npx cap sync"
+    "mobile:sync": "npm run build:mobile && npx cap sync"
   },
   "dependencies": {
     "@capacitor/android": "^6.1.0",
