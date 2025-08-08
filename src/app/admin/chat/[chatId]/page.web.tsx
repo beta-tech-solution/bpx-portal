@@ -35,7 +35,7 @@ interface ChatViewProps {
     chatId: string;
 }
 
-export default function ChatView({ chatId }: ChatViewProps) {
+function ChatView({ chatId }: ChatViewProps) {
   const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -274,4 +274,8 @@ export default function ChatView({ chatId }: ChatViewProps) {
     )}
     </>
   );
+}
+
+export default function AdminChatPage({ params }: { params: { chatId: string }}) {
+  return <ChatView chatId={params.chatId} />;
 }

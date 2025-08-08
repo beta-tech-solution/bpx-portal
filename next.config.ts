@@ -7,6 +7,7 @@ const isMobileBuild = process.env.BUILD_TARGET === 'mobile';
 const nextConfig: NextConfig = {
   output: isMobileBuild ? 'export' : undefined,
   distDir: isMobileBuild ? 'out' : '.next',
+  pageExtensions: isMobileBuild ? ['tsx', 'ts'] : ['tsx', 'ts', 'web.tsx'],
   images: {
     unoptimized: isMobileBuild ? true : undefined,
     remotePatterns: [
@@ -29,19 +30,6 @@ const nextConfig: NextConfig = {
   },
   eslint: {
     ignoreDuringBuilds: true,
-  },
-  // During mobile builds, we add a rewrite to effectively ignore the admin folder,
-  // preventing it from causing issues with static export.
-  async rewrites() {
-    if (isMobileBuild) {
-      return [
-        {
-          source: '/admin/:path*',
-          destination: '/404',
-        },
-      ];
-    }
-    return [];
   },
 };
 
