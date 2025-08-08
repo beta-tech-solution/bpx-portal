@@ -36,7 +36,8 @@ import {
   Loader2,
   MessageSquare,
   BarChart2,
-  Megaphone
+  Megaphone, 
+  Users 
 } from "lucide-react";
 import { db, auth } from "@/lib/firebase/config";
 import { collection, onSnapshot, query, where, doc } from "firebase/firestore";
@@ -48,6 +49,7 @@ import { Badge } from "@/components/ui/badge";
 
 const navItems = [
     { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, countKey: null },
+    { href: "/admin/users", label: "Users", icon: Users, countKey: 'users' }, // New menu item
     { href: "/admin/deposits", label: "Deposits", icon: DollarSign, countKey: 'deposits' },
     { href: "/admin/withdrawals", label: "Withdrawals", icon: Landmark, countKey: 'withdrawals' },
     { href: "/admin/profit-stats", label: "Profit Stats", icon: BarChart2, countKey: null },

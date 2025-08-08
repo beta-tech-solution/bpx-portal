@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -10,9 +9,9 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, CalendarIcon, Eye, ArrowLeft, ArrowRight } from "lucide-react"
+import { Loader2, CalendarIcon, Eye, ArrowLeft, ArrowRight, User, Phone, Mail, Copy } from "lucide-react"
 import { db, auth } from "@/lib/firebase/config"
-import { collection, query, where, Timestamp, onSnapshot, orderBy } from "firebase/firestore"
+import { collection, query, where, Timestamp, onSnapshot, doc } from "firebase/firestore"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { cn } from "@/lib/utils"
@@ -57,12 +56,13 @@ function WithdrawalHistoryContent() {
 
     setLoading(true);
 
-    const q = query(collection(db, "withdrawals"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
+    const q = query(collection(db, "withdrawals"), where("userId", "==", user.uid));
     const unsubscribeWithdrawals = onSnapshot(q, (querySnapshot) => {
         const data = querySnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
         } as Withdrawal));
+        data.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
         setWithdrawals(data);
         setLoading(false);
     }, (error) => {
@@ -133,11 +133,6 @@ function WithdrawalHistoryContent() {
                     <p><span className="font-semibold">Account #:</span> {item.accountNumber}</p>
                     <p><span className="font-semibold">Holder:</span> {item.accountHolder}</p>
                 </div>
-                 {item.adminProofUrl && item.status === 'Approved' && (
-                    <div className="border-t pt-4 flex justify-end">
-                        <ProofDialog proofUrl={item.adminProofUrl} />
-                    </div>
-                )}
             </CardContent>
           </Card>
         ))}
