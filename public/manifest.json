@@ -1,23 +1,45 @@
 {
     "name": "BPX Master",
     "short_name": "BPX Master",
+    "description": "BPX Master is your portal for accessing BPX services with a seamless experience across web and mobile.",
+    "id": "com.bpxmaster.app",
     "start_url": "/splash",
     "scope": "/",
+    "launch_handler": {
+      "client_mode": "navigate-existing"
+    },
     "icons": [
       {
         "src": "/images/android.png",
         "sizes": "192x192",
-        "type": "image/png"
+        "type": "image/png",
+        "purpose": "any maskable"
       },
       {
         "src": "/images/playstore.png",
         "sizes": "512x512",
+        "type": "image/png",
+        "purpose": "any maskable"
+      }
+    ],
+    "screenshots": [
+      {
+        "src": "/images/dashss.png",
+        "sizes": "1080x1920",
+        "type": "image/png"
+      },
+      {
+        "src": "/images/chatss.png",
+        "sizes": "1080x1920",
         "type": "image/png"
       }
     ],
     "theme_color": "#ffffff",
     "background_color": "#ffffff",
     "display": "standalone",
-    "orientation": "portrait-primary"
+    "orientation": "portrait-primary",
+    "categories": ["productivity", "business"],
+    "dir": "ltr",
+    "lang": "en"
   }
   
