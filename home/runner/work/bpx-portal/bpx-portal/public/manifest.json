@@ -1,12 +1,14 @@
 
 {
-  "name": "BPX Portal",
-  "short_name": "BPX Portal",
-  "start_url": "/",
+  "name": "BPX Master",
+  "short_name": "BPX",
+  "id": "/?source=pwa",
+  "start_url": "/?source=pwa",
   "display": "standalone",
-  "background_color": "#E8EAF6",
-  "theme_color": "#3F51B5",
-  "description": "Your portal for BPX services.",
+  "background_color": "#FFFFFF",
+  "theme_color": "#2F3C7E",
+  "description": "Your portal for BPX services, including deposits, withdrawals, and BPExch account management.",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",
