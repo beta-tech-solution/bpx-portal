@@ -16,7 +16,7 @@
       "purpose": "any"
     },
     {
-      "src": "/images/android.png",
+      "src": "/images/maskandroid.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
@@ -28,7 +28,7 @@
       "purpose": "any"
     },
     {
-      "src": "/images/playstore.png",
+      "src": "/images/maskplaystore.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
