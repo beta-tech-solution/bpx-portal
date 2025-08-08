@@ -18,25 +18,25 @@ export const metadata: Metadata = {
         rel: 'icon',
         type: 'image/png',
         sizes: '32x32',
-        url: '/favicon-32x32.png',
+        url: '/images/fav32.png',
       },
        {
         rel: 'icon',
         type: 'image/png',
         sizes: '16x16',
-        url: '/favicon-16x16.png',
+        url: '/images/fav16.png',
       },
       {
         rel: 'icon',
         type: 'image/png',
         sizes: '192x192',
-        url: '/android-chrome-192x192.png',
+        url: '/images/android.png',
       },
       {
         rel: 'icon',
         type: 'image/png',
         sizes: '512x512',
-        url: '/android-chrome-512x512.png',
+        url: '/images/android12.png',
       },
     ],
   },
@@ -59,6 +59,10 @@ export default function RootLayout({
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#FFFFFF" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="BPX Portal" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Poppins:wght@400;500;600;700&family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
