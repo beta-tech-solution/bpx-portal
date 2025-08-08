@@ -19,6 +19,8 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+          cache: gradle
+          gradle-project-dir: android
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
