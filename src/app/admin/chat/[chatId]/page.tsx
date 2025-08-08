@@ -1,14 +1,12 @@
 
+"use client"
+
 import ChatView from "@/components/admin/chat-view";
 
-// This function is required for static exports (output: 'export') with dynamic routes.
-// It tells Next.js not to pre-render any specific chat pages during the mobile build.
-export async function generateStaticParams() {
-  return [];
-}
-
-// The page itself is now a simple server component.
+// The page itself is now a simple server component that was causing issues with the build process.
+// The new build configuration in next.config.ts now ignores the /admin path during mobile builds,
+// so we can revert this page to its original, simpler form where it directly renders the client component.
+// The generateStaticParams function has been removed as it's no longer needed with this strategy.
 export default function AdminChatPage({ params }: { params: { chatId: string }}) {
-  // It passes the chatId to the client component which handles all the logic.
   return <ChatView chatId={params.chatId} />;
 }

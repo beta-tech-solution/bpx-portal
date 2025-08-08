@@ -30,6 +30,19 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // During mobile builds, we add a rewrite to effectively ignore the admin folder,
+  // preventing it from causing issues with static export.
+  async rewrites() {
+    if (isMobileBuild) {
+      return [
+        {
+          source: '/admin/:path*',
+          destination: '/404',
+        },
+      ];
+    }
+    return [];
+  },
 };
 
 export default nextConfig;
