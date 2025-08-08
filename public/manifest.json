@@ -10,25 +10,25 @@
     },
     "icons": [
     {
-      "src": "/images/android-any.png",
+      "src": "/images/android.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/images/android-maskable.png",
+      "src": "/images/android.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/images/playstore-any.png",
+      "src": "/images/playstore.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/images/playstore-maskable.png",
+      "src": "/images/playstore.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
