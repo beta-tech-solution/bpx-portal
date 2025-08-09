@@ -1,8 +1,12 @@
-[{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "com.bpxmaster.twa",
-        "sha256_cert_fingerprints": ["BE:0E:94:3E:95:B9:30:FF:4C:92:58:08:CC:A1:86:4D:DA:D6:EF:85:C0:20:17:CF:BA:32:89:1A:91:DB:8B:25"]
-      }
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.bpxmaster.twa",
+      "sha256_cert_fingerprints": [
+        "BE:0E:94:3E:95:B9:30:FF:4C:92:58:08:CC:A1:86:4D:DA:D6:EF:85:C0:20:17:CF:BA:32:89:1A:91:DB:8B:25"
+      ]
     }
+  }
+]
