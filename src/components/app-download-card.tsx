@@ -1,7 +1,5 @@
 
 "use client"
-
-import Link from "next/link";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -16,9 +14,9 @@ export default function AppDownloadCard() {
                 <h3 className="font-bold text-xl">Get the BPX Master App</h3>
                 <p className="text-sm text-white/70 mt-1 mb-6 max-w-xs">Experience seamless and secure transactions on the go. Download now!</p>
                 <div className="flex items-center justify-center">
-                    <Link href="#" passHref>
-                        <Image src="/images/play.png" alt="Get it on Google Play" width={180} height={70} className="object-contain transition-transform hover:scale-105" unoptimized/>
-                    </Link>
+                <a href="/BPXMaster.apk" download>
+                <Image src="/images/play.png" alt="Get it on Google Play" width={180} height={70} className="object-contain transition-transform hover:scale-105" unoptimized/>
+                </a>
                 </div>
             </CardContent>
         </Card>

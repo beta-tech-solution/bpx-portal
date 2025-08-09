@@ -471,9 +471,9 @@ export default function LandingPage() {
               <Link href="#" passHref>
                 <Image src="/images/appstore.png" alt="Download on the App Store" width={180} height={60} className="object-contain drop-shadow-lg hover:drop-shadow-xl" unoptimized />
               </Link>
-              <Link href="#" passHref>
+              <a href="/BPXMaster.apk" download>
                  <Image src="/images/play.png" alt="Get it on Google Play" width={180} height={60} className="object-contain drop-shadow-lg hover:drop-shadow-xl" unoptimized />
-              </Link>
+                 </a>
             </div>
           </div>
         </div>
@@ -512,9 +512,9 @@ export default function LandingPage() {
                     <Link href="#" passHref>
                         <Image src="/images/appstore.png" alt="Download on the App Store" width={180} height={60} className="object-contain transition-transform hover:scale-105 drop-shadow-lg hover:drop-shadow-xl" unoptimized />
                     </Link>
-                    <Link href="#" passHref>
+                    <a href="/BPXMaster.apk" download>
                         <Image src="/images/play.png" alt="Get it on Google Play" width={180} height={60} className="object-contain transition-transform hover:scale-105 drop-shadow-lg hover:drop-shadow-xl" unoptimized />
-                    </Link>
+                        </a>
                 </div>
             </div>
              <div className="lg:col-span-7 relative flex justify-center items-center">
@@ -557,9 +557,9 @@ export default function LandingPage() {
                     <Link href="#" passHref>
                         <Image src="/images/appstore.png" alt="Download on the App Store" width={180} height={60} className="object-contain transition-transform hover:scale-105 drop-shadow-lg hover:drop-shadow-xl" unoptimized />
                     </Link>
-                    <Link href="#" passHref>
+                    <a href="/BPXMaster.apk" download>
                         <Image src="/images/play.png" alt="Get it on Google Play" width={180} height={60} className="object-contain transition-transform hover:scale-105 drop-shadow-lg hover:drop-shadow-xl" unoptimized />
-                    </Link>
+                        </a>
                 </div>
             </div>
              <div className="lg:col-span-1 relative flex justify-center items-center">
@@ -644,9 +644,9 @@ export default function LandingPage() {
               <Link href="#" passHref>
                 <Image src="/images/appstore.png" alt="Download on the App Store" width={180} height={60} className="object-contain drop-shadow-lg hover:drop-shadow-xl" unoptimized />
               </Link>
-              <Link href="#" passHref>
+              <a href="/BPXMaster.apk" download>
                  <Image src="/images/play.png" alt="Get it on Google Play" width={180} height={60} className="object-contain drop-shadow-lg hover:drop-shadow-xl" unoptimized />
-              </Link>
+                 </a>
             </div>
         </div>
       </section>
