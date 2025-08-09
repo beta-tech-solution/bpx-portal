@@ -2,66 +2,69 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { DollarSign, TrendingUp, CreditCard, BarChart } from "lucide-react";
 
 export default function SplashScreen() {
-  const [showScript, setShowScript] = useState(true);
+  const [step, setStep] = useState(0);
   const [isFading, setIsFading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    const hideScript = setTimeout(() => setShowScript(false), 2500); // Show "Starting Your Portal" for 2.5s
-    const fadeTimer = setTimeout(() => setIsFading(true), 3800); // Fade after 3.8s
-    const redirectTimer = setTimeout(() => router.push("/login"), 4500); // Redirect after fade
+    const timers = [
+      setTimeout(() => setStep(1), 800), // Show welcome text
+      setTimeout(() => setStep(2), 2200), // Show getting ready text
+      setTimeout(() => setIsFading(true), 3200), // Fade out
+      setTimeout(() => router.push("/login"), 4000), // Redirect
+    ];
 
-    return () => {
-      clearTimeout(hideScript);
-      clearTimeout(fadeTimer);
-      clearTimeout(redirectTimer);
-    };
+    return () => timers.forEach(clearTimeout);
   }, [router]);
 
   return (
     <div
-      className={`relative flex flex-col items-center justify-center min-h-screen text-white overflow-hidden transition-opacity duration-700 ${
+      className={`flex flex-col items-center justify-center min-h-screen text-white overflow-hidden relative transition-opacity duration-700 ${
         isFading ? "opacity-0" : "opacity-100"
       }`}
     >
-      {/* Background shimmer */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-700 animate-gradient" />
+      {/* Background with shimmer effect */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#0a1d3b] via-[#102c54] to-[#0a1d3b] animate-gradient"></div>
 
-      {/* Floating finance icons */}
-      <div className="absolute bottom-0 w-full h-full overflow-hidden pointer-events-none">
-        {[DollarSign, TrendingUp, CreditCard, BarChart].map((Icon, i) => (
-          <Icon
-            key={i}
-            className="absolute text-white opacity-20"
-            style={{
-              bottom: -50,
-              left: `${20 + i * 20}%`,
-              animation: `floatUp 5s ease-in-out ${i * 0.8}s infinite`,
-              width: 40,
-              height: 40,
-            }}
-          />
-        ))}
+      {/* Logo with shimmer + glow */}
+      <div className="relative z-10 animate-logo">
+        <div className="absolute inset-0 rounded-full blur-xl bg-blue-400 opacity-40 animate-pulse"></div>
+        <img
+          src="/images/logo.png" // Replace with your logo link
+          alt="App Logo"
+          className="w-28 h-28 object-contain relative z-10 shimmer-mask rounded-full"
+        />
       </div>
 
-      {/* Handwriting effect */}
-      {showScript && (
-        <h2 className="text-3xl font-[DancingScript] handwriting-animation z-10">
-          Starting Your Portal
-        </h2>
-      )}
-
-      {/* BPX Master Title */}
-      {!showScript && (
-        <h1 className="text-5xl font-bold tracking-wide fade-in-up z-10">
-          BPX Master
+      {/* Welcome text in Dancing Script */}
+      {step >= 1 && (
+        <h1
+          className="mt-6 text-3xl font-[DancingScript] z-10 animate-fadein"
+          style={{ fontFamily: "'Dancing Script', cursive" }}
+        >
+          Welcome to Your Portal
+          <span className="inline-block loading-dots">
+            <span>.</span>
+            <span>.</span>
+            <span>.</span>
+          </span>
         </h1>
       )}
 
+      {/* Getting ready text in Raleway 400 */}
+      {step >= 2 && (
+        <p
+          className="mt-3 text-sm font-[Raleway] font-normal opacity-80 z-10 animate-fadein-slow"
+          style={{ fontFamily: "'Raleway', sans-serif" }}
+        >
+          Getting things ready...
+        </p>
+      )}
+
       <style jsx>{`
+        /* Background shimmer animation */
         @keyframes gradientMove {
           0% {
             background-position: 0% 50%;
@@ -75,57 +78,95 @@ export default function SplashScreen() {
         }
         .animate-gradient {
           background-size: 200% 200%;
-          animation: gradientMove 6s ease infinite;
+          animation: gradientMove 8s ease infinite;
         }
-        @keyframes floatUp {
+
+        /* Logo zoom-in animation */
+        @keyframes logoZoom {
           0% {
-            transform: translateY(0) scale(0.8);
+            transform: scale(0.8);
             opacity: 0;
-          }
-          30% {
-            opacity: 0.3;
           }
           100% {
-            transform: translateY(-120vh) scale(1.2);
-            opacity: 0;
+            transform: scale(1);
+            opacity: 1;
           }
         }
-        @keyframes handwriting {
-          from {
-            width: 0;
-          }
-          to {
-            width: 100%;
-          }
+        .animate-logo {
+          animation: logoZoom 0.8s ease-out forwards;
         }
-        .handwriting-animation {
-          font-family: 'Dancing Script', cursive;
-          white-space: nowrap;
+
+        /* Logo shimmer mask effect */
+        .shimmer-mask {
+          position: relative;
           overflow: hidden;
-          border-right: 3px solid rgba(255, 255, 255, 0.75);
-          animation: handwriting 2s steps(30, end), blink 0.75s step-end infinite;
         }
-        @keyframes blink {
-          from,
-          to {
-            border-color: transparent;
+        .shimmer-mask::after {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(
+            120deg,
+            transparent,
+            rgba(255, 255, 255, 0.5),
+            transparent
+          );
+          animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer {
+          0% {
+            left: -100%;
           }
           50% {
-            border-color: white;
+            left: 100%;
+          }
+          100% {
+            left: 100%;
           }
         }
-        .fade-in-up {
-          animation: fadeUp 1s ease-out forwards;
+
+        /* Fade-in effects */
+        .animate-fadein {
+          animation: fadeInUp 0.8s ease-out forwards;
           opacity: 0;
         }
-        @keyframes fadeUp {
+        .animate-fadein-slow {
+          animation: fadeInUp 1s ease-out forwards;
+          opacity: 0;
+        }
+        @keyframes fadeInUp {
           from {
             opacity: 0;
-            transform: translateY(20px);
+            transform: translateY(10px);
           }
           to {
             opacity: 1;
             transform: translateY(0);
+          }
+        }
+
+        /* Loading dots animation */
+        .loading-dots span {
+          animation: bounce 1.2s infinite;
+          display: inline-block;
+        }
+        .loading-dots span:nth-child(2) {
+          animation-delay: 0.2s;
+        }
+        .loading-dots span:nth-child(3) {
+          animation-delay: 0.4s;
+        }
+        @keyframes bounce {
+          0%,
+          80%,
+          100% {
+            transform: scale(0.8);
+          }
+          40% {
+            transform: scale(1);
           }
         }
       `}</style>
