@@ -162,7 +162,7 @@ export default function LoginPage() {
             <div className="flex justify-center mb-4">
                 <Wallet className="w-10 h-10 text-primary"/>
             </div>
-          <CardTitle className="text-2xl font-headline">BPX Portal Login</CardTitle>
+          <CardTitle className="text-2xl font-headline">Welcome to BPX Portal Login</CardTitle>
           <CardDescription>
             Enter your credentials to access your account.
           </CardDescription>
@@ -225,10 +225,10 @@ export default function LoginPage() {
                     </span>
                 </div>
             </div>
-            <Button variant="outline" className="w-full" type="button" onClick={handleGoogleLogin} disabled={isGoogleLoading}>
+         {/* <Button variant="outline" className="w-full" type="button" onClick={handleGoogleLogin} disabled={isGoogleLoading}>
                  {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-4 w-4" />}
                 Sign in with Google
-            </Button>
+            </Button>*/}
             </CardContent>
         </form>
         <CardFooter className="text-sm flex flex-col items-start gap-2">

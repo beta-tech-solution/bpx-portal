@@ -35,15 +35,20 @@ export default function DepositPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loadingAccounts, setLoadingAccounts] = useState(true);
   const [hasPendingDeposit, setHasPendingDeposit] = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState(true); // New loading state
   const [fileName, setFileName] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+        setCheckingStatus(false);
+        return;
+    }
 
     // Check for pending deposits
     const pendingQuery = query(collection(db, 'deposits'), where('userId', '==', user.uid), where('status', '==', 'Pending'));
     const unsubscribePending = onSnapshot(pendingQuery, (snapshot) => {
         setHasPendingDeposit(!snapshot.empty);
+        setCheckingStatus(false); // Status checked, turn off loading
     });
 
     return () => {
@@ -196,6 +201,14 @@ export default function DepositPage() {
           </CardFooter>
         </Card>
       </div>
+    );
+  }
+
+  if (checkingStatus) {
+    return (
+        <div className="flex justify-center items-center h-48">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
     );
   }
 

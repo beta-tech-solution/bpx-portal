@@ -162,7 +162,7 @@ export default function SignupPage() {
             <CardContent className="grid gap-4">
                 <div className="grid gap-2">
                     <Label htmlFor="full-name">Full Name</Label>
-                    <Input id="full-name" name="full-name" placeholder="John Doe" required />
+                    <Input id="full-name" name="full-name" placeholder="Full Name" required />
                 </div>
                 <div className="grid gap-2">
                     <Label htmlFor="email">Email</Label>
@@ -242,10 +242,10 @@ export default function SignupPage() {
                         </span>
                     </div>
                 </div>
-                <Button variant="outline" className="w-full" type="button" onClick={handleGoogleSignup} disabled={isGoogleLoading}>
+               {/* <Button variant="outline" className="w-full" type="button" onClick={handleGoogleSignup} disabled={isGoogleLoading}>
                     {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-4 w-4" />}
                     Sign in with Google
-                </Button>
+                </Button>*/}
             </CardContent>
         </form>
         <CardFooter className="text-sm">

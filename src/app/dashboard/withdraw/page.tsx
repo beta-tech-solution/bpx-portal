@@ -27,9 +27,13 @@ export default function WithdrawPage() {
   const [totalWithdrawals, setTotalWithdrawals] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [hasPendingWithdrawal, setHasPendingWithdrawal] = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState(true); // New loading state
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+        setCheckingStatus(false);
+        return;
+    }
 
     // Listen for user data changes (status, credentials)
     const userDocRef = doc(db, 'users', user.uid);
@@ -43,6 +47,7 @@ export default function WithdrawPage() {
     const pendingQuery = query(collection(db, 'withdrawals'), where('userId', '==', user.uid), where('status', '==', 'Pending'));
     const unsubscribePending = onSnapshot(pendingQuery, (snapshot) => {
         setHasPendingWithdrawal(!snapshot.empty);
+        setCheckingStatus(false); // Status checked, turn off loading
     });
 
     const approvedQuery = query(collection(db, 'withdrawals'), where('userId', '==', user.uid), where('status', '==', 'Approved'));
@@ -125,6 +130,14 @@ export default function WithdrawPage() {
     } finally {
         setIsLoading(false);
     }
+  }
+
+  if (checkingStatus) {
+    return (
+        <div className="flex justify-center items-center h-48">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+    );
   }
 
   return (
