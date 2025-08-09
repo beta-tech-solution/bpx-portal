@@ -2,7 +2,7 @@
   "name": "BPX Master",
   "short_name": "BPX Master",
   "description": "BPX Master is your portal for accessing BPX services.",
-  "id": "com.bpxmaster.app",
+  "id": "com.bpxmaster.twa",
   "start_url": "/splash?source=pwa",
   "scope": "/",
   "icons": [
