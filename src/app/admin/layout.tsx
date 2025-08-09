@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -49,10 +48,19 @@ import { Badge } from "@/components/ui/badge";
 
 const navItems = [
     { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, countKey: null },
-    { href: "/admin/users", label: "Users", icon: Users, countKey: 'users' }, // New menu item
+    { href: "/admin/users", label: "Users", icon: Users, countKey: 'users' },
     { href: "/admin/deposits", label: "Deposits", icon: DollarSign, countKey: 'deposits' },
     { href: "/admin/withdrawals", label: "Withdrawals", icon: Landmark, countKey: 'withdrawals' },
-   
+    { href: "/admin/profit-stats", label: "Profit Stats", icon: BarChart2, countKey: null },
+    { href: "/admin/announcement", label: "Announcement", icon: Megaphone, countKey: null },
+];
+
+// Mobile-specific nav items (limited)
+const mobileNavItems = [
+    { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, countKey: null },
+    { href: "/admin/deposits", label: "Deposits", icon: DollarSign, countKey: 'deposits' },
+    { href: "/admin/users", label: "Users", icon: Users, countKey: 'users' },
+    { href: "/admin/withdrawals", label: "Withdrawals", icon: Landmark, countKey: 'withdrawals' },
 ];
 
 const mobileHeaderItems = [
@@ -81,7 +89,13 @@ export default function AdminLayout({
       chats: 0,
   });
 
-  const fullNavItems = [ ...navItems, { href: "/admin/chat", label: "Support Chat", icon: MessageSquare, countKey: 'chats' }, { href: "/admin/bpexch-activity", label: "Login Activity", icon: Activity, countKey: null }, { href: "/admin/settings", label: "Settings", icon: Settings, countKey: null }];
+  const fullNavItems = [ 
+    ...navItems, 
+    { href: "/admin/chat", label: "Support Chat", icon: MessageSquare, countKey: 'chats' }, 
+    { href: "/admin/bpexch-activity", label: "Login Activity", icon: Activity, countKey: null }, 
+    { href: "/admin/settings", label: "Settings", icon: Settings, countKey: null }
+  ];
+
   const getPageTitle = () => {
     const currentItem = fullNavItems.find(item => item.href === pathname);
     if (currentItem) return currentItem.label;
@@ -92,7 +106,6 @@ export default function AdminLayout({
   }
 
   React.useEffect(() => {
-    // Show preloader for a moment on initial load
     setPageLoading(true);
     const timer = setTimeout(() => setPageLoading(false), 1000);
     return () => clearTimeout(timer);
@@ -255,7 +268,7 @@ export default function AdminLayout({
         <SidebarFooter className="p-4">
             <div className="flex items-center gap-3 bg-sidebar-accent/10 p-2 rounded-lg">
                 <Avatar>
-                    <AvatarImage src={adminProfile.photoURL || undefined} data-ai-hint="admin avatar" alt="Admin" />
+                    <AvatarImage src={adminProfile.photoURL || undefined} alt="Admin" />
                     <AvatarFallback>{getInitials(adminProfile.name)}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 overflow-hidden">
@@ -297,9 +310,10 @@ export default function AdminLayout({
             </Button>
         </div>
 
+        {/* Mobile Bottom Navigation */}
         <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-10">
             <div className="flex justify-center items-center h-16 gap-2">
-                {navItems.map((item) => {
+                {mobileNavItems.map((item) => {
                      const count = item.countKey ? pendingCounts[item.countKey as keyof typeof pendingCounts] : 0;
                      return (
                     <Link href={item.href} key={item.href} className={`relative flex flex-col items-center justify-center gap-1 w-full h-full ${isActive(item.href) ? 'text-primary' : 'text-muted-foreground'}`}>
