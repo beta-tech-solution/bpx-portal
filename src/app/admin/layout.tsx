@@ -52,8 +52,7 @@ const navItems = [
     { href: "/admin/users", label: "Users", icon: Users, countKey: 'users' }, // New menu item
     { href: "/admin/deposits", label: "Deposits", icon: DollarSign, countKey: 'deposits' },
     { href: "/admin/withdrawals", label: "Withdrawals", icon: Landmark, countKey: 'withdrawals' },
-    { href: "/admin/profit-stats", label: "Profit Stats", icon: BarChart2, countKey: null },
-    { href: "/admin/announcement", label: "Announcement", icon: Megaphone, countKey: null },
+   
 ];
 
 const mobileHeaderItems = [
