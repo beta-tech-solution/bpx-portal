@@ -1,87 +1,104 @@
-
-import type {Metadata} from 'next';
-import './globals.css';
+// app/layout.tsx
+import type { Metadata } from "next";
+import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
-import { Analytics } from "@vercel/analytics/react"
-import { Suspense } from 'react';
-import SplashScreen from './splash/page';
+import { Analytics } from "@vercel/analytics/react";
+import { Suspense } from "react";
+import SplashScreen from "./splash/page";
 
 export const metadata: Metadata = {
-  title: 'BPX Portal',
-  description: 'Your portal for BPX services.',
+  title: "BPX Portal",
+  description: "Your portal for BPX services.",
   icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
     other: [
-      {
-        rel: 'icon',
-        type: 'image/png',
-        sizes: '32x32',
-        url: '/images/fav32.png',
-      },
-       {
-        rel: 'icon',
-        type: 'image/png',
-        sizes: '16x16',
-        url: '/images/fav16.png',
-      },
-      {
-        rel: 'icon',
-        type: 'image/png',
-        sizes: '192x192',
-        url: '/images/android.png',
-      },
-      {
-        rel: 'icon',
-        type: 'image/png',
-        sizes: '512x512',
-        url: '/images/android12.png',
-      },
+      { rel: "icon", type: "image/png", sizes: "32x32", url: "/images/fav32.png" },
+      { rel: "icon", type: "image/png", sizes: "16x16", url: "/images/fav16.png" },
+      { rel: "icon", type: "image/png", sizes: "192x192", url: "/images/android.png" },
+      { rel: "icon", type: "image/png", sizes: "512x512", url: "/images/android12.png" },
     ],
   },
 };
 
 export default function RootLayout({
   children,
-  searchParams
+  searchParams,
 }: Readonly<{
   children: React.ReactNode;
   searchParams?: { [key: string]: string | string[] | undefined };
 }>) {
-
-  if (searchParams?.splash === 'true') {
-    return <SplashScreen />;
+  // keep your existing quick server-side check for manual testing:
+  if (searchParams?.splash === "true") {
+    // return shell with only splash to prevent unnecessary hydration
+    return (
+      <html lang="en">
+        <head>
+          <link rel="manifest" href="/manifest.json" />
+          <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+          <meta name="theme-color" content="#FFFFFF" />
+        </head>
+        <body className="font-body antialiased">
+          <SplashScreen />
+        </body>
+      </html>
+    );
   }
-  
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
         <link rel="manifest" href="/manifest.json" />
+        <meta name="application-name" content="BPX Master" />
         <meta name="theme-color" content="#FFFFFF" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="BPX Portal" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Poppins:wght@400;500;600;700&family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
-        <script dangerouslySetInnerHTML={{ __html: `
-            if ('serviceWorker' in navigator) {
-              window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js').then(function(registration) {
-                  console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                }, function(err) {
-                  console.log('ServiceWorker registration failed: ', err);
+
+        {/* redirect to /splash when launched as a PWA/TWA (client-side) */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){
+              try {
+                var isStandalone = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches
+                                   || window.navigator.standalone === true;
+                if (!isStandalone) return;
+                var loc = window.location;
+                // already on splash => do nothing
+                if (loc.pathname && loc.pathname.startsWith('/splash')) return;
+                // avoid loop if we already marked from=pwa
+                if (loc.search && loc.search.indexOf('from=pwa') !== -1) return;
+                // redirect to splash and mark so we don't loop
+                var target = '/splash?from=pwa';
+                window.location.replace(target + (loc.hash || ''));
+              } catch(e){ console && console.error(e); }
+            })();`,
+          }}
+        />
+
+        {/* service worker registration (keeps your current code) */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                  }).catch(function(err) {
+                    console.log('ServiceWorker registration failed: ', err);
+                  });
                 });
-              });
-            }
-        `}} />
+              }
+            `,
+          }}
+        />
       </head>
+
       <body className="font-body antialiased">
-        <Suspense fallback={null}>
-            {children}
-        </Suspense>
+        <Suspense fallback={null}>{children}</Suspense>
         <Toaster />
         <Analytics />
       </body>
