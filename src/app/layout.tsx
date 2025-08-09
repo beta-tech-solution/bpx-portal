@@ -8,7 +8,7 @@ import SplashScreen from "./splash/page";
 
 export const metadata: Metadata = {
   title: "BPX Portal",
-  description: "Your portal for BPX services.",
+  description: "BPX Master made easy — manage deposits, withdrawals, and account details in one secure, user-friendly dashboard designed for BPX Master clients.",
   icons: {
     icon: "/favicon.ico",
     shortcut: "/favicon.ico",
