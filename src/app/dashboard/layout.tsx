@@ -39,74 +39,72 @@ export default function DashboardLayout({
   React.useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
-        if (userData === null) {
-          const userDocRef = doc(db, "users", currentUser.uid);
-          const unsubscribeSnapshot = onSnapshot(
-            userDocRef,
-            (doc) => {
-              if (doc.exists()) {
-                const dbData = doc.data() as UserData;
-                if (dbData.role !== "Admin" && !currentUser.emailVerified) {
-                  toast({
-                    title: "Email Not Verified",
-                    description:
-                      "Please check your inbox and verify your email address to log in.",
-                    variant: "destructive",
-                  });
-                  signOut(auth);
-                  return;
-                }
-                setUser(currentUser);
-                setUserData(dbData);
-
-                const now = Date.now();
-                const lastSeen = dbData.lastSeen?.toMillis() || 0;
-                if (now - lastSeen > 5 * 60 * 1000) {
-                  updateDoc(userDocRef, { lastSeen: serverTimestamp() });
-                }
-
-                setLoading(false);
-              } else {
+        const userDocRef = doc(db, "users", currentUser.uid);
+        const unsubscribeSnapshot = onSnapshot(
+          userDocRef,
+          (doc) => {
+            if (doc.exists()) {
+              const dbData = doc.data() as UserData;
+              if (dbData.role === "Admin") {
+                router.push('/admin/dashboard');
+                return;
+              }
+              if (!currentUser.emailVerified) {
                 toast({
-                  title: "Error",
-                  description: "User profile not found.",
+                  title: "Email Not Verified",
+                  description: "Please check your inbox and verify your email address to log in.",
                   variant: "destructive",
                 });
                 signOut(auth);
+                return;
               }
-            },
-            (error) => {
+              setUser(currentUser);
+              setUserData(dbData);
+
+              // More efficient "last seen" update
+              const now = Date.now();
+              const lastSeen = dbData.lastSeen?.toMillis() || 0;
+              if (now - lastSeen > 5 * 60 * 1000) { // 5 minutes
+                updateDoc(userDocRef, { lastSeen: serverTimestamp() });
+              }
+            } else {
               toast({
                 title: "Error",
-                description: "Could not fetch user profile.",
+                description: "User profile not found.",
                 variant: "destructive",
               });
-              console.error("Firestore snapshot error:", error);
               signOut(auth);
             }
-          );
-          return () => unsubscribeSnapshot();
-        }
+          },
+          (error) => {
+            toast({
+              title: "Error",
+              description: "Could not fetch user profile.",
+              variant: "destructive",
+            });
+            console.error("Firestore snapshot error:", error);
+            signOut(auth);
+          }
+        );
+        setLoading(false);
+        return () => unsubscribeSnapshot();
       } else {
         router.push("/login");
       }
     });
 
-    const interval = setInterval(() => {
-      if (auth.currentUser) {
-        const userDocRef = doc(db, "users", auth.currentUser.uid);
-        updateDoc(userDocRef, { lastSeen: serverTimestamp() });
-      }
-    }, 2 * 60 * 1000);
-
     return () => {
       unsubscribeAuth();
-      clearInterval(interval);
     };
-  }, [router, toast, userData]);
+  }, [router, toast]);
 
   if (loading) {
     return <Preloader loadingText="Loading Dashboard..." />;
+  }
+  
+  if (!user || !userData) {
+    // This case is handled by the redirect, but as a fallback:
+    return <Preloader loadingText="Redirecting..." />;
   }
 
   return (
@@ -123,3 +121,5 @@ export default function DashboardLayout({
     </div>
   );
 }
+
+    

@@ -167,7 +167,7 @@ export default function AdminUsersPage() {
                 </div>
                 <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">Balance:</span>
-                    <span className="font-mono">PKR {user.balance.toFixed(2)}</span>
+                    <span className="font-mono">PKR {user.balance?.toFixed(2) || '0.00'}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">Role:</span>
@@ -201,7 +201,7 @@ export default function AdminUsersPage() {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDelete(user.id)}>Delete</AlertDialogAction>
+                                <AlertDialogAction onClick={() => handleDelete(user.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
@@ -233,7 +233,7 @@ export default function AdminUsersPage() {
                     <div className="font-medium">{user.fullName}</div>
                     <div className="text-sm text-muted-foreground">{user.email}</div>
                     </TableCell>
-                    <TableCell className="font-mono">PKR {user.balance.toFixed(2)}</TableCell>
+                    <TableCell className="font-mono">PKR {user.balance?.toFixed(2) || '0.00'}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                          <Badge variant={user.status === 'Active' ? 'secondary' : (user.status === 'Pending' ? 'default' : 'destructive')}>{user.status}</Badge>
@@ -438,10 +438,11 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                     balance: data.balance,
                     status: finalStatus,
                     role: data.role,
-                    createdAt: new Date(),
+                    createdAt: serverTimestamp(),
                     bpexchUsername: data.bpexchUsername,
                     bpexchPassword: data.bpexchPassword,
                     adminMessage: data.adminMessage,
+                    emailVerified: false,
                 });
                 toast({ title: "User Created", description: "New user has been added successfully." });
             }
@@ -673,7 +674,7 @@ function UserDetailsDialog({ open, setOpen, user }: { open: boolean, setOpen: (o
                         <DetailRow label="Email" value={user.email} />
                         <DetailRow label="Phone" value={user.phone} />
                         <DetailRow label="Gender" value={user.gender} />
-                        <DetailRow label="Balance" value={`PKR ${user.balance.toFixed(2)}`} />
+                        <DetailRow label="Balance" value={`PKR ${user.balance?.toFixed(2) || '0.00'}`} />
                         <DetailRow label="Status" value={user.status} />
                         <DetailRow label="Role" value={user.role} />
                         <DetailRow label="Joined On" value={user.createdAt ? format(user.createdAt.toDate(), 'PPP') : 'N/A'} />

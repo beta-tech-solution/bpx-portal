@@ -73,7 +73,7 @@ export default function AdminDashboardPage() {
         setLoading(true);
         const unsubscribes: (() => void)[] = [];
 
-        // --- Overview Cards Listeners ---
+        // --- Overview Cards Listeners (Efficient) ---
         const setupListener = (
             collectionName: string, 
             stateKey: keyof OverviewData,
@@ -90,10 +90,9 @@ export default function AdminDashboardPage() {
         };
         
         setupListener('users', 'totalUsers');
-        setupListener('users', 'pendingUsers', [['emailVerified', '==', false]]);
+        setupListener('users', 'pendingUsers', [['status', '==', 'Pending']]);
         setupListener('deposits', 'pendingDeposits', [['status', '==', 'Pending']]);
         setupListener('withdrawals', 'pendingWithdrawals', [['status', '==', 'Pending']]);
-
 
         // --- Unread Chats Listener ---
         const chatsQuery = query(collection(db, 'chats'), where('adminRead', '==', false), orderBy('lastMessageTimestamp', 'desc'));
@@ -107,8 +106,10 @@ export default function AdminDashboardPage() {
             setUnreadChats(chats);
         }));
 
-        const fetchAllTimeProfitData = async () => {
+        const fetchOneTimeData = async () => {
+            setLoadingExtraStats(true);
             try {
+                // All-Time Profit Data
                 const depositsQuery = query(collection(db, "deposits"), where("status", "==", "Approved"));
                 const withdrawalsQuery = query(collection(db, "withdrawals"), where("status", "==", "Approved"));
                 const [depositsSnapshot, withdrawalsSnapshot] = await Promise.all([getDocs(depositsQuery), getDocs(withdrawalsQuery)]);
@@ -116,29 +117,19 @@ export default function AdminDashboardPage() {
                 const totalWithdrawals = withdrawalsSnapshot.docs.reduce((sum, doc) => sum + parseFloat(doc.data().amount), 0);
                 const netProfit = totalDeposits - totalWithdrawals;
 
-                const data: ProfitData[] = [
+                const profitChartData: ProfitData[] = [
                     { name: 'Total Deposits', value: totalDeposits, fill: COLORS.deposits },
                     { name: 'Total Withdrawals', value: totalWithdrawals, fill: COLORS.withdrawals },
                 ];
-                // Only add profit slice if it's meaningful
                 if (netProfit !== 0) {
-                     data.push({ name: 'Net Profit', value: netProfit, fill: COLORS.profit });
+                     profitChartData.push({ name: 'Net Profit', value: netProfit, fill: COLORS.profit });
                 }
+                setProfitData(profitChartData.filter(d => d.value !== 0));
 
-                setProfitData(data.filter(d => d.value !== 0));
-            } catch (error) {
-                console.error("Error fetching all-time profit data:", error);
-            }
-        };
-
-        const fetchExtraStats = async () => {
-            setLoadingExtraStats(true);
-            try {
+                // Recent Transactions & 7-Day Stats
                 const userCache = new Map<string, string>();
                 const getUserName = async (userId: string): Promise<string> => {
-                    if (userCache.has(userId)) {
-                        return userCache.get(userId)!;
-                    }
+                    if (userCache.has(userId)) return userCache.get(userId)!;
                     try {
                         const userDoc = await getDoc(doc(db, 'users', userId));
                         if (userDoc.exists()) {
@@ -146,58 +137,53 @@ export default function AdminDashboardPage() {
                             userCache.set(userId, name);
                             return name;
                         }
-                    } catch (e) {
-                        console.error("Could not fetch user", e);
-                    }
+                    } catch (e) { console.error("Could not fetch user", e); }
                     userCache.set(userId, 'Unknown User');
                     return 'Unknown User';
                 };
-
-                // Recent Transactions - Fetch without ordering here to avoid index issues
-                const depositsQuery = query(collection(db, "deposits"), where("status", "==", "Approved"));
-                const withdrawalsQuery = query(collection(db, "withdrawals"), where("status", "==", "Approved"));
-                const [depositsSnapshot, withdrawalsSnapshot] = await Promise.all([getDocs(depositsQuery), getDocs(withdrawalsQuery)]);
-
-                const depositsPromises = depositsSnapshot.docs.map(async docSnapshot => ({ id: docSnapshot.id, type: 'Deposit', userName: await getUserName(docSnapshot.data().userId), ...docSnapshot.data() } as Transaction));
-                const withdrawalsPromises = withdrawalsSnapshot.docs.map(async docSnapshot => ({ id: docSnapshot.id, type: 'Withdrawal', userName: await getUserName(docSnapshot.data().userId), ...docSnapshot.data() } as Transaction));
-                const combined = [...await Promise.all(depositsPromises), ...await Promise.all(withdrawalsPromises)];
                 
-                // Sort and slice on the client-side
+                const sevenDaysAgo = subDays(new Date(), 7);
+                let total7DayDeposits = 0;
+                let total7DayWithdrawals = 0;
+
+                const depositsPromises = depositsSnapshot.docs.map(async docSnapshot => {
+                    const data = docSnapshot.data();
+                    if(data.createdAt.toDate() >= sevenDaysAgo) {
+                       total7DayDeposits += parseFloat(data.amount);
+                    }
+                    return { id: docSnapshot.id, type: 'Deposit', userName: await getUserName(data.userId), ...data } as Transaction
+                });
+
+                const withdrawalsPromises = withdrawalsSnapshot.docs.map(async docSnapshot => {
+                    const data = docSnapshot.data();
+                     if(data.createdAt.toDate() >= sevenDaysAgo) {
+                       total7DayWithdrawals += parseFloat(data.amount);
+                    }
+                    return { id: docSnapshot.id, type: 'Withdrawal', userName: await getUserName(data.userId), ...data } as Transaction
+                });
+                
+                const combined = [...await Promise.all(depositsPromises), ...await Promise.all(withdrawalsPromises)];
                 combined.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
                 setRecentTransactions(combined.slice(0, 5));
                 
-                // 7-Day Stats
-                const sevenDaysAgo = subDays(new Date(), 7);
-                const sevenDayDepositsQuery = query(collection(db, "deposits"), where("status", "==", "Approved"), where("createdAt", ">=", sevenDaysAgo));
-                const sevenDayWithdrawalsQuery = query(collection(db, "withdrawals"), where("status", "==", "Approved"), where("createdAt", ">=", sevenDaysAgo));
-                const [sevenDayDepositsSnap, sevenDayWithdrawalsSnap] = await Promise.all([getDocs(sevenDayDepositsQuery), getDocs(sevenDayWithdrawalsQuery)]);
-                
-                const total7DayDeposits = sevenDayDepositsSnap.docs.reduce((sum, doc) => sum + parseFloat(doc.data().amount), 0);
-                const total7DayWithdrawals = sevenDayWithdrawalsSnap.docs.reduce((sum, doc) => sum + parseFloat(doc.data().amount), 0);
                 setSevenDayStats({
                     deposits: total7DayDeposits,
                     withdrawals: total7DayWithdrawals,
                     profit: total7DayDeposits - total7DayWithdrawals
                 });
+
             } catch (error) {
-                console.error("Error fetching extra stats:", error);
+                console.error("Error fetching one-time stats:", error);
             } finally {
                 setLoadingExtraStats(false);
             }
         };
         
-        fetchAllTimeProfitData();
-        fetchExtraStats();
+        fetchOneTimeData();
         setLoading(false);
         
-        const intervalId = setInterval(() => {
-            fetchAllTimeProfitData();
-            fetchExtraStats();
-        }, 30000); // Refresh every 30 seconds
-
         return () => {
             unsubscribes.forEach(unsub => unsub());
-            clearInterval(intervalId);
         };
     }, []);
 
@@ -410,3 +396,5 @@ export default function AdminDashboardPage() {
         </div>
     )
 }
+
+    
