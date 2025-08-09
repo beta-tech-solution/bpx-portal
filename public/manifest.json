@@ -6,9 +6,9 @@
   "start_url": "/splash?source=pwa",
   "scope": "/",
   "icons": [
-    { "src": "/images/android.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/images/maskandroid.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
-    { "src": "/images/playstore.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/images/appicon.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/images/appiconmask.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/images/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "/images/maskplaystore.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "screenshots": [
