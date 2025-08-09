@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React from "react";
@@ -399,9 +398,18 @@ export default function LandingPage() {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify({
             "@context": "https://schema.org",
-            "@type": "WebSite",
+            "@type": "Organization",
             "name": "BPX Master",
             "url": "https://www.bpxmaster.com",
+            "logo": "https://www.bpxmaster.com/images/logo.png",
+            "contactPoint": {
+              "@type": "ContactPoint",
+              "telephone": "+1-234-567-890",
+              "contactType": "Customer Service"
+            },
+            "sameAs": [
+                // Add your social media links here if you have them
+            ],
             "potentialAction": {
               "@type": "SearchAction",
               "target": {
