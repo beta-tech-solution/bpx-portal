@@ -1,111 +1,134 @@
+"use client";
 
-"use client"
-
-import { Wallet } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { DollarSign, TrendingUp, CreditCard, BarChart } from "lucide-react";
 
 export default function SplashScreen() {
-    const [isFading, setIsFading] = useState(false);
-    const router = useRouter();
+  const [showScript, setShowScript] = useState(true);
+  const [isFading, setIsFading] = useState(false);
+  const router = useRouter();
 
-    useEffect(() => {
-        const fadeTimer = setTimeout(() => {
-            setIsFading(true);
-        }, 3500); // Start fading after 3.5 seconds
+  useEffect(() => {
+    const hideScript = setTimeout(() => setShowScript(false), 2500); // Show "Starting Your Portal" for 2.5s
+    const fadeTimer = setTimeout(() => setIsFading(true), 3800); // Fade after 3.8s
+    const redirectTimer = setTimeout(() => router.push("/login"), 4500); // Redirect after fade
 
-        const redirectTimer = setTimeout(() => {
-            router.push('/login');
-        }, 4000); // Redirect after 4 seconds (during fade)
-
-        return () => {
-            clearTimeout(fadeTimer);
-            clearTimeout(redirectTimer);
-        }
-    }, [router]);
+    return () => {
+      clearTimeout(hideScript);
+      clearTimeout(fadeTimer);
+      clearTimeout(redirectTimer);
+    };
+  }, [router]);
 
   return (
-    <div className={`flex flex-col items-center justify-center min-h-screen bg-background transition-opacity duration-500 ${isFading ? 'opacity-0' : 'opacity-100'}`}>
+    <div
+      className={`relative flex flex-col items-center justify-center min-h-screen text-white overflow-hidden transition-opacity duration-700 ${
+        isFading ? "opacity-0" : "opacity-100"
+      }`}
+    >
+      {/* Background shimmer */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-500 to-blue-700 animate-gradient" />
+
+      {/* Floating finance icons */}
+      <div className="absolute bottom-0 w-full h-full overflow-hidden pointer-events-none">
+        {[DollarSign, TrendingUp, CreditCard, BarChart].map((Icon, i) => (
+          <Icon
+            key={i}
+            className="absolute text-white opacity-20"
+            style={{
+              bottom: -50,
+              left: `${20 + i * 20}%`,
+              animation: `floatUp 5s ease-in-out ${i * 0.8}s infinite`,
+              width: 40,
+              height: 40,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Handwriting effect */}
+      {showScript && (
+        <h2 className="text-3xl font-[DancingScript] handwriting-animation z-10">
+          Starting Your Portal
+        </h2>
+      )}
+
+      {/* BPX Master Title */}
+      {!showScript && (
+        <h1 className="text-5xl font-bold tracking-wide fade-in-up z-10">
+          BPX Master
+        </h1>
+      )}
+
       <style jsx>{`
-        .container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+        @keyframes gradientMove {
+          0% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
         }
-
-        .logo-container {
-            animation: pop-in 1s ease-out forwards;
+        .animate-gradient {
+          background-size: 200% 200%;
+          animation: gradientMove 6s ease infinite;
         }
-
-        @keyframes pop-in {
-            0% { transform: scale(0.8); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        
-        .title {
-            font-family: 'Poppins', sans-serif;
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: hsl(var(--foreground));
-            margin-top: 1.5rem;
-            animation: fade-in-up 1s ease-out 0.5s forwards;
+        @keyframes floatUp {
+          0% {
+            transform: translateY(0) scale(0.8);
             opacity: 0;
-        }
-
-        @keyframes fade-in-up {
-             0% { opacity: 0; transform: translateY(20px); }
-             100% { opacity: 1; transform: translateY(0); }
-        }
-
-        .loading-dots {
-            display: flex;
-            gap: 0.75rem;
-            margin-top: 1.5rem;
-            animation: fade-in-up 1s ease-out 1s forwards;
+          }
+          30% {
+            opacity: 0.3;
+          }
+          100% {
+            transform: translateY(-120vh) scale(1.2);
             opacity: 0;
+          }
         }
-
-        .loading-dots div {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background-color: hsl(var(--primary));
-            animation: bounce 1.4s infinite ease-in-out both;
+        @keyframes handwriting {
+          from {
+            width: 0;
+          }
+          to {
+            width: 100%;
+          }
         }
-
-        .loading-dots .dot-1 {
-            animation-delay: -0.32s;
+        .handwriting-animation {
+          font-family: 'Dancing Script', cursive;
+          white-space: nowrap;
+          overflow: hidden;
+          border-right: 3px solid rgba(255, 255, 255, 0.75);
+          animation: handwriting 2s steps(30, end), blink 0.75s step-end infinite;
         }
-
-        .loading-dots .dot-2 {
-            animation-delay: -0.16s;
+        @keyframes blink {
+          from,
+          to {
+            border-color: transparent;
+          }
+          50% {
+            border-color: white;
+          }
         }
-
-        @keyframes bounce {
-            0%, 80%, 100% {
-                transform: scale(0);
-            }
-            40% {
-                transform: scale(1.0);
-            }
+        .fade-in-up {
+          animation: fadeUp 1s ease-out forwards;
+          opacity: 0;
+        }
+        @keyframes fadeUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
       `}</style>
-       <div className="container">
-           <div className="logo-container">
-              <div className="p-4 rounded-2xl bg-primary text-primary-foreground shadow-lg">
-                 <Wallet className="w-16 h-16"/>
-              </div>
-          </div>
-           <h1 className="title">BPX Master</h1>
-            <div className="loading-dots">
-                <div className="dot-1"></div>
-                <div className="dot-2"></div>
-                <div className="dot-3"></div>
-            </div>
-      </div>
     </div>
   );
 }
-
-    
