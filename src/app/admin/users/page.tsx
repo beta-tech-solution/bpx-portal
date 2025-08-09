@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { MoreHorizontal, Edit, Trash2, PlusCircle, Users, Loader2, Copy } from "lucide-react"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -23,6 +24,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Textarea } from "@/components/ui/textarea"
 import { useMediaQuery } from "@/hooks/use-media-query"
+import { deleteUserAction } from "./actions"
 
 
 const userChartConfig = {
@@ -53,6 +55,7 @@ export default function AdminUsersPage() {
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
   const [userChartData, setUserChartData] = React.useState<{ date: string; count: number }[]>([]);
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const { toast } = useToast();
 
   React.useEffect(() => {
     setLoading(true);
@@ -106,9 +109,14 @@ export default function AdminUsersPage() {
       setIsDetailsOpen(true);
   }
   
-  const handleDelete = (user: User) => {
-    // Implement delete functionality here
-    console.log("Delete user:", user.id)
+  const handleDelete = async (userId: string) => {
+    try {
+        await deleteUserAction(userId);
+        toast({ title: "User Deleted", description: "The user has been permanently removed." });
+    } catch (error: any) {
+        console.error("Failed to delete user:", error);
+        toast({ title: "Error", description: error.message || "Could not delete user.", variant: "destructive" });
+    }
   }
 
   const isUserOnline = (lastSeen: Timestamp | undefined) => {
@@ -167,9 +175,25 @@ export default function AdminUsersPage() {
                     <Button variant="ghost" size="icon" onClick={() => handleEdit(user)}>
                         <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(user)}>
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete the user's account and all associated data.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(user.id)}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 </div>
               </CardContent>
             </Card>
@@ -218,9 +242,33 @@ export default function AdminUsersPage() {
                            <Button variant="ghost" size="icon" onClick={() => handleEdit(user)}>
                                 <Edit className="h-4 w-4" />
                            </Button>
-                           <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(user)}>
-                                <Trash2 className="h-4 w-4" />
-                           </Button>
+                           <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This action cannot be undone. This will permanently delete the user's account and remove their data from our servers.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                handleDelete(user.id);
+                                            }}
+                                            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                                        >
+                                            Delete
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
                         </div>
                     </TableCell>
                 </TableRow>
@@ -315,34 +363,25 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
     });
 
      React.useEffect(() => {
-        if(open) {
-            let initialStatus: 'Active' | 'Pending' | 'Suspended' = 'Pending';
-            if (user) {
-                if (user.bpexchUsername && user.bpexchPassword) {
-                    initialStatus = 'Active';
-                }
-                // Allow admin's manual setting to persist if it's 'Suspended'
-                if (user.status === 'Suspended') {
-                    initialStatus = 'Suspended';
-                } else if (user.status === 'Active' && (user.bpexchUsername && user.bpexchPassword)) {
-                    initialStatus = 'Active';
-                } else if (user.status === 'Pending') {
-                    initialStatus = 'Pending';
-                }
-            }
-
+        if (open) {
+            const getInitialStatus = (user: User | null) => {
+                if (!user) return 'Pending';
+                if (user.status === 'Suspended') return 'Suspended';
+                if (user.bpexchUsername && user.bpexchPassword) return 'Active';
+                return 'Pending';
+            };
 
             form.reset({
                 fullName: user?.fullName || "",
                 email: user?.email || "",
                 balance: user?.balance || 0,
-                status: user?.status || initialStatus,
+                status: getInitialStatus(user),
                 role: user?.role || 'User',
                 password: "",
                 bpexchUsername: user?.bpexchUsername || "",
                 bpexchPassword: user?.bpexchPassword || "",
                 adminMessage: user?.adminMessage || "",
-            })
+            });
         }
     }, [user, form, open]);
 
@@ -351,6 +390,7 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
         setIsLoading(true);
         
         let finalStatus = data.status;
+        // If the status isn't manually set to Suspended, determine it automatically
         if (data.status !== 'Suspended') {
             finalStatus = (data.bpexchUsername && data.bpexchPassword) ? 'Active' : 'Pending';
         }
@@ -476,7 +516,7 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                                     render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Status</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <Select onValueChange={field.onChange} value={field.value}>
                                         <FormControl>
                                             <SelectTrigger>
                                                 <SelectValue />
