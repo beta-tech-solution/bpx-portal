@@ -95,6 +95,7 @@ export default function RootLayout({
             `,
           }}
         />
+        <meta name="google-site-verification" content="uSmzlonhsJHQVRYiZeWS7-VLBA0GZj6Z3an1USl48Vo" />
       </head>
 
       <body className="font-body antialiased">
