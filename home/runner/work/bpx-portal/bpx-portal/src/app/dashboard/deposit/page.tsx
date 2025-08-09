@@ -27,7 +27,6 @@ interface Account {
 }
 
 export default function DepositPage() {
-  const [isSubmitted, setIsSubmitted] = useState(false);
   const [progress, setProgress] = useState(10);
   const [isLoading, setIsLoading] = useState(false);
   const [user] = useAuthState(auth);
@@ -49,9 +48,6 @@ export default function DepositPage() {
     const unsubscribePending = onSnapshot(pendingQuery, (snapshot) => {
         const pending = !snapshot.empty;
         setHasPendingDeposit(pending);
-        if (pending) {
-          setIsSubmitted(true); // If there's a pending deposit, show the progress screen
-        }
         setCheckingStatus(false);
     }, (error) => {
         console.error("Error checking pending deposits:", error);
@@ -140,7 +136,7 @@ export default function DepositPage() {
             description: "We have received your proof and will confirm it shortly.",
         });
         
-        // Let the onSnapshot listener handle setting isSubmitted to true
+        // Let the onSnapshot listener handle setting hasPendingDeposit to true
         
         form.reset();
         setFileName(null);
@@ -172,7 +168,7 @@ export default function DepositPage() {
   }
 
   useEffect(() => {
-    if (isSubmitted) {
+    if (hasPendingDeposit) {
       const timer = setInterval(() => {
         setProgress((prev) => {
           if (prev >= 95) {
@@ -184,7 +180,7 @@ export default function DepositPage() {
       }, 800);
       return () => clearInterval(timer);
     }
-  }, [isSubmitted]);
+  }, [hasPendingDeposit]);
 
   if (checkingStatus) {
     return (
@@ -194,7 +190,7 @@ export default function DepositPage() {
     );
   }
   
-  if (isSubmitted) {
+  if (hasPendingDeposit) {
     return (
       <div className="flex items-center justify-center h-full animate-fade-in w-full">
         <Card className="w-full">

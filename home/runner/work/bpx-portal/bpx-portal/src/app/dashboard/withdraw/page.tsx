@@ -212,7 +212,7 @@ export default function WithdrawPage() {
           </div>
         </CardContent>
         <CardFooter className="p-6 pt-0">
-          <Button type="submit" className="w-full h-12 text-base font-bold bg-slate-800 hover:bg-slate-700 text-white" disabled={isWithdrawalDisabled}>
+          <Button type="submit" className="w-full h-12 text-base font-bold bg-slate-800 hover:bg-slate-700 text-white" disabled={isLoading || isWithdrawalDisabled}>
             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Landmark className="mr-2 h-4 w-4" />}
             WITHDRAW
           </Button>
