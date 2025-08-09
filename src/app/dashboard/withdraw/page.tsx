@@ -194,7 +194,7 @@ export default function WithdrawPage() {
             <div>
                 <h4 className="font-bold mb-2">Instructions:</h4>
                 <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                    <li>Withdrawals are processed within 24-48 hours.</li>
+                    <li>Withdrawals are processed within 90 hours.</li>
                     <li>Ensure all account details are correct to avoid delays.</li>
                     <li>A small processing fee may apply.</li>
                 </ul>
@@ -202,7 +202,7 @@ export default function WithdrawPage() {
             <div className="text-right">
                 <h4 className="font-bold mb-2">ہدایات:</h4>
                 <ul className="list-disc list-inside space-y-1 rtl font-code">
-                    <li>رقم کی واپسی 24-48 گھنٹوں کے اندر عمل میں لائی جاتی ہے۔</li>
+                    <li>رقم کی واپسی 90 گھنٹوں کے اندر عمل میں لائی جاتی ہے۔</li>
                     <li>تاخیر سے بچنے کے لیے یقینی بنائیں کہ اکاؤنٹ کی تمام تفصیلات درست ہیں۔</li>
                     <li>ایک چھوٹی پروسیسنگ فیس لاگو ہوسکتی ہے۔</li>
                 </ul>

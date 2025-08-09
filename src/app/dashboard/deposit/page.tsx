@@ -276,7 +276,7 @@ export default function DepositPage() {
                             <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
   <li>Transfer the payment to the account mentioned above.</li>
   <li>Upload the payment proof and submit it for verification.</li>
-  <li>Payments are typically approved within 30 minutes.</li>
+  <li>Payments are typically approved within 90 minutes.</li>
   <li>Ensure you enter the exact amount to prevent any delays.</li>
 </ol>
 
