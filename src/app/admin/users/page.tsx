@@ -1,3 +1,4 @@
+
 "use client"
 import * as React from "react"
 import { Button } from "@/components/ui/button"
@@ -71,7 +72,17 @@ export default function AdminUsersPage() {
         });
 
         querySnapshot.forEach((doc) => {
-            const userData = { id: doc.id, ...doc.data() } as User
+            const userData = { id: doc.id, ...doc.data() } as User;
+
+            // Automatically determine status based on BPExch credentials
+            if (userData.status !== 'Suspended') {
+                if (userData.bpexchUsername && userData.bpexchPassword) {
+                    userData.status = 'Active';
+                } else {
+                    userData.status = 'Pending';
+                }
+            }
+
             usersData.push(userData);
 
             if (userData.createdAt) {
@@ -687,3 +698,5 @@ function UserDetailsDialog({ open, setOpen, user }: { open: boolean, setOpen: (o
         </Dialog>
     )
 }
+
+    
