@@ -72,18 +72,19 @@ export default function ProfitStatsPage() {
 
       const userCache = new Map();
       const getUserName = async (userId: string) => {
-        if (!userId) return 'Unknown User';
-        if(userCache.has(userId)) return userCache.get(userId);
-        try {
-          // Changed query to match user document structure
-          const userDocs = await getDocs(query(collection(db, 'users'), where('uid', '==', userId)));
-          if(!userDocs.empty) {
-            const name = userDocs.docs[0].data().fullName;
-            userCache.set(userId, name);
-            return name;
-          }
-        } catch (e) { console.error(e); }
-        return 'Unknown User';
+          if (!userId) return 'Unknown User';
+          if (userCache.has(userId)) return userCache.get(userId);
+          try {
+              const userDocRef = doc(db, 'users', userId);
+              const userDoc = await getDoc(userDocRef);
+              if (userDoc.exists()) {
+                  const name = userDoc.data().fullName || 'Unknown User';
+                  userCache.set(userId, name);
+                  return name;
+              }
+          } catch (e) { console.error("Error fetching user", e); }
+          userCache.set(userId, 'Unknown User');
+          return 'Unknown User';
       }
 
       let totalDeposits = 0;
