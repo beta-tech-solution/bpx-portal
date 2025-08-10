@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, XCircle, ArrowDownLeft, Loader2, Eye } from "lucide-react";
+import { CheckCircle, XCircle, ArrowDownLeft, Loader2, Eye, User } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import Image from 'next/image';
 import { useToast } from "@/hooks/use-toast";
@@ -25,6 +25,7 @@ interface Deposit {
   id: string;
   userId: string;
   userFullName: string;
+  bpexchUsername?: string;
   amount: string;
   date: string;
   status: DepositStatus;
@@ -63,16 +64,21 @@ export default function AdminDepositsPage() {
                 querySnapshot.docs.map(async (docSnapshot) => {
                     const data = docSnapshot.data();
                     let userFullName = 'Unknown User';
+                    let bpexchUsername = 'N/A';
 
                     if (data.userId) {
                         if (userCache.has(data.userId)) {
-                            userFullName = userCache.get(data.userId);
+                            const userData = userCache.get(data.userId);
+                            userFullName = userData.fullName;
+                            bpexchUsername = userData.bpexchUsername;
                         } else {
                             try {
                                 const userDoc = await getDoc(doc(db, 'users', data.userId));
                                 if (userDoc.exists()) {
-                                    userFullName = userDoc.data().fullName;
-                                    userCache.set(data.userId, userFullName);
+                                    const userData = userDoc.data();
+                                    userFullName = userData.fullName || 'Unknown User';
+                                    bpexchUsername = userData.bpexchUsername || 'N/A';
+                                    userCache.set(data.userId, { fullName: userFullName, bpexchUsername });
                                 }
                             } catch (e) {
                                 console.error("Error fetching user for deposit:", e);
@@ -83,6 +89,7 @@ export default function AdminDepositsPage() {
                     return {
                         id: docSnapshot.id,
                         userFullName,
+                        bpexchUsername,
                         date: data.createdAt ? format(data.createdAt.toDate(), 'PP') : 'No Date',
                         ...data
                     } as Deposit;
@@ -245,6 +252,10 @@ function DepositContent({ data, loading }: { data: Deposit[], loading: boolean }
               <div>
                   <p className="font-semibold break-words">{deposit.userFullName}</p>
                   <p className="text-sm text-muted-foreground">{deposit.date}</p>
+                  <div className="flex items-center gap-2 text-xs mt-1 text-muted-foreground">
+                    <User className="h-3 w-3" />
+                    <span>{deposit.bpexchUsername}</span>
+                  </div>
               </div>
               <p className="font-mono text-xl font-bold">PKR {deposit.amount}</p>
               <div className="flex items-center justify-between gap-2 mt-2">
@@ -278,6 +289,7 @@ function DepositContent({ data, loading }: { data: Deposit[], loading: boolean }
         <TableHeader>
           <TableRow>
             <TableHead>User</TableHead>
+            <TableHead>BPExch ID</TableHead>
             <TableHead>Amount</TableHead>
             <TableHead>Date</TableHead>
             <TableHead>Status</TableHead>
@@ -288,6 +300,7 @@ function DepositContent({ data, loading }: { data: Deposit[], loading: boolean }
           {data.map((deposit) => (
             <TableRow key={deposit.id}>
               <TableCell className="font-medium">{deposit.userFullName}</TableCell>
+              <TableCell className="font-mono text-xs">{deposit.bpexchUsername}</TableCell>
               <TableCell className="font-mono">PKR {deposit.amount}</TableCell>
               <TableCell>{deposit.date}</TableCell>
               <TableCell>
