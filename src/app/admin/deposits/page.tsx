@@ -253,7 +253,7 @@ function DepositContent({ data, loading }: { data: Deposit[], loading: boolean }
                   <p className="font-semibold break-words">{deposit.userFullName}</p>
                   <p className="text-sm text-muted-foreground">{deposit.date}</p>
                   <div className="flex items-center gap-2 text-xs mt-1 text-muted-foreground">
-                    <User className="h-3 w-3" />
+                  <span className="font-semibold">BPEXCH ID:</span>
                     <span>{deposit.bpexchUsername}</span>
                   </div>
               </div>
