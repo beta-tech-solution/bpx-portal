@@ -1,0 +1,33 @@
+
+"use server";
+
+import { auth as adminAuth, db } from "@/lib/firebase/admin";
+import { doc, deleteDoc } from "firebase/firestore";
+
+export async function deleteUserAction(uid: string) {
+    if (!uid) {
+        throw new Error("User ID is required.");
+    }
+
+    try {
+        // Attempt to delete from Firebase Authentication first.
+        await adminAuth.deleteUser(uid);
+    } catch (error: any) {
+        // If the user doesn't exist in Auth, we can ignore the error and proceed.
+        // This makes the cleanup more robust.
+        if (error.code !== 'auth/user-not-found') {
+            console.error("Error deleting user from Firebase Auth:", error);
+            throw new Error(error.message || "An error occurred while deleting the user from Authentication.");
+        }
+    }
+
+    try {
+        // Always attempt to delete from Firestore.
+        const userDocRef = doc(db, "users", uid);
+        await deleteDoc(userDocRef);
+        return { success: true, message: "User deleted successfully." };
+    } catch(error: any) {
+        console.error("Error deleting user from Firestore:", error);
+        throw new Error(error.message || "An error occurred while deleting the user from the database.");
+    }
+}
