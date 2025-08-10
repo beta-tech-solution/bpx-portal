@@ -15,7 +15,7 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from "rec
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { db } from '@/lib/firebase/config';
-import { collection, query, onSnapshot, doc, getDoc, updateDoc, increment, writeBatch } from 'firebase/firestore';
+import { collection, query, getDocs, doc, getDoc, updateDoc, increment, writeBatch, orderBy } from 'firebase/firestore';
 import { format, subDays } from 'date-fns';
 import { useMediaQuery } from '@/hooks/use-media-query';
 
@@ -58,44 +58,49 @@ export default function AdminWithdrawalsPage() {
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
-    const q = query(collection(db, 'withdrawals'));
-    const unsubscribe = onSnapshot(q, async (querySnapshot) => {
-      setLoading(true);
-      const withdrawalsData: Withdrawal[] = [];
-      const userCache = new Map();
-      
-      for (const docSnapshot of querySnapshot.docs) {
-        const data = docSnapshot.data();
-        let userFullName = 'Unknown User';
-        if (data.userId) {
-            if(userCache.has(data.userId)) {
-                userFullName = userCache.get(data.userId);
-            } else {
-                try {
-                    const userDoc = await getDoc(doc(db, 'users', data.userId));
-                    if (userDoc.exists()) {
-                        userFullName = userDoc.data().fullName;
-                        userCache.set(data.userId, userFullName);
+    const fetchWithdrawals = async () => {
+        setLoading(true);
+        try {
+            const q = query(collection(db, 'withdrawals'), orderBy('createdAt', 'desc'));
+            const querySnapshot = await getDocs(q);
+            
+            const userCache = new Map();
+            const withdrawalsData: Withdrawal[] = await Promise.all(
+                querySnapshot.docs.map(async (docSnapshot) => {
+                    const data = docSnapshot.data();
+                    let userFullName = 'Unknown User';
+                    if (data.userId) {
+                        if(userCache.has(data.userId)) {
+                            userFullName = userCache.get(data.userId);
+                        } else {
+                            try {
+                                const userDoc = await getDoc(doc(db, 'users', data.userId));
+                                if (userDoc.exists()) {
+                                    userFullName = userDoc.data().fullName;
+                                    userCache.set(data.userId, userFullName);
+                                }
+                            } catch(e) {
+                                console.error("Error fetching user for withdrawal:", e);
+                            }
+                        }
                     }
-                } catch(e) {
-                    console.error("Error fetching user for withdrawal:", e);
-                }
-            }
+                    return {
+                        id: docSnapshot.id,
+                        userFullName,
+                        date: data.createdAt ? format(data.createdAt.toDate(), 'PP') : 'No Date',
+                        ...data
+                    } as Withdrawal;
+                })
+            );
+            
+            setWithdrawals(withdrawalsData);
+        } catch (error) {
+            console.error("Error fetching withdrawals:", error);
+        } finally {
+            setLoading(false);
         }
-        withdrawalsData.push({
-          id: docSnapshot.id,
-          userFullName,
-          date: data.createdAt ? format(data.createdAt.toDate(), 'PP') : 'No Date',
-          ...data
-        } as Withdrawal);
-      }
-      setWithdrawals(withdrawalsData.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime()));
-      setLoading(false);
-    }, (error) => {
-        console.error("Error fetching withdrawals:", error);
-        setLoading(false);
-    });
-    return () => unsubscribe();
+    };
+    fetchWithdrawals();
   }, []);
 
   const filteredWithdrawals = useMemo(() => {
@@ -203,8 +208,6 @@ function WithdrawalContent({ data, loading }: { data: Withdrawal[], loading: boo
             const withdrawalRef = doc(db, 'withdrawals', withdrawal.id);
             batch.update(withdrawalRef, { status: newStatus });
             
-            // If rejected, refund the amount to the user's balance.
-            // The amount was already deducted upon request. If approved, no balance change needed.
             if (newStatus === 'Rejected') {
                 if (!withdrawal.userId) {
                     throw new Error(`Cannot reject withdrawal ${withdrawal.id}: No user ID associated.`);

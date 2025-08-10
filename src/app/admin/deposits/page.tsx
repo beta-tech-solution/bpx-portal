@@ -15,7 +15,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { db } from '@/lib/firebase/config';
-import { collection, query, onSnapshot, doc, getDoc, updateDoc, increment, writeBatch } from 'firebase/firestore';
+import { collection, query, getDocs, doc, getDoc, updateDoc, increment, writeBatch, orderBy } from 'firebase/firestore';
 import { format, subDays } from 'date-fns';
 import { useMediaQuery } from '@/hooks/use-media-query';
 
@@ -52,45 +52,51 @@ export default function AdminDepositsPage() {
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
-    const q = query(collection(db, 'deposits'));
-    const unsubscribe = onSnapshot(q, async (querySnapshot) => {
-      setLoading(true);
-      const depositsData: Deposit[] = [];
-      const userCache = new Map();
-      
-      for (const docSnapshot of querySnapshot.docs) {
-        const data = docSnapshot.data();
-        let userFullName = 'Unknown User';
+    const fetchDeposits = async () => {
+        setLoading(true);
+        try {
+            const q = query(collection(db, 'deposits'), orderBy('createdAt', 'desc'));
+            const querySnapshot = await getDocs(q);
+            
+            const userCache = new Map();
+            const depositsData: Deposit[] = await Promise.all(
+                querySnapshot.docs.map(async (docSnapshot) => {
+                    const data = docSnapshot.data();
+                    let userFullName = 'Unknown User';
 
-        if(data.userId && userCache.has(data.userId)) {
-            userFullName = userCache.get(data.userId);
-        } else if (data.userId) {
-            try {
-                const userDoc = await getDoc(doc(db, 'users', data.userId));
-                if (userDoc.exists()) {
-                    userFullName = userDoc.data().fullName;
-                    userCache.set(data.userId, userFullName);
-                }
-            } catch (e) {
-                console.error("Error fetching user for deposit:", e);
-            }
+                    if (data.userId) {
+                        if (userCache.has(data.userId)) {
+                            userFullName = userCache.get(data.userId);
+                        } else {
+                            try {
+                                const userDoc = await getDoc(doc(db, 'users', data.userId));
+                                if (userDoc.exists()) {
+                                    userFullName = userDoc.data().fullName;
+                                    userCache.set(data.userId, userFullName);
+                                }
+                            } catch (e) {
+                                console.error("Error fetching user for deposit:", e);
+                            }
+                        }
+                    }
+                    
+                    return {
+                        id: docSnapshot.id,
+                        userFullName,
+                        date: data.createdAt ? format(data.createdAt.toDate(), 'PP') : 'No Date',
+                        ...data
+                    } as Deposit;
+                })
+            );
+            
+            setDeposits(depositsData);
+        } catch (error) {
+            console.error("Error fetching deposits:", error);
+        } finally {
+            setLoading(false);
         }
-        
-        depositsData.push({
-          id: docSnapshot.id,
-          userFullName,
-          date: data.createdAt ? format(data.createdAt.toDate(), 'PP') : 'No Date',
-          ...data
-        } as Deposit);
-      }
-      
-      setDeposits(depositsData.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime()));
-      setLoading(false);
-    }, (error) => {
-        console.error("Error fetching deposits:", error);
-        setLoading(false);
-    });
-    return () => unsubscribe();
+    };
+    fetchDeposits();
   }, []);
 
   const filteredDeposits = useMemo(() => {
@@ -335,5 +341,3 @@ function ProofDialog({ proofUrl }: { proofUrl: string }) {
     </Dialog>
   )
 }
-
-    

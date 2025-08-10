@@ -16,7 +16,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { db } from "@/lib/firebase/config"
-import { collection, onSnapshot, query, orderBy, Timestamp, addDoc, doc, updateDoc, setDoc } from 'firebase/firestore'
+import { collection, query, orderBy, Timestamp, addDoc, doc, updateDoc, setDoc, getDocs } from 'firebase/firestore'
 import { format, subMinutes, subDays, eachDayOfInterval } from 'date-fns'
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { useForm, Controller } from "react-hook-form";
@@ -59,51 +59,54 @@ export default function AdminUsersPage() {
   const { toast } = useToast();
 
   React.useEffect(() => {
-    setLoading(true);
-    const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const usersData: User[] = [];
-        const thirtyDaysAgo = subDays(new Date(), 29);
-        const dailyCounts: { [key: string]: number } = {};
+    const fetchUsers = async () => {
+        setLoading(true);
+        try {
+            const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
+            const querySnapshot = await getDocs(q);
 
-        const days = eachDayOfInterval({ start: thirtyDaysAgo, end: new Date() });
-        days.forEach(day => {
-            dailyCounts[format(day, 'yyyy-MM-dd')] = 0;
-        });
+            const usersData: User[] = [];
+            const thirtyDaysAgo = subDays(new Date(), 29);
+            const dailyCounts: { [key: string]: number } = {};
 
-        querySnapshot.forEach((doc) => {
-            const userData = { id: doc.id, ...doc.data() } as User;
+            const days = eachDayOfInterval({ start: thirtyDaysAgo, end: new Date() });
+            days.forEach(day => {
+                dailyCounts[format(day, 'yyyy-MM-dd')] = 0;
+            });
 
-            // Automatically determine status based on BPExch credentials
-            if (userData.status !== 'Suspended') {
-                if (userData.bpexchUsername && userData.bpexchPassword) {
-                    userData.status = 'Active';
-                } else {
-                    userData.status = 'Pending';
+            querySnapshot.forEach((doc) => {
+                const userData = { id: doc.id, ...doc.data() } as User;
+
+                if (userData.status !== 'Suspended') {
+                    userData.status = (userData.bpexchUsername && userData.bpexchPassword) ? 'Active' : 'Pending';
                 }
-            }
 
-            usersData.push(userData);
+                usersData.push(userData);
 
-            if (userData.createdAt) {
-                const creationDate = format(userData.createdAt.toDate(), 'yyyy-MM-dd');
-                if (dailyCounts[creationDate] !== undefined) {
-                    dailyCounts[creationDate]++;
+                if (userData.createdAt) {
+                    const creationDate = format(userData.createdAt.toDate(), 'yyyy-MM-dd');
+                    if (dailyCounts[creationDate] !== undefined) {
+                        dailyCounts[creationDate]++;
+                    }
                 }
-            }
-        });
-        
-        const chartData = Object.entries(dailyCounts).map(([date, count]) => ({
-            date: format(new Date(date), 'MMM d'),
-            count
-        }));
-        
-        setUserChartData(chartData);
-        setUsers(usersData);
-        setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
+            });
+            
+            const chartData = Object.entries(dailyCounts).map(([date, count]) => ({
+                date: format(new Date(date), 'MMM d'),
+                count
+            }));
+            
+            setUserChartData(chartData);
+            setUsers(usersData);
+        } catch (error) {
+            console.error("Error fetching users:", error);
+            toast({ title: "Error", description: "Could not fetch user data.", variant: "destructive" });
+        } finally {
+            setLoading(false);
+        }
+    };
+    fetchUsers();
+  }, [toast]);
 
   const handleEdit = (user: User) => {
     setSelectedUser(user);
@@ -123,6 +126,7 @@ export default function AdminUsersPage() {
   const handleDelete = async (userId: string) => {
     try {
         await deleteUserAction(userId);
+        setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
         toast({ title: "User Deleted", description: "The user has been permanently removed." });
     } catch (error: any) {
         console.error("Failed to delete user:", error);
@@ -401,13 +405,12 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
         setIsLoading(true);
         
         let finalStatus = data.status;
-        // If the status isn't manually set to Suspended, determine it automatically
         if (data.status !== 'Suspended') {
             finalStatus = (data.bpexchUsername && data.bpexchPassword) ? 'Active' : 'Pending';
         }
 
         try {
-            if (user) { // Editing existing user
+            if (user) { 
                 const userRef = doc(db, 'users', user.id);
                 await updateDoc(userRef, { 
                     fullName: data.fullName, 
@@ -420,13 +423,12 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                     adminMessage: data.adminMessage,
                 });
                 toast({ title: "User Updated", description: "User details have been saved successfully." });
-            } else { // Adding new user
+            } else {
                 if (!data.password) {
                     toast({ title: "Error", description: "Password is required for new users.", variant: "destructive" });
                     setIsLoading(false);
                     return;
                 }
-                 // We need a separate auth instance to create a user without signing in the admin
                 const tempAuth = getAuth();
                 const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, data.password);
                 const newUser = userCredential.user;
@@ -699,5 +701,3 @@ function UserDetailsDialog({ open, setOpen, user }: { open: boolean, setOpen: (o
         </Dialog>
     )
 }
-
-    

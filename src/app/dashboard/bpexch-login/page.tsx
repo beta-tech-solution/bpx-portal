@@ -11,7 +11,7 @@ import { CartesianGrid, Line, LineChart, XAxis, YAxis, Tooltip } from "recharts"
 import { ChartContainer, ChartTooltipContent, ChartTooltip } from "@/components/ui/chart"
 import { ExternalLink, Loader2, ShieldOff, ShieldCheck, User, Lock, MessageSquare, Copy } from "lucide-react"
 import { db, auth } from '@/lib/firebase/config';
-import { collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy, limit, doc, updateDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy, limit, doc, updateDoc, arrayUnion, arrayRemove, getDocs, getDoc } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { format, subDays, eachDayOfInterval } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -80,69 +80,75 @@ export default function BpexchLoginPage() {
 
     useEffect(() => {
         if (!user) return;
-        setLoading(true);
-
+        
         const userDocRef = doc(db, 'users', user.uid);
         const unsubscribeUser = onSnapshot(userDocRef, (doc) => {
             setUserData(doc.data() as UserData);
         });
 
-        const q = query(
-            collection(db, 'bpexch_logins'), 
-            where('userId', '==', user.uid),
-            orderBy('timestamp', 'desc')
-        );
+        return () => unsubscribeUser();
+    }, [user]);
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const activity: LoginActivity[] = [];
-            const loginsPerDay: { [key: string]: number } = {};
+    useEffect(() => {
+        if(!user) return;
 
-            const last7Days = eachDayOfInterval({
-                start: subDays(new Date(), 6),
-                end: new Date()
-            });
-
-            last7Days.forEach(day => {
-                loginsPerDay[format(day, 'yyyy-MM-dd')] = 0;
-            });
-            
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                if(!data.timestamp) return;
-                const timestamp = (data.timestamp as any).toDate();
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const q = query(
+                    collection(db, 'bpexch_logins'), 
+                    where('userId', '==', user.uid),
+                    orderBy('timestamp', 'desc')
+                );
+        
+                const snapshot = await getDocs(q);
                 
-                activity.push({
-                    id: doc.id,
-                    date: format(timestamp, 'yyyy-MM-dd'),
-                    time: format(timestamp, 'p'),
-                    ip: data.ip,
-                    status: 'Success'
+                const activity: LoginActivity[] = [];
+                const loginsPerDay: { [key: string]: number } = {};
+
+                const last7Days = eachDayOfInterval({
+                    start: subDays(new Date(), 6),
+                    end: new Date()
                 });
 
-                const dayKey = format(timestamp, 'yyyy-MM-dd');
-                if(dayKey in loginsPerDay) {
-                    loginsPerDay[dayKey]++;
-                }
-            });
+                last7Days.forEach(day => {
+                    loginsPerDay[format(day, 'yyyy-MM-dd')] = 0;
+                });
+                
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if(!data.timestamp) return;
+                    const timestamp = (data.timestamp as any).toDate();
+                    
+                    activity.push({
+                        id: doc.id,
+                        date: format(timestamp, 'yyyy-MM-dd'),
+                        time: format(timestamp, 'p'),
+                        ip: data.ip,
+                        status: 'Success'
+                    });
 
-            setLoginActivity(activity.slice(0, 5));
+                    const dayKey = format(timestamp, 'yyyy-MM-dd');
+                    if(dayKey in loginsPerDay) {
+                        loginsPerDay[dayKey]++;
+                    }
+                });
 
-            const formattedChartData = Object.entries(loginsPerDay).map(([date, count]) => ({
-                day: format(new Date(date), 'E'),
-                logins: count
-            }));
-            
-            setChartData(formattedChartData);
-            setLoading(false);
-        }, (error) => {
-            console.error("Error fetching login activity:", error);
-            setLoading(false);
-        });
+                setLoginActivity(activity.slice(0, 5));
 
-        return () => {
-            unsubscribeUser();
-            unsubscribe();
+                const formattedChartData = Object.entries(loginsPerDay).map(([date, count]) => ({
+                    day: format(new Date(date), 'E'),
+                    logins: count
+                }));
+                
+                setChartData(formattedChartData);
+            } catch (error) {
+                console.error("Error fetching login activity:", error);
+            } finally {
+                setLoading(false);
+            }
         }
+        fetchData();
     }, [user]);
 
     const handleLoginClick = async () => {
@@ -305,5 +311,3 @@ export default function BpexchLoginPage() {
     </div>
   )
 }
-
-    

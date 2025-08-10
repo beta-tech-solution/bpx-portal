@@ -10,7 +10,7 @@ import { Save, Loader2, User, Camera, KeyRound, Mail, Phone, Calendar } from "lu
 import { useToast } from "@/hooks/use-toast";
 import { auth, db } from "@/lib/firebase/config";
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { doc, getDoc, updateDoc, Timestamp, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
@@ -54,15 +54,17 @@ export default function UserSettingsPage() {
     useEffect(() => {
         if(user) {
             const userDocRef = doc(db, 'users', user.uid);
-            const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
+            getDoc(userDocRef).then((docSnap) => {
                 if(docSnap.exists()){
                     const data = docSnap.data() as UserData;
                     setUserData(data);
                     setEditableFullName(data.fullName);
                 }
                 setIsLoading(false);
+            }).catch(err => {
+                console.error("Error fetching user data:", err);
+                setIsLoading(false);
             });
-            return () => unsubscribe();
         } else if (!loadingUser) {
             setIsLoading(false);
         }
@@ -91,6 +93,7 @@ export default function UserSettingsPage() {
 
             const userDocRef = doc(db, 'users', user.uid);
             await updateDoc(userDocRef, { photoURL });
+            setUserData(prev => prev ? { ...prev, photoURL } : null);
 
             toast({ title: "Profile Picture Updated" });
         } catch (error) {
@@ -111,6 +114,7 @@ export default function UserSettingsPage() {
             await updateDoc(userDocRef, {
                 fullName: editableFullName
             });
+            setUserData(prev => prev ? { ...prev, fullName: editableFullName } : null);
             toast({
                 title: "Profile Updated",
                 description: "Your full name has been saved successfully.",

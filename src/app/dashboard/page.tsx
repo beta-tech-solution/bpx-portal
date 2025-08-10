@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Loader2, CalendarCheck, Hand, Copy, ExternalLink, Wallet, FileText, Download, Megaphone } from "lucide-react"
 import { auth, db } from "@/lib/firebase/config"
-import { collection, query, where, onSnapshot, doc, orderBy, limit, Timestamp } from "firebase/firestore"
-import { onAuthStateChanged, User } from "firebase/auth"
+import { collection, query, where, doc, orderBy, limit, Timestamp, getDocs, getDoc } from "firebase/firestore"
+import { useAuthState } from "react-firebase-hooks/auth"
 import { format } from 'date-fns';
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
@@ -28,79 +28,73 @@ interface Transaction {
 
 export default function DashboardPage() {
     const { toast } = useToast();
-    const [user, setUser] = useState<User | null>(null);
+    const [user] = useAuthState(auth);
     const [userData, setUserData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
-    const [depositsData, setDepositsData] = useState<Transaction[]>([]);
-    const [withdrawalsData, setWithdrawalsData] = useState<Transaction[]>([]);
     const [globalAnnouncement, setGlobalAnnouncement] = useState<string | null>(null);
     
     useEffect(() => {
-        const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
-            if (currentUser) {
-                setUser(currentUser);
-                
-                const userDocRef = doc(db, "users", currentUser.uid);
-                const unsubscribeUser = onSnapshot(userDocRef, (doc) => {
-                    if (doc.exists()) {
-                        setUserData(doc.data());
-                    }
-                    setLoading(false);
-                });
+        if (!user) {
+            setLoading(false);
+            return;
+        }
 
-                const depositsQuery = query(collection(db, "deposits"), where("userId", "==", currentUser.uid), limit(5));
-                const unsubDeposits = onSnapshot(depositsQuery, (snapshot) => {
-                    const deposits = snapshot.docs.map(doc => ({ id: doc.id, type: 'Deposit', ...doc.data() } as Transaction));
-                    setDepositsData(deposits);
-                }, (error) => {
-                    console.error("Error fetching deposits:", error);
-                });
-
-                const withdrawalsQuery = query(collection(db, "withdrawals"), where("userId", "==", currentUser.uid), limit(5));
-                const unsubWithdrawals = onSnapshot(withdrawalsQuery, (snapshot) => {
-                    const withdrawals = snapshot.docs.map(doc => ({ id: doc.id, type: 'Withdrawal', ...doc.data() } as Transaction));
-                    setWithdrawalsData(withdrawals);
-                }, (error) => {
-                    console.error("Error fetching withdrawals:", error);
-                });
-
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                // Fetch user data, announcement, and transactions in parallel
+                const userDocRef = doc(db, "users", user.uid);
                 const announcementDocRef = doc(db, "settings", "globalAnnouncement");
-                const unsubscribeAnnouncement = onSnapshot(announcementDocRef, (docSnap) => {
-                    if(docSnap.exists() && docSnap.data().message) {
-                        setGlobalAnnouncement(docSnap.data().message);
-                    } else {
-                        setGlobalAnnouncement(null);
-                    }
-                });
+                const depositsQuery = query(collection(db, "deposits"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(5));
+                const withdrawalsQuery = query(collection(db, "withdrawals"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(5));
 
-                return () => {
-                    unsubscribeUser();
-                    unsubDeposits();
-                    unsubWithdrawals();
-                    unsubscribeAnnouncement();
-                };
+                const [
+                    userDocSnap,
+                    announcementDocSnap,
+                    depositsSnap,
+                    withdrawalsSnap
+                ] = await Promise.all([
+                    getDoc(userDocRef),
+                    getDoc(announcementDocRef),
+                    getDocs(depositsQuery),
+                    getDocs(withdrawalsQuery)
+                ]);
 
-            } else {
-                setUser(null);
-                setUserData(null);
+                // Process user data
+                if (userDocSnap.exists()) {
+                    setUserData(userDocSnap.data());
+                }
+
+                // Process announcement
+                if (announcementDocSnap.exists() && announcementDocSnap.data().message) {
+                    setGlobalAnnouncement(announcementDocSnap.data().message);
+                } else {
+                    setGlobalAnnouncement(null);
+                }
+
+                // Process transactions
+                const deposits = depositsSnap.docs.map(doc => ({ id: doc.id, type: 'Deposit', ...doc.data() } as Transaction));
+                const withdrawals = withdrawalsSnap.docs.map(doc => ({ id: doc.id, type: 'Withdrawal', ...doc.data() } as Transaction));
+                
+                const allTransactions = [...deposits, ...withdrawals]
+                    .sort((a, b) => (b.createdAt?.toDate() ?? 0) > (a.createdAt?.toDate() ?? 0) ? 1 : -1)
+                    .slice(0, 10);
+                
+                setRecentTransactions(allTransactions);
+
+            } catch (error) {
+                console.error("Error fetching dashboard data:", error);
+                toast({ title: "Error", description: "Could not load dashboard data.", variant: "destructive" });
+            } finally {
                 setLoading(false);
             }
-        });
-        
-        return () => unsubscribeAuth();
-    }, []);
+        };
 
-    useEffect(() => {
-        const allTransactions = [...depositsData, ...withdrawalsData]
-            .sort((a, b) => {
-                const dateA = a.createdAt?.toDate() ?? new Date(0);
-                const dateB = b.createdAt?.toDate() ?? new Date(0);
-                return dateB.getTime() - dateA.getTime();
-            });
-        setRecentTransactions(allTransactions.slice(0, 10));
-    }, [depositsData, withdrawalsData]);
-    
+        fetchData();
+        
+    }, [user, toast]);
+
     const handleCopy = (text: string, label: string) => {
         if (text) {
             navigator.clipboard.writeText(text);
@@ -233,5 +227,3 @@ export default function DashboardPage() {
     </>
   )
 }
-
-    

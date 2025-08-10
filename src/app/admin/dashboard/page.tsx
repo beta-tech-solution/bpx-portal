@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Pie, PieChart, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { DollarSign, Users, Landmark, Loader2, UserCheck, MessageSquare, ArrowRight, TrendingUp, ArrowDownLeft, ArrowUpRight } from "lucide-react"
@@ -56,7 +56,6 @@ const statusVariant = {
 
 export default function AdminDashboardPage() {
     const router = useRouter();
-    const [loading, setLoading] = useState(true);
     const [overviewData, setOverviewData] = useState<OverviewData>({
         totalUsers: 0,
         pendingDeposits: 0,
@@ -67,13 +66,11 @@ export default function AdminDashboardPage() {
     const [profitData, setProfitData] = useState<ProfitData[]>([]);
     const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
     const [sevenDayStats, setSevenDayStats] = useState({ deposits: 0, withdrawals: 0, profit: 0 });
-    const [loadingExtraStats, setLoadingExtraStats] = useState(true);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        setLoading(true);
         const unsubscribes: (() => void)[] = [];
 
-        // --- Overview Cards Listeners (Efficient) ---
         const setupListener = (
             collectionName: string, 
             stateKey: keyof OverviewData,
@@ -89,12 +86,10 @@ export default function AdminDashboardPage() {
             unsubscribes.push(unsubscribe);
         };
         
-        setupListener('users', 'totalUsers');
         setupListener('users', 'pendingUsers', [['status', '==', 'Pending']]);
         setupListener('deposits', 'pendingDeposits', [['status', '==', 'Pending']]);
         setupListener('withdrawals', 'pendingWithdrawals', [['status', '==', 'Pending']]);
 
-        // --- Unread Chats Listener ---
         const chatsQuery = query(collection(db, 'chats'), where('adminRead', '==', false), orderBy('lastMessageTimestamp', 'desc'));
         unsubscribes.push(onSnapshot(chatsQuery, (snapshot) => {
             const chats = snapshot.docs.map(doc => ({
@@ -107,39 +102,41 @@ export default function AdminDashboardPage() {
         }));
 
         const fetchOneTimeData = async () => {
-            setLoadingExtraStats(true);
+            setLoading(true);
             try {
-                // All-Time Profit Data
+                // Fetch all data in parallel
+                const usersQuery = query(collection(db, "users"));
                 const depositsQuery = query(collection(db, "deposits"), where("status", "==", "Approved"));
                 const withdrawalsQuery = query(collection(db, "withdrawals"), where("status", "==", "Approved"));
-                const [depositsSnapshot, withdrawalsSnapshot] = await Promise.all([getDocs(depositsQuery), getDocs(withdrawalsQuery)]);
+                
+                const [usersSnapshot, depositsSnapshot, withdrawalsSnapshot] = await Promise.all([
+                    getDocs(usersQuery),
+                    getDocs(depositsQuery),
+                    getDocs(withdrawalsQuery)
+                ]);
+
+                // Set total users count
+                setOverviewData(prev => ({ ...prev, totalUsers: usersSnapshot.size }));
+
+                // Process profit data
                 const totalDeposits = depositsSnapshot.docs.reduce((sum, doc) => sum + parseFloat(doc.data().amount), 0);
                 const totalWithdrawals = withdrawalsSnapshot.docs.reduce((sum, doc) => sum + parseFloat(doc.data().amount), 0);
                 const netProfit = totalDeposits - totalWithdrawals;
 
                 const profitChartData: ProfitData[] = [
-                    { name: 'Total Deposits', value: totalDeposits, fill: COLORS.deposits },
-                    { name: 'Total Withdrawals', value: totalWithdrawals, fill: COLORS.withdrawals },
+                    { name: 'Deposits', value: totalDeposits, fill: COLORS.deposits },
+                    { name: 'Withdrawals', value: totalWithdrawals, fill: COLORS.withdrawals },
                 ];
-                if (netProfit !== 0) {
-                     profitChartData.push({ name: 'Net Profit', value: netProfit, fill: COLORS.profit });
-                }
-                setProfitData(profitChartData.filter(d => d.value !== 0));
+                setProfitData(profitChartData.filter(d => d.value > 0));
 
-                // Recent Transactions & 7-Day Stats
+                // Process recent transactions and 7-day stats
                 const userCache = new Map<string, string>();
                 const getUserName = async (userId: string): Promise<string> => {
                     if (userCache.has(userId)) return userCache.get(userId)!;
-                    try {
-                        const userDoc = await getDoc(doc(db, 'users', userId));
-                        if (userDoc.exists()) {
-                            const name = userDoc.data().fullName || 'Unknown User';
-                            userCache.set(userId, name);
-                            return name;
-                        }
-                    } catch (e) { console.error("Could not fetch user", e); }
-                    userCache.set(userId, 'Unknown User');
-                    return 'Unknown User';
+                    const userDoc = usersSnapshot.docs.find(d => d.id === userId);
+                    const name = userDoc?.data().fullName || 'Unknown User';
+                    userCache.set(userId, name);
+                    return name;
                 };
                 
                 const sevenDaysAgo = subDays(new Date(), 7);
@@ -175,12 +172,11 @@ export default function AdminDashboardPage() {
             } catch (error) {
                 console.error("Error fetching one-time stats:", error);
             } finally {
-                setLoadingExtraStats(false);
+                setLoading(false);
             }
         };
         
         fetchOneTimeData();
-        setLoading(false);
         
         return () => {
             unsubscribes.forEach(unsub => unsub());
@@ -320,34 +316,30 @@ export default function AdminDashboardPage() {
                         <CardDescription>The last 5 approved transactions.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {loadingExtraStats ? (
-                            <div className="flex justify-center items-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
-                        ) : (
-                             <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>User</TableHead>
-                                        <TableHead>Type</TableHead>
-                                        <TableHead>Amount</TableHead>
-                                        <TableHead>Date</TableHead>
+                         <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>User</TableHead>
+                                    <TableHead>Type</TableHead>
+                                    <TableHead>Amount</TableHead>
+                                    <TableHead>Date</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {recentTransactions.length > 0 ? recentTransactions.map(tx => (
+                                    <TableRow key={tx.id}>
+                                        <TableCell>{tx.userName}</TableCell>
+                                        <TableCell><Badge variant={statusVariant[tx.type]}>{tx.type}</Badge></TableCell>
+                                        <TableCell className="font-mono">PKR {tx.amount.toLocaleString()}</TableCell>
+                                        <TableCell>{format(tx.createdAt.toDate(), 'PP')}</TableCell>
                                     </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {recentTransactions.length > 0 ? recentTransactions.map(tx => (
-                                        <TableRow key={tx.id}>
-                                            <TableCell>{tx.userName}</TableCell>
-                                            <TableCell><Badge variant={statusVariant[tx.type]}>{tx.type}</Badge></TableCell>
-                                            <TableCell className="font-mono">PKR {tx.amount.toLocaleString()}</TableCell>
-                                            <TableCell>{format(tx.createdAt.toDate(), 'PP')}</TableCell>
-                                        </TableRow>
-                                    )) : (
-                                        <TableRow>
-                                            <TableCell colSpan={4} className="text-center text-muted-foreground">No recent transactions found.</TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                        )}
+                                )) : (
+                                    <TableRow>
+                                        <TableCell colSpan={4} className="text-center text-muted-foreground">No recent transactions found.</TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
                     </CardContent>
                 </Card>
 
@@ -357,44 +349,36 @@ export default function AdminDashboardPage() {
                         <CardDescription>Profit summary for the past week.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        {loadingExtraStats ? (
-                            <div className="flex justify-center items-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
-                        ) : (
-                            <>
-                                <Card>
-                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                        <CardTitle className="text-sm font-medium">Total Deposits</CardTitle>
-                                        <ArrowDownLeft className="h-4 w-4 text-green-500" />
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="text-2xl font-bold">PKR {sevenDayStats.deposits.toLocaleString()}</div>
-                                    </CardContent>
-                                </Card>
-                                <Card>
-                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                        <CardTitle className="text-sm font-medium">Total Withdrawals</CardTitle>
-                                        <ArrowUpRight className="h-4 w-4 text-red-500" />
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="text-2xl font-bold">PKR {sevenDayStats.withdrawals.toLocaleString()}</div>
-                                    </CardContent>
-                                </Card>
-                                <Card>
-                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                        <CardTitle className="text-sm font-medium">Net Profit</CardTitle>
-                                        <TrendingUp className="h-4 w-4 text-primary" />
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="text-2xl font-bold">PKR {sevenDayStats.profit.toLocaleString()}</div>
-                                    </CardContent>
-                                </Card>
-                            </>
-                        )}
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Total Deposits</CardTitle>
+                                <ArrowDownLeft className="h-4 w-4 text-green-500" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">PKR {sevenDayStats.deposits.toLocaleString()}</div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Total Withdrawals</CardTitle>
+                                <ArrowUpRight className="h-4 w-4 text-red-500" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">PKR {sevenDayStats.withdrawals.toLocaleString()}</div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Net Profit</CardTitle>
+                                <TrendingUp className="h-4 w-4 text-primary" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">PKR {sevenDayStats.profit.toLocaleString()}</div>
+                            </CardContent>
+                        </Card>
                     </CardContent>
                 </Card>
             </div>
         </div>
     )
 }
-
-    

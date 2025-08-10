@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -11,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Loader2, CalendarIcon, Eye, ArrowLeft, ArrowRight } from "lucide-react"
 import { db, auth } from "@/lib/firebase/config"
-import { collection, query, where, Timestamp, onSnapshot } from "firebase/firestore"
+import { collection, query, where, Timestamp, getDocs, orderBy } from "firebase/firestore"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { cn } from "@/lib/utils"
@@ -51,28 +52,25 @@ function DepositHistoryContent() {
         return;
     }
 
-    setLoading(true);
-
-    const q = query(collection(db, "deposits"), where("userId", "==", user.uid));
-    const unsubscribeDeposits = onSnapshot(q, (querySnapshot) => {
-        const depositsData = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        } as Deposit));
-        
-        depositsData.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
-
-        setDeposits(depositsData);
-        setLoading(false);
-    }, (error) => {
-        console.error("Error fetching deposits:", error);
-        toast({ title: "Error", description: "Could not fetch deposit history.", variant: "destructive" });
-        setLoading(false);
-    });
-
-    return () => {
-        unsubscribeDeposits();
+    const fetchDeposits = async () => {
+        setLoading(true);
+        try {
+            const q = query(collection(db, "deposits"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
+            const querySnapshot = await getDocs(q);
+            const depositsData = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            } as Deposit));
+            setDeposits(depositsData);
+        } catch (error) {
+            console.error("Error fetching deposits:", error);
+            toast({ title: "Error", description: "Could not fetch deposit history.", variant: "destructive" });
+        } finally {
+            setLoading(false);
+        }
     }
+
+    fetchDeposits();
   }, [user, toast]);
 
   const filteredDeposits = useMemo(() => {

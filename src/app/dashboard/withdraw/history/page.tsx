@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -11,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Loader2, CalendarIcon, Eye, ArrowLeft, ArrowRight, User, Phone, Mail, Copy } from "lucide-react"
 import { db, auth } from "@/lib/firebase/config"
-import { collection, query, where, Timestamp, onSnapshot, doc } from "firebase/firestore"
+import { collection, query, where, Timestamp, getDocs, orderBy } from "firebase/firestore"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { cn } from "@/lib/utils"
@@ -54,26 +55,25 @@ function WithdrawalHistoryContent() {
         return;
     }
 
-    setLoading(true);
+    const fetchWithdrawals = async () => {
+        setLoading(true);
+        try {
+            const q = query(collection(db, "withdrawals"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
+            const querySnapshot = await getDocs(q);
+            const data = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            } as Withdrawal));
+            setWithdrawals(data);
+        } catch (error) {
+            console.error("Error fetching withdrawals:", error);
+            toast({ title: "Error", description: "Could not fetch withdrawal history.", variant: "destructive" });
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    const q = query(collection(db, "withdrawals"), where("userId", "==", user.uid));
-    const unsubscribeWithdrawals = onSnapshot(q, (querySnapshot) => {
-        const data = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        } as Withdrawal));
-        data.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
-        setWithdrawals(data);
-        setLoading(false);
-    }, (error) => {
-        console.error("Error fetching withdrawals:", error);
-        toast({ title: "Error", description: "Could not fetch withdrawal history.", variant: "destructive" });
-        setLoading(false);
-    });
-
-    return () => {
-        unsubscribeWithdrawals();
-    }
+    fetchWithdrawals();
   }, [user, toast]);
 
   const filteredWithdrawals = useMemo(() => {

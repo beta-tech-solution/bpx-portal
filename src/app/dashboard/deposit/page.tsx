@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { auth, db } from '@/lib/firebase/config';
-import { collection, addDoc, serverTimestamp, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, onSnapshot, doc, getDoc, getDocs } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import Image from 'next/image';
 
@@ -27,7 +27,6 @@ interface Account {
 }
 
 export default function DepositPage() {
-  const [isSubmitted, setIsSubmitted] = useState(false);
   const [progress, setProgress] = useState(10);
   const [isLoading, setIsLoading] = useState(false);
   const [user] = useAuthState(auth);
@@ -35,7 +34,7 @@ export default function DepositPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loadingAccounts, setLoadingAccounts] = useState(true);
   const [hasPendingDeposit, setHasPendingDeposit] = useState(false);
-  const [checkingStatus, setCheckingStatus] = useState(true); // New loading state
+  const [checkingStatus, setCheckingStatus] = useState(true);
   const [fileName, setFileName] = useState<string | null>(null);
 
   useEffect(() => {
@@ -44,30 +43,51 @@ export default function DepositPage() {
         return;
     }
 
-    // Check for pending deposits
+    setCheckingStatus(true);
     const pendingQuery = query(collection(db, 'deposits'), where('userId', '==', user.uid), where('status', '==', 'Pending'));
-    const unsubscribePending = onSnapshot(pendingQuery, (snapshot) => {
+    
+    // Using getDocs for a one-time check is more efficient than onSnapshot here.
+    getDocs(pendingQuery).then(snapshot => {
         setHasPendingDeposit(!snapshot.empty);
-        setCheckingStatus(false); // Status checked, turn off loading
+        setCheckingStatus(false);
+    }).catch(error => {
+        console.error("Error checking pending deposits:", error);
+        toast({ title: "Error", description: "Could not check your deposit status.", variant: "destructive"});
+        setCheckingStatus(false);
     });
 
-    return () => {
-        unsubscribePending();
-    };
-  }, [user]);
-
-  useEffect(() => {
     const fetchAccounts = async () => {
         setLoadingAccounts(true);
-        const settingsDocRef = doc(db, "settings", "depositAccounts");
-        const docSnap = await getDoc(settingsDocRef);
-        if (docSnap.exists()) {
-            setAccounts(docSnap.data().accounts || []);
+        try {
+            const settingsDocRef = doc(db, "settings", "depositAccounts");
+            const docSnap = await getDoc(settingsDocRef);
+            if (docSnap.exists()) {
+                setAccounts(docSnap.data().accounts || []);
+            }
+        } catch (error) {
+            console.error("Error fetching accounts:", error);
+        } finally {
+            setLoadingAccounts(false);
         }
-        setLoadingAccounts(false);
     }
     fetchAccounts();
-  }, []);
+
+  }, [user, toast]);
+  
+  useEffect(() => {
+    if (hasPendingDeposit) {
+      const timer = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 95) {
+            clearInterval(timer);
+            return 95;
+          }
+          return prev + 5;
+        });
+      }, 800);
+      return () => clearInterval(timer);
+    }
+  }, [hasPendingDeposit]);
 
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -77,8 +97,6 @@ export default function DepositPage() {
         return;
     }
     
-    setIsLoading(true);
-
     const form = event.currentTarget;
     const amountInput = form.elements.namedItem('amount') as HTMLInputElement;
     const fileInput = form.elements.namedItem('proof') as HTMLInputElement;
@@ -91,8 +109,7 @@ export default function DepositPage() {
         title: "Error",
         description: "Please enter an amount and upload a proof of payment.",
         variant: "destructive",
-      })
-      setIsLoading(false);
+      });
       return;
     }
     
@@ -102,9 +119,10 @@ export default function DepositPage() {
         description: "The minimum deposit amount is PKR 500.",
         variant: "destructive",
       });
-      setIsLoading(false);
       return;
     }
+
+    setIsLoading(true);
 
     try {
         const formData = new FormData();
@@ -117,7 +135,7 @@ export default function DepositPage() {
         });
 
         if (!uploadResponse.ok) {
-            throw new Error('Cloudinary upload failed');
+            throw new Error('Image upload failed. Please check your connection and try again.');
         }
 
         const cloudinaryData = await uploadResponse.json();
@@ -132,21 +150,22 @@ export default function DepositPage() {
             createdAt: serverTimestamp()
         });
         
-        setIsSubmitted(true);
-        form.reset();
-        setFileName(null);
+        setHasPendingDeposit(true);
         toast({
             title: "Deposit Submitted",
             description: "We have received your proof and will confirm it shortly.",
         });
+        
+        form.reset();
+        setFileName(null);
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Deposit error:", error);
         toast({
             title: "Submission Failed",
-            description: "There was an error submitting your deposit. Please try again.",
+            description: error.message || "There was an error submitting your deposit. Please try again.",
             variant: "destructive",
-        })
+        });
     } finally {
         setIsLoading(false);
     }
@@ -166,22 +185,15 @@ export default function DepositPage() {
     }
   }
 
-  useEffect(() => {
-    if (isSubmitted) {
-      const timer = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 95) {
-            clearInterval(timer);
-            return 95;
-          }
-          return prev + 5;
-        });
-      }, 800);
-      return () => clearInterval(timer);
-    }
-  }, [isSubmitted]);
-
-  if (isSubmitted) {
+  if (checkingStatus) {
+    return (
+        <div className="flex justify-center items-center h-48">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+    );
+  }
+  
+  if (hasPendingDeposit) {
     return (
       <div className="flex items-center justify-center h-full animate-fade-in w-full">
         <Card className="w-full">
@@ -196,33 +208,13 @@ export default function DepositPage() {
               <p className="text-center text-sm text-muted-foreground">Waiting for Admin Confirmation... ({progress}%)</p>
             </div>
           </CardContent>
-          <CardFooter className="flex justify-center">
-            <Button variant="outline" onClick={() => setIsSubmitted(false)}>Make Another Deposit</Button>
-          </CardFooter>
         </Card>
       </div>
     );
   }
 
-  if (checkingStatus) {
-    return (
-        <div className="flex justify-center items-center h-48">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-    );
-  }
-
   return (
     <div className="animate-fade-in grid gap-8 w-full">
-        {hasPendingDeposit && (
-             <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Pending Deposit Request</AlertTitle>
-                <AlertDescription>
-                    You already have a deposit request pending approval. Please wait for the admin to process it before submitting a new one.
-                </AlertDescription>
-            </Alert>
-        )}
         <Card className="w-full transition-shadow hover:shadow-lg">
             <form onSubmit={handleSubmit}>
                 <CardContent className="p-6 flex flex-col gap-6">
@@ -274,30 +266,25 @@ export default function DepositPage() {
                         <div>
                             <h4 className="font-bold mb-2">Instructions (English):</h4>
                             <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-  <li>Transfer the payment to the account mentioned above.</li>
-  <li>Upload the payment proof and submit it for verification.</li>
-  <li>Payments are typically approved within 30 minutes.</li>
-  <li>Ensure you enter the exact amount to prevent any delays.</li>
-</ol>
-
-
+                              <li>Transfer the payment to the account mentioned above.</li>
+                              <li>Upload the payment proof and submit it for verification.</li>
+                              <li>Payments are typically approved within 90 minutes.</li>
+                              <li>Ensure you enter the exact amount to prevent any delays.</li>
+                            </ol>
                         </div>
                         <div className="text-right">
-  <h4 className="font-bold mb-2">ہدایات (Urdu):</h4>
-  <ol dir="rtl" className="list-decimal pr-6 space-y-2 text-sm text-muted-foreground font-code">
-  <li>ادائیگی اوپر دیے گئے اکاؤنٹ میں منتقل کریں</li>
-  <li>ادائیگی کا ثبوت اپ لوڈ کریں اور جمع کروائیں</li>
-  <li>ادائیگی کی منظوری تقریباً 30 منٹ میں دی جائے گی</li>
-  <li>ادائیگی میں تاخیر سے بچنے کے لیے درست رقم درج کریں</li>
-</ol>
-
-</div>
-
-
+                          <h4 className="font-bold mb-2">ہدایات (Urdu):</h4>
+                          <ol dir="rtl" className="list-decimal pr-6 space-y-2 text-sm text-muted-foreground font-code">
+                            <li>ادائیگی اوپر دیے گئے اکاؤنٹ میں منتقل کریں</li>
+                            <li>ادائیگی کا ثبوت اپ لوڈ کریں اور جمع کروائیں</li>
+                            <li>ادائیگی کی منظوری تقریباً 90 منٹ میں دی جائے گی</li>
+                            <li>ادائیگی میں تاخیر سے بچنے کے لیے درست رقم درج کریں</li>
+                          </ol>
+                        </div>
                     </div>
                 </CardContent>
                 <CardFooter className="p-6 pt-0">
-                    <Button type="submit" className="w-full h-12 text-base font-bold bg-slate-800 hover:bg-slate-700 text-white" disabled={isLoading || hasPendingDeposit}>
+                    <Button type="submit" className="w-full h-12 text-base font-bold bg-slate-800 hover:bg-slate-700 text-white" disabled={isLoading}>
                         {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                         DEPOSIT
                     </Button>

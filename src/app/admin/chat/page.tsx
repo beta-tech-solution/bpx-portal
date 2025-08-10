@@ -57,13 +57,13 @@ export default function AdminChatListPage() {
         const messagesQuery = query(collection(chatRef, 'messages'));
         const messagesSnapshot = await getDocs(messagesQuery);
         
-        // Firestore doesn't support batch deletes of subcollections from the client-side easily.
-        // We delete messages one by one. For large chats, a cloud function is better.
-        for (const messageDoc of messagesSnapshot.docs) {
-            await deleteDoc(doc(db, `chats/${chatId}/messages`, messageDoc.id));
-        }
+        const deletePromises = messagesSnapshot.docs.map(messageDoc => 
+            deleteDoc(doc(db, `chats/${chatId}/messages`, messageDoc.id))
+        );
         
+        await Promise.all(deletePromises);
         await deleteDoc(chatRef);
+        
         toast({ title: "Chat Deleted", description: "The entire chat session has been removed." });
     } catch(e) {
         console.error("Error deleting chat:", e);

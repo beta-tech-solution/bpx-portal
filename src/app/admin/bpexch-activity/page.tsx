@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Loader2, Search } from "lucide-react";
 import { db } from '@/lib/firebase/config';
-import { collection, query, onSnapshot, getDoc, doc, orderBy } from 'firebase/firestore';
+import { collection, query, getDocs, doc, orderBy, getDoc } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { useMediaQuery } from '@/hooks/use-media-query';
 
@@ -27,55 +27,57 @@ export default function AdminBpexchActivityPage() {
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
-    setLoading(true);
-    const q = query(collection(db, 'bpexch_logins'), orderBy('timestamp', 'desc'));
+    const fetchActivity = async () => {
+        setLoading(true);
+        try {
+            const q = query(collection(db, 'bpexch_logins'), orderBy('timestamp', 'desc'));
+            const snapshot = await getDocs(q);
 
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const activityData: LoginActivity[] = [];
-      const userCache = new Map();
+            const userCache = new Map();
+            const activityData: LoginActivity[] = await Promise.all(snapshot.docs.map(async (docSnapshot) => {
+                const data = docSnapshot.data();
+                let userName = 'Unknown';
+                let userEmail = 'Unknown';
 
-      for (const docSnapshot of snapshot.docs) {
-        const data = docSnapshot.data();
-        let userName = 'Unknown';
-        let userEmail = 'Unknown';
-        
-        if (data.userId) {
-          if (userCache.has(data.userId)) {
-              const userData = userCache.get(data.userId);
-              userName = userData.name;
-              userEmail = userData.email;
-          } else {
-              try {
-                const userDoc = await getDoc(doc(db, 'users', data.userId));
-                if (userDoc.exists()) {
-                  const userData = userDoc.data();
-                  userName = userData.fullName;
-                  userEmail = userData.email;
-                  userCache.set(data.userId, { name: userName, email: userEmail });
+                if (data.userId) {
+                    if (userCache.has(data.userId)) {
+                        const userData = userCache.get(data.userId);
+                        userName = userData.name;
+                        userEmail = userData.email;
+                    } else {
+                        try {
+                            const userDoc = await getDoc(doc(db, 'users', data.userId));
+                            if (userDoc.exists()) {
+                                const userData = userDoc.data();
+                                userName = userData.fullName;
+                                userEmail = userData.email;
+                                userCache.set(data.userId, { name: userName, email: userEmail });
+                            }
+                        } catch (e) {
+                            console.error("Could not fetch user", e);
+                        }
+                    }
                 }
-              } catch (e) {
-                  console.error("Could not fetch user", e)
-              }
-          }
+                
+                return {
+                    id: docSnapshot.id,
+                    userId: data.userId,
+                    userName,
+                    userEmail,
+                    ip: data.ip,
+                    timestamp: data.timestamp ? format((data.timestamp as any).toDate(), 'PPpp') : 'No date',
+                };
+            }));
+            
+            setActivity(activityData);
+        } catch (error) {
+            console.error("Error fetching activity: ", error);
+        } finally {
+            setLoading(false);
         }
-        
-        activityData.push({
-          id: docSnapshot.id,
-          userId: data.userId,
-          userName,
-          userEmail,
-          ip: data.ip,
-          timestamp: data.timestamp ? format((data.timestamp as any).toDate(), 'PPpp') : 'No date',
-        });
-      }
-      setActivity(activityData);
-      setLoading(false);
-    }, (error) => {
-      console.error("Error fetching activity: ", error);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
+    };
+    
+    fetchActivity();
   }, []);
 
   const filteredActivity = useMemo(() => {
