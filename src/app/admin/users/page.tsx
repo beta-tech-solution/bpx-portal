@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { MoreHorizontal, Edit, Trash2, PlusCircle, Users, Loader2, Copy, ShieldCheck, ShieldAlert } from "lucide-react"
+import { MoreHorizontal, Edit, Trash2, PlusCircle, Users, Loader2, Copy } from "lucide-react"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -25,8 +25,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Textarea } from "@/components/ui/textarea"
 import { useMediaQuery } from "@/hooks/use-media-query"
-import { deleteUserAction, updateUserVerificationAction } from "./actions"
-import { Switch } from "@/components/ui/switch"
+import { deleteUserAction } from "./actions"
 
 
 const userChartConfig = {
@@ -47,7 +46,6 @@ interface User {
   bpexchUsername?: string;
   bpexchPassword?: string;
   adminMessage?: string;
-  emailVerified: boolean;
 }
 
 export default function AdminUsersPage() {
@@ -188,12 +186,6 @@ export default function AdminUsersPage() {
                          <Badge variant={user.status === 'Active' ? 'secondary' : (user.status === 'Pending' ? 'default' : 'destructive')}>{user.status}</Badge>
                       </div>
                 </div>
-                 <div className="flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground">Email:</span>
-                    <Badge variant={user.emailVerified ? 'secondary' : 'destructive'}>
-                        {user.emailVerified ? 'Verified' : 'Not Verified'}
-                    </Badge>
-                </div>
                 <div className="flex items-center justify-end gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
                     <Button variant="ghost" size="icon" onClick={() => handleEdit(user)}>
                         <Edit className="h-4 w-4" />
@@ -231,7 +223,6 @@ export default function AdminUsersPage() {
             <TableHeader>
                 <TableRow>
                 <TableHead>User</TableHead>
-                <TableHead>Email Status</TableHead>
                 <TableHead>Balance</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Role</TableHead>
@@ -245,12 +236,6 @@ export default function AdminUsersPage() {
                     <TableCell>
                     <div className="font-medium">{user.fullName}</div>
                     <div className="text-sm text-muted-foreground">{user.email}</div>
-                    </TableCell>
-                    <TableCell>
-                        <Badge variant={user.emailVerified ? 'secondary' : 'destructive'}>
-                           {user.emailVerified ? <ShieldCheck className="mr-1 h-3 w-3" /> : <ShieldAlert className="mr-1 h-3 w-3" />}
-                           {user.emailVerified ? 'Verified' : 'Not Verified'}
-                        </Badge>
                     </TableCell>
                     <TableCell className="font-mono">PKR {user.balance?.toFixed(2) || '0.00'}</TableCell>
                     <TableCell>
@@ -369,7 +354,6 @@ const UserFormSchema = z.object({
     bpexchUsername: z.string().optional(),
     bpexchPassword: z.string().optional(),
     adminMessage: z.string().optional(),
-    emailVerified: z.boolean(),
 });
 
 type UserFormValues = z.infer<typeof UserFormSchema>;
@@ -390,7 +374,6 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
             bpexchUsername: "",
             bpexchPassword: "",
             adminMessage: "",
-            emailVerified: false,
         },
     });
 
@@ -413,7 +396,6 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                 bpexchUsername: user?.bpexchUsername || "",
                 bpexchPassword: user?.bpexchPassword || "",
                 adminMessage: user?.adminMessage || "",
-                emailVerified: user?.emailVerified || false,
             });
         }
     }, [user, form, open]);
@@ -440,11 +422,6 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                     bpexchPassword: data.bpexchPassword,
                     adminMessage: data.adminMessage,
                 });
-
-                if (user.emailVerified !== data.emailVerified) {
-                    await updateUserVerificationAction(user.id, data.emailVerified);
-                }
-
                 toast({ title: "User Updated", description: "User details have been saved successfully." });
             } else {
                 if (!data.password) {
@@ -467,12 +444,8 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                     bpexchUsername: data.bpexchUsername,
                     bpexchPassword: data.bpexchPassword,
                     adminMessage: data.adminMessage,
-                    emailVerified: data.emailVerified,
+                    emailVerified: false,
                 });
-                
-                // Also update auth user record
-                await updateUserVerificationAction(newUser.uid, data.emailVerified);
-
                 toast({ title: "User Created", description: "New user has been added successfully." });
             }
             setOpen(false);
@@ -520,24 +493,6 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                                                 <Input placeholder="user@example.com" {...field} />
                                             </FormControl>
                                             <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                 <FormField
-                                    control={form.control}
-                                    name="emailVerified"
-                                    render={({ field }) => (
-                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                                            <div className="space-y-0.5">
-                                                <FormLabel>Email Verified</FormLabel>
-                                                <FormMessage />
-                                            </div>
-                                            <FormControl>
-                                                <Switch
-                                                    checked={field.value}
-                                                    onCheckedChange={field.onChange}
-                                                />
-                                            </FormControl>
                                         </FormItem>
                                     )}
                                 />
@@ -719,12 +674,6 @@ function UserDetailsDialog({ open, setOpen, user }: { open: boolean, setOpen: (o
                     <div className="space-y-2">
                         <DetailRow label="Full Name" value={user.fullName} />
                         <DetailRow label="Email" value={user.email} />
-                        <div className="flex justify-between items-center py-2 border-b">
-                            <div>
-                                <p className="text-sm text-muted-foreground">Email Verified</p>
-                                <p className="font-medium">{user.emailVerified ? 'Yes' : 'No'}</p>
-                            </div>
-                        </div>
                         <DetailRow label="Phone" value={user.phone} />
                         <DetailRow label="Gender" value={user.gender} />
                         <DetailRow label="Balance" value={`PKR ${user.balance?.toFixed(2) || '0.00'}`} />
