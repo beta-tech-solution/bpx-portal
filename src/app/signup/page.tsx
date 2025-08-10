@@ -91,7 +91,7 @@ export default function SignupPage() {
                 emailVerified: user.emailVerified,
             });
 
-            toast({ title: "Account Created", description: "A verification email has been sent to your inbox. Please verify your email to log in." })
+            toast({ title: "Account Created", description: "A verification email has been sent to your inbox or spam folder. Please verify your email to log in." })
             router.push('/login')
 
         } catch (error: any) {

@@ -11,7 +11,8 @@ if (!process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
 // This needs to be done carefully as it's a JSON string.
 let serviceAccount;
 try {
-    // Vercel escapes newlines, so we need to un-escape them for JSON.parse to work correctly.
+    // Vercel and other platforms escape newlines in multiline environment variables.
+    // We need to un-escape them for JSON.parse to work correctly.
     const serviceAccountString = process.env.FIREBASE_SERVICE_ACCOUNT_KEY.replace(/\\n/g, '\n');
     serviceAccount = JSON.parse(serviceAccountString);
 } catch (e) {
