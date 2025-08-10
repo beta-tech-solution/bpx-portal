@@ -8,7 +8,8 @@ import SplashScreen from "./splash/page";
 
 export const metadata: Metadata = {
   title: "BPX Portal",
-  description: "BPX Master made easy — manage deposits, withdrawals, and account details in one secure, user-friendly dashboard designed for BPX Master clients.",
+  description:
+    "BPX Master made easy — manage deposits, withdrawals, and account details in one secure, user-friendly dashboard designed for BPX Master clients.",
   icons: {
     icon: "/favicon.ico",
     shortcut: "/favicon.ico",
@@ -36,8 +37,20 @@ export default function RootLayout({
       <html lang="en">
         <head>
           <link rel="manifest" href="/manifest.json" />
-          <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+          <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+          />
           <meta name="theme-color" content="#FFFFFF" />
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                document.addEventListener('gesturestart', function (e) {
+                  e.preventDefault();
+                });
+              `,
+            }}
+          />
         </head>
         <body className="font-body antialiased">
           <SplashScreen />
@@ -49,7 +62,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+        />
         <link rel="manifest" href="/manifest.json" />
         <meta name="application-name" content="BPX Master" />
         <meta name="theme-color" content="#FFFFFF" />
@@ -57,6 +73,17 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="BPX Portal" />
+
+        {/* Disable pinch zoom safeguard */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              document.addEventListener('gesturestart', function (e) {
+                e.preventDefault();
+              });
+            `,
+          }}
+        />
 
         {/* redirect to /splash when launched as a PWA/TWA (client-side) */}
         <script
@@ -79,7 +106,7 @@ export default function RootLayout({
           }}
         />
 
-        {/* service worker registration (keeps your current code) */}
+        {/* service worker registration */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
