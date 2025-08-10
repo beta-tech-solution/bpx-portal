@@ -1,8 +1,8 @@
+
 "use server";
 
-import { auth as adminAuth } from "@/lib/firebase/admin";
-import { db } from "@/lib/firebase/config";
-import { doc, deleteDoc } from "firebase/firestore";
+import { auth as adminAuth, db } from "@/lib/firebase/admin";
+import { doc, deleteDoc, updateDoc } from "firebase/firestore";
 
 export async function deleteUserAction(uid: string) {
     if (!uid) {
@@ -36,5 +36,30 @@ export async function deleteUserAction(uid: string) {
         }
         
         throw new Error(error.message || "An unknown error occurred while deleting the user.");
+    }
+}
+
+export async function updateUserVerificationAction(uid: string, isVerified: boolean) {
+    if (!uid) {
+        throw new Error("User ID is required.");
+    }
+
+    try {
+        // Update Firebase Authentication
+        await adminAuth.updateUser(uid, {
+            emailVerified: isVerified
+        });
+
+        // Update Firestore
+        const userDocRef = doc(db, "users", uid);
+        await updateDoc(userDocRef, {
+            emailVerified: isVerified
+        });
+
+        return { success: true, message: `User email verification status set to ${isVerified}.` };
+
+    } catch (error: any) {
+        console.error("Error updating user verification:", error);
+        throw new Error(error.message || "An unknown error occurred while updating verification status.");
     }
 }
