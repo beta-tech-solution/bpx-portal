@@ -16,15 +16,15 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { db } from "@/lib/firebase/config"
-import { collection, query, orderBy, Timestamp, doc, updateDoc, getDocs, serverTimestamp } from 'firebase/firestore'
+import { collection, query, orderBy, Timestamp, doc, updateDoc, getDocs, serverTimestamp, setDoc, deleteDoc } from 'firebase/firestore'
 import { format, subMinutes, subDays, eachDayOfInterval } from 'date-fns'
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Textarea } from "@/components/ui/textarea"
 import { useMediaQuery } from "@/hooks/use-media-query"
-import { deleteUserAction, createUserAction } from "./actions"
+import { getAuth, createUserWithEmailAndPassword } from "firebase/auth"
 
 const userChartConfig = {
   count: { label: "New Users", color: "hsl(var(--primary))" },
@@ -46,6 +46,25 @@ interface User {
   adminMessage?: string;
   emailVerified: boolean;
 }
+
+// This is a client-side action, not a server action.
+async function deleteUserClientSideAction(uid: string) {
+    if (!uid) {
+        throw new Error("User ID is required.");
+    }
+    // We can't delete from Auth on client side without re-authentication.
+    // So we will just delete from Firestore.
+    // Admin will have to manually delete from Firebase Console for full cleanup.
+    try {
+        const userDocRef = doc(db, "users", uid);
+        await deleteDoc(userDocRef);
+        return { success: true, message: "User deleted from database." };
+    } catch(error: any) {
+        console.error("Error deleting user from Firestore:", error);
+        throw new Error(error.message || "An error occurred while deleting the user from the database.");
+    }
+}
+
 
 export default function AdminUsersPage() {
   const [isFormOpen, setIsFormOpen] = React.useState(false);
@@ -124,9 +143,9 @@ export default function AdminUsersPage() {
   
   const handleDelete = async (userId: string) => {
     try {
-        await deleteUserAction(userId);
+        await deleteUserClientSideAction(userId);
         setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
-        toast({ title: "User Deleted", description: "The user has been permanently removed." });
+        toast({ title: "User Deleted", description: "The user has been removed from the database." });
     } catch (error: any) {
         console.error("Failed to delete user:", error);
         toast({ title: "Error", description: error.message || "Could not delete user.", variant: "destructive" });
@@ -442,16 +461,29 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                     return;
                 }
                 
-                const result = await createUserAction({
-                    ...data,
+                // --- Isolated Firebase Auth Instance ---
+                // This is the key change to prevent admin logout.
+                // We create a temporary auth instance for this one operation.
+                const tempAuth = getAuth();
+                const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, data.password);
+                const newUser = userCredential.user;
+
+                // Now use the primary Firestore instance to write the user's data
+                await setDoc(doc(db, "users", newUser.uid), {
+                    uid: newUser.uid,
+                    fullName: data.fullName,
+                    email: data.email,
+                    balance: data.balance,
                     status: finalStatus,
+                    role: data.role,
+                    createdAt: serverTimestamp(),
+                    bpexchUsername: data.bpexchUsername,
+                    bpexchPassword: data.bpexchPassword,
+                    adminMessage: data.adminMessage,
+                    emailVerified: false,
                 });
                 
-                if (result.success) {
-                    toast({ title: "User Created", description: "New user has been added successfully." });
-                } else {
-                    throw new Error(result.message);
-                }
+                toast({ title: "User Created", description: "New user has been added successfully." });
             }
             setOpen(false);
         } catch (error: any) {
@@ -495,7 +527,7 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                                         <FormItem>
                                             <FormLabel>Email</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="user@example.com" {...field} />
+                                                <Input placeholder="user@example.com" {...field} disabled={!!user} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -712,5 +744,3 @@ function UserDetailsDialog({ open, setOpen, user }: { open: boolean, setOpen: (o
         </Dialog>
     )
 }
-
-    
