@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { MoreHorizontal, Edit, Trash2, PlusCircle, Users, Loader2, Copy } from "lucide-react"
+import { MoreHorizontal, Edit, Trash2, PlusCircle, Users, Loader2, Copy, ShieldCheck, ShieldAlert } from "lucide-react"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -16,7 +16,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { db } from "@/lib/firebase/config"
-import { collection, query, orderBy, Timestamp, addDoc, doc, updateDoc, setDoc, getDocs } from 'firebase/firestore'
+import { collection, query, orderBy, Timestamp, addDoc, doc, updateDoc, setDoc, getDocs, serverTimestamp } from 'firebase/firestore'
 import { format, subMinutes, subDays, eachDayOfInterval } from 'date-fns'
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { useForm, Controller } from "react-hook-form";
@@ -26,7 +26,6 @@ import { z } from "zod"
 import { Textarea } from "@/components/ui/textarea"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { deleteUserAction } from "./actions"
-
 
 const userChartConfig = {
   count: { label: "New Users", color: "hsl(var(--primary))" },
@@ -46,6 +45,7 @@ interface User {
   bpexchUsername?: string;
   bpexchPassword?: string;
   adminMessage?: string;
+  emailVerified: boolean;
 }
 
 export default function AdminUsersPage() {
@@ -186,6 +186,12 @@ export default function AdminUsersPage() {
                          <Badge variant={user.status === 'Active' ? 'secondary' : (user.status === 'Pending' ? 'default' : 'destructive')}>{user.status}</Badge>
                       </div>
                 </div>
+                 <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Email:</span>
+                    <Badge variant={user.emailVerified ? 'secondary' : 'destructive'}>
+                        {user.emailVerified ? 'Verified' : 'Not Verified'}
+                    </Badge>
+                </div>
                 <div className="flex items-center justify-end gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
                     <Button variant="ghost" size="icon" onClick={() => handleEdit(user)}>
                         <Edit className="h-4 w-4" />
@@ -223,6 +229,7 @@ export default function AdminUsersPage() {
             <TableHeader>
                 <TableRow>
                 <TableHead>User</TableHead>
+                <TableHead>Email Status</TableHead>
                 <TableHead>Balance</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Role</TableHead>
@@ -236,6 +243,12 @@ export default function AdminUsersPage() {
                     <TableCell>
                     <div className="font-medium">{user.fullName}</div>
                     <div className="text-sm text-muted-foreground">{user.email}</div>
+                    </TableCell>
+                    <TableCell>
+                        <Badge variant={user.emailVerified ? 'secondary' : 'destructive'}>
+                           {user.emailVerified ? <ShieldCheck className="mr-1 h-3 w-3" /> : <ShieldAlert className="mr-1 h-3 w-3" />}
+                           {user.emailVerified ? 'Verified' : 'Not Verified'}
+                        </Badge>
                     </TableCell>
                     <TableCell className="font-mono">PKR {user.balance?.toFixed(2) || '0.00'}</TableCell>
                     <TableCell>
@@ -444,8 +457,9 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                     bpexchUsername: data.bpexchUsername,
                     bpexchPassword: data.bpexchPassword,
                     adminMessage: data.adminMessage,
-                    emailVerified: false,
+                    emailVerified: false, 
                 });
+                
                 toast({ title: "User Created", description: "New user has been added successfully." });
             }
             setOpen(false);
@@ -674,6 +688,12 @@ function UserDetailsDialog({ open, setOpen, user }: { open: boolean, setOpen: (o
                     <div className="space-y-2">
                         <DetailRow label="Full Name" value={user.fullName} />
                         <DetailRow label="Email" value={user.email} />
+                        <div className="flex justify-between items-center py-2 border-b">
+                            <div>
+                                <p className="text-sm text-muted-foreground">Email Verified</p>
+                                <p className="font-medium">{user.emailVerified ? 'Yes' : 'No'}</p>
+                            </div>
+                        </div>
                         <DetailRow label="Phone" value={user.phone} />
                         <DetailRow label="Gender" value={user.gender} />
                         <DetailRow label="Balance" value={`PKR ${user.balance?.toFixed(2) || '0.00'}`} />

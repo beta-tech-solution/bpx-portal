@@ -31,6 +31,8 @@ export default function AdminChatListPage() {
 
   useEffect(() => {
     setLoading(true);
+    // Simplified query to avoid needing a complex index.
+    // It fetches all chats and sorts them by the most recent message.
     const q = query(collection(db, "chats"), orderBy("lastMessageTimestamp", "desc"));
     
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -40,10 +42,14 @@ export default function AdminChatListPage() {
       } as ChatSession));
       setSessions(chatSessions);
       setLoading(false);
+    }, (error) => {
+      console.error("Error fetching chat sessions: ", error);
+      toast({ title: "Error", description: "Could not load chat sessions. Please check console for details.", variant: "destructive" });
+      setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [toast]);
 
   const getInitials = (name: string) => {
     if (!name) return 'U';
@@ -57,11 +63,13 @@ export default function AdminChatListPage() {
         const messagesQuery = query(collection(chatRef, 'messages'));
         const messagesSnapshot = await getDocs(messagesQuery);
         
-        const deletePromises = messagesSnapshot.docs.map(messageDoc => 
-            deleteDoc(doc(db, `chats/${chatId}/messages`, messageDoc.id))
-        );
+        // Use a batch to delete all messages, which is more efficient.
+        const batch = writeBatch(db);
+        messagesSnapshot.docs.forEach(messageDoc => {
+            batch.delete(messageDoc.ref);
+        });
+        await batch.commit();
         
-        await Promise.all(deletePromises);
         await deleteDoc(chatRef);
         
         toast({ title: "Chat Deleted", description: "The entire chat session has been removed." });
