@@ -16,7 +16,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { db } from "@/lib/firebase/config"
-import { collection, query, orderBy, Timestamp, addDoc, doc, updateDoc, setDoc, getDocs } from 'firebase/firestore'
+import { collection, query, orderBy, Timestamp, addDoc, doc, updateDoc, setDoc, getDocs, serverTimestamp } from 'firebase/firestore'
 import { format, subMinutes, subDays, eachDayOfInterval } from 'date-fns'
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { useForm, Controller } from "react-hook-form";
@@ -721,3 +721,5 @@ function UserDetailsDialog({ open, setOpen, user }: { open: boolean, setOpen: (o
         </Dialog>
     )
 }
+
+    
