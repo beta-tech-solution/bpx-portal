@@ -15,17 +15,18 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { db } from "@/lib/firebase/config"
-import { collection, query, orderBy, Timestamp, addDoc, doc, updateDoc, setDoc, getDocs, serverTimestamp } from 'firebase/firestore'
+import { db, app as defaultApp } from "@/lib/firebase/config"
+import { collection, query, orderBy, Timestamp, doc, updateDoc, getDocs, serverTimestamp, setDoc, deleteDoc } from 'firebase/firestore'
 import { format, subMinutes, subDays, eachDayOfInterval } from 'date-fns'
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Textarea } from "@/components/ui/textarea"
 import { useMediaQuery } from "@/hooks/use-media-query"
-import { deleteUserAction } from "./actions"
+import { getAuth, createUserWithEmailAndPassword } from "firebase/auth"
+import { initializeApp, deleteApp } from "firebase/app"
+
 
 const userChartConfig = {
   count: { label: "New Users", color: "hsl(var(--primary))" },
@@ -47,6 +48,26 @@ interface User {
   adminMessage?: string;
   emailVerified: boolean;
 }
+
+// This is a client-side action, not a server action.
+// It is safe because Firestore security rules should prevent unauthorized deletion.
+async function deleteUserClientSideAction(uid: string) {
+    if (!uid) {
+        throw new Error("User ID is required.");
+    }
+    // We can't delete from Auth on client side without re-authentication.
+    // This is a known limitation. Admin will have to manually delete from Firebase Console for full cleanup.
+    // The primary goal here is to remove the user from the app's database.
+    try {
+        const userDocRef = doc(db, "users", uid);
+        await deleteDoc(userDocRef);
+        return { success: true, message: "User deleted from database. Remember to delete them from the Firebase Auth console." };
+    } catch(error: any) {
+        console.error("Error deleting user from Firestore:", error);
+        throw new Error(error.message || "An error occurred while deleting the user from the database.");
+    }
+}
+
 
 export default function AdminUsersPage() {
   const [isFormOpen, setIsFormOpen] = React.useState(false);
@@ -125,9 +146,9 @@ export default function AdminUsersPage() {
   
   const handleDelete = async (userId: string) => {
     try {
-        await deleteUserAction(userId);
+        const result = await deleteUserClientSideAction(userId);
         setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
-        toast({ title: "User Deleted", description: "The user has been permanently removed." });
+        toast({ title: "User Removed", description: result.message });
     } catch (error: any) {
         console.error("Failed to delete user:", error);
         toast({ title: "Error", description: error.message || "Could not delete user.", variant: "destructive" });
@@ -206,7 +227,7 @@ export default function AdminUsersPage() {
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    This action cannot be undone. This will permanently delete the user's account and all associated data.
+                                    This will permanently remove the user from the application database. You will still need to delete them from the Firebase Authentication console manually.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -280,7 +301,7 @@ export default function AdminUsersPage() {
                                     <AlertDialogHeader>
                                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                         <AlertDialogDescription>
-                                            This action cannot be undone. This will permanently delete the user's account and remove their data from our servers.
+                                            This will permanently remove the user from the application database. You will still need to delete them from the Firebase Authentication console manually. This action cannot be undone.
                                         </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
@@ -424,10 +445,11 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
 
         try {
             if (user) { 
+                // Editing an existing user
                 const userRef = doc(db, 'users', user.id);
                 await updateDoc(userRef, { 
                     fullName: data.fullName, 
-                    email: data.email, 
+                    // Email cannot be changed here as it's tied to auth
                     balance: data.balance, 
                     status: finalStatus, 
                     role: data.role,
@@ -437,35 +459,52 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                 });
                 toast({ title: "User Updated", description: "User details have been saved successfully." });
             } else {
+                // Creating a new user
                 if (!data.password) {
-                    toast({ title: "Error", description: "Password is required for new users.", variant: "destructive" });
+                    form.setError("password", { type: "manual", message: "Password is required for new users." });
                     setIsLoading(false);
                     return;
                 }
-                const tempAuth = getAuth();
-                const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, data.password);
-                const newUser = userCredential.user;
-
-                await setDoc(doc(db, "users", newUser.uid), {
-                    uid: newUser.uid,
-                    fullName: data.fullName,
-                    email: data.email,
-                    balance: data.balance,
-                    status: finalStatus,
-                    role: data.role,
-                    createdAt: serverTimestamp(),
-                    bpexchUsername: data.bpexchUsername,
-                    bpexchPassword: data.bpexchPassword,
-                    adminMessage: data.adminMessage,
-                    emailVerified: false, 
-                });
                 
-                toast({ title: "User Created", description: "New user has been added successfully." });
+                // --- Robust Isolated Firebase Auth Instance ---
+                // Create a temporary, uniquely named Firebase app instance.
+                const tempAppName = `temp-user-creation-${Date.now()}`;
+                const tempApp = initializeApp(defaultApp.options, tempAppName);
+                const tempAuth = getAuth(tempApp);
+
+                try {
+                    const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, data.password);
+                    const newUser = userCredential.user;
+
+                    // Now use the primary Firestore instance to write the user's data
+                    await setDoc(doc(db, "users", newUser.uid), {
+                        uid: newUser.uid,
+                        fullName: data.fullName,
+                        email: data.email,
+                        balance: data.balance,
+                        status: finalStatus,
+                        role: data.role,
+                        createdAt: serverTimestamp(),
+                        bpexchUsername: data.bpexchUsername,
+                        bpexchPassword: data.bpexchPassword,
+                        adminMessage: data.adminMessage,
+                        emailVerified: false,
+                    });
+                    
+                    toast({ title: "User Created", description: "New user has been added successfully." });
+                } finally {
+                    // IMPORTANT: Clean up the temporary app instance
+                    await deleteApp(tempApp);
+                }
             }
             setOpen(false);
         } catch (error: any) {
             console.error("Error saving user:", error);
-            toast({ title: "Error", description: error.message || "Could not save user details.", variant: "destructive" });
+            if (error.code === 'auth/email-already-in-use') {
+                form.setError("email", { type: 'manual', message: 'This email address is already in use.' });
+            } else {
+                toast({ title: "Error", description: error.message || "Could not save user details.", variant: "destructive" });
+            }
         } finally {
             setIsLoading(false);
         }
@@ -504,7 +543,7 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                                         <FormItem>
                                             <FormLabel>Email</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="user@example.com" {...field} />
+                                                <Input placeholder="user@example.com" {...field} disabled={!!user} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
