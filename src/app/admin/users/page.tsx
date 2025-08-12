@@ -26,6 +26,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth"
 import { initializeApp, deleteApp } from "firebase/app"
+import { Switch } from "@/components/ui/switch"
 
 
 const userChartConfig = {
@@ -47,6 +48,7 @@ interface User {
   bpexchPassword?: string;
   adminMessage?: string;
   emailVerified: boolean;
+  adminVerified?: boolean;
 }
 
 // This is a client-side action, not a server action.
@@ -209,8 +211,8 @@ export default function AdminUsersPage() {
                 </div>
                  <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">Email:</span>
-                    <Badge variant={user.emailVerified ? 'secondary' : 'destructive'}>
-                        {user.emailVerified ? 'Verified' : 'Not Verified'}
+                    <Badge variant={user.emailVerified || user.adminVerified ? 'secondary' : 'destructive'}>
+                        {user.emailVerified || user.adminVerified ? 'Verified' : 'Not Verified'}
                     </Badge>
                 </div>
                 <div className="flex items-center justify-end gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
@@ -266,9 +268,9 @@ export default function AdminUsersPage() {
                     <div className="text-sm text-muted-foreground">{user.email}</div>
                     </TableCell>
                     <TableCell>
-                        <Badge variant={user.emailVerified ? 'secondary' : 'destructive'}>
-                           {user.emailVerified ? <ShieldCheck className="mr-1 h-3 w-3" /> : <ShieldAlert className="mr-1 h-3 w-3" />}
-                           {user.emailVerified ? 'Verified' : 'Not Verified'}
+                        <Badge variant={user.emailVerified || user.adminVerified ? 'secondary' : 'destructive'}>
+                           {user.emailVerified || user.adminVerified ? <ShieldCheck className="mr-1 h-3 w-3" /> : <ShieldAlert className="mr-1 h-3 w-3" />}
+                           {user.emailVerified || user.adminVerified ? 'Verified' : 'Not Verified'}
                         </Badge>
                     </TableCell>
                     <TableCell className="font-mono">PKR {user.balance?.toFixed(2) || '0.00'}</TableCell>
@@ -388,6 +390,7 @@ const UserFormSchema = z.object({
     bpexchUsername: z.string().optional(),
     bpexchPassword: z.string().optional(),
     adminMessage: z.string().optional(),
+    adminVerified: z.boolean().optional(),
 });
 
 type UserFormValues = z.infer<typeof UserFormSchema>;
@@ -408,6 +411,7 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
             bpexchUsername: "",
             bpexchPassword: "",
             adminMessage: "",
+            adminVerified: false,
         },
     });
 
@@ -430,6 +434,7 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                 bpexchUsername: user?.bpexchUsername || "",
                 bpexchPassword: user?.bpexchPassword || "",
                 adminMessage: user?.adminMessage || "",
+                adminVerified: user?.adminVerified || false,
             });
         }
     }, [user, form, open]);
@@ -456,6 +461,7 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                     bpexchUsername: data.bpexchUsername,
                     bpexchPassword: data.bpexchPassword,
                     adminMessage: data.adminMessage,
+                    adminVerified: data.adminVerified,
                 });
                 toast({ title: "User Updated", description: "User details have been saved successfully." });
             } else {
@@ -489,6 +495,7 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                         bpexchPassword: data.bpexchPassword,
                         adminMessage: data.adminMessage,
                         emailVerified: false,
+                        adminVerified: data.adminVerified,
                     });
                     
                     toast({ title: "User Created", description: "New user has been added successfully." });
@@ -549,6 +556,26 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                                         </FormItem>
                                     )}
                                 />
+                                {user && (
+                                <FormField
+                                    control={form.control}
+                                    name="adminVerified"
+                                    render={({ field }) => (
+                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                        <div className="space-y-0.5">
+                                            <FormLabel>Manual Verification</FormLabel>
+                                            <FormMessage />
+                                        </div>
+                                        <FormControl>
+                                            <Switch
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                            />
+                                        </FormControl>
+                                        </FormItem>
+                                    )}
+                                />
+                                )}
                                 <FormField
                                     control={form.control}
                                     name="balance"
@@ -730,7 +757,7 @@ function UserDetailsDialog({ open, setOpen, user }: { open: boolean, setOpen: (o
                         <div className="flex justify-between items-center py-2 border-b">
                             <div>
                                 <p className="text-sm text-muted-foreground">Email Verified</p>
-                                <p className="font-medium">{user.emailVerified ? 'Yes' : 'No'}</p>
+                                <p className="font-medium">{user.emailVerified || user.adminVerified ? 'Yes' : 'No'}</p>
                             </div>
                         </div>
                         <DetailRow label="Phone" value={user.phone} />

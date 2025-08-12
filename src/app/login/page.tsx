@@ -58,22 +58,28 @@ export default function LoginPage() {
             const userDocRef = doc(db, 'users', user.uid);
             const userDoc = await getDoc(userDocRef);
 
-            if (userDoc.exists()) {
-                const userData = userDoc.data();
-                // If user is Admin, bypass email verification check
-                if (userData.role === 'Admin') {
-                    toast({ title: "Admin Login Successful", description: "Welcome back!" });
-                    router.push('/admin/dashboard');
-                    return;
-                }
+            if (!userDoc.exists()) {
+                await auth.signOut();
+                toast({ title: "Login Failed", description: "User profile not found.", variant: "destructive" });
+                setIsLoading(false);
+                return;
             }
             
-            // Check if email is verified for non-admin users
-            if (!user.emailVerified) {
+            const userData = userDoc.data();
+            
+            // If user is Admin, they can log in regardless of verification status
+            if (userData.role === 'Admin') {
+                toast({ title: "Admin Login Successful", description: "Welcome back!" });
+                router.push('/admin/dashboard');
+                return;
+            }
+            
+            // For regular users, check for official OR admin verification
+            if (!user.emailVerified && !userData.adminVerified) {
                 await auth.signOut();
                 toast({
                     title: "Email Not Verified",
-                    description: "Please check your inbox and verify your email address to log in.",
+                    description: "Please verify your email to log in, or contact support.",
                     variant: "destructive"
                 });
                 setIsLoading(false);

@@ -89,6 +89,7 @@ export default function SignupPage() {
                 status: 'Active',
                 role: 'User',
                 emailVerified: user.emailVerified,
+                adminVerified: false,
             });
 
             toast({ title: "Account Created", description: "A verification email has been sent to your inbox or spam folder. Please verify your email to log in." })
@@ -125,7 +126,8 @@ export default function SignupPage() {
                     balance: 0,
                     status: 'Active',
                     role: 'User',
-                    emailVerified: user.emailVerified
+                    emailVerified: user.emailVerified,
+                    adminVerified: true, // Google users are pre-verified
                 });
                 toast({ title: "Account Created", description: "Your account has been created successfully. Please sign in." })
                 router.push('/login')
