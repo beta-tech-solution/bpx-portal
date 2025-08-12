@@ -16,16 +16,15 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { db } from "@/lib/firebase/config"
-import { collection, query, orderBy, Timestamp, addDoc, doc, updateDoc, setDoc, getDocs, serverTimestamp } from 'firebase/firestore'
+import { collection, query, orderBy, Timestamp, doc, updateDoc, getDocs, serverTimestamp } from 'firebase/firestore'
 import { format, subMinutes, subDays, eachDayOfInterval } from 'date-fns'
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { useForm, Controller } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Textarea } from "@/components/ui/textarea"
 import { useMediaQuery } from "@/hooks/use-media-query"
-import { deleteUserAction } from "./actions"
+import { deleteUserAction, createUserAction } from "./actions"
 
 const userChartConfig = {
   count: { label: "New Users", color: "hsl(var(--primary))" },
@@ -438,29 +437,21 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                 toast({ title: "User Updated", description: "User details have been saved successfully." });
             } else {
                 if (!data.password) {
-                    toast({ title: "Error", description: "Password is required for new users.", variant: "destructive" });
+                    form.setError("password", { type: "manual", message: "Password is required for new users." });
                     setIsLoading(false);
                     return;
                 }
-                const tempAuth = getAuth();
-                const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, data.password);
-                const newUser = userCredential.user;
-
-                await setDoc(doc(db, "users", newUser.uid), {
-                    uid: newUser.uid,
-                    fullName: data.fullName,
-                    email: data.email,
-                    balance: data.balance,
+                
+                const result = await createUserAction({
+                    ...data,
                     status: finalStatus,
-                    role: data.role,
-                    createdAt: serverTimestamp(),
-                    bpexchUsername: data.bpexchUsername,
-                    bpexchPassword: data.bpexchPassword,
-                    adminMessage: data.adminMessage,
-                    emailVerified: false, 
                 });
                 
-                toast({ title: "User Created", description: "New user has been added successfully." });
+                if (result.success) {
+                    toast({ title: "User Created", description: "New user has been added successfully." });
+                } else {
+                    throw new Error(result.message);
+                }
             }
             setOpen(false);
         } catch (error: any) {
