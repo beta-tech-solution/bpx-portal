@@ -60,17 +60,6 @@ export default function SignupPage() {
             setIsLoading(false)
             return
         }
-        
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-        if (!passwordRegex.test(password)) {
-            toast({
-                title: "Weak Password",
-                description: "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number and one special character.",
-                variant: "destructive"
-            });
-            setIsLoading(false);
-            return;
-        }
 
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password)
