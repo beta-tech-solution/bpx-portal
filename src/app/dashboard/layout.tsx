@@ -20,6 +20,7 @@ interface UserData {
   photoURL?: string;
   role: 'Admin' | 'User';
   emailVerified: boolean;
+  adminVerified?: boolean;
   bpexchUsername?: string;
   lastSeen?: any;
 }
@@ -45,19 +46,23 @@ export default function DashboardLayout({
           (doc) => {
             if (doc.exists()) {
               const dbData = doc.data() as UserData;
+              
               if (dbData.role === "Admin") {
                 router.push('/admin/dashboard');
                 return;
               }
-              if (!currentUser.emailVerified) {
-                toast({
-                  title: "Email Not Verified",
-                  description: "Please check your inbox and verify your email address to log in.",
-                  variant: "destructive",
-                });
-                signOut(auth);
-                return;
+
+              const isVerified = currentUser.emailVerified || dbData.adminVerified === true;
+              if (!isVerified) {
+                  toast({
+                      title: "Email Not Verified",
+                      description: "Please verify your email address to log in.",
+                      variant: "destructive",
+                  });
+                  signOut(auth);
+                  return;
               }
+
               setUser(currentUser);
               setUserData(dbData);
 
@@ -103,7 +108,6 @@ export default function DashboardLayout({
   }
   
   if (!user || !userData) {
-    // This case is handled by the redirect, but as a fallback:
     return <Preloader loadingText="Redirecting..." />;
   }
 
@@ -121,5 +125,3 @@ export default function DashboardLayout({
     </div>
   );
 }
-
-    

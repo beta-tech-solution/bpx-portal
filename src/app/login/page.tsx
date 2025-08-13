@@ -67,19 +67,19 @@ export default function LoginPage() {
             
             const userData = userDoc.data();
             
-            // If user is Admin, they can log in regardless of verification status
             if (userData.role === 'Admin') {
                 toast({ title: "Admin Login Successful", description: "Welcome back!" });
                 router.push('/admin/dashboard');
                 return;
             }
             
-            // For regular users, check for official OR admin verification
-            if (!user.emailVerified && !userData.adminVerified) {
+            const isVerified = user.emailVerified || userData.adminVerified === true;
+
+            if (!isVerified) {
                 await auth.signOut();
                 toast({
                     title: "Email Not Verified",
-                    description: "Please verify your email to log in, or contact support.",
+                    description: "Please verify your email to log in, or contact support if the issue persists.",
                     variant: "destructive"
                 });
                 setIsLoading(false);
@@ -116,7 +116,8 @@ export default function LoginPage() {
                     balance: 0,
                     status: 'Active',
                     role: 'User',
-                    emailVerified: user.emailVerified, // Store verification status
+                    emailVerified: user.emailVerified,
+                    adminVerified: true,
                 });
                 toast({ title: "Account Created", description: "Welcome! Your account has been created." })
             } else {
