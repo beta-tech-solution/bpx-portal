@@ -172,10 +172,10 @@ export default function DashboardPage() {
                         <Megaphone className="h-5 w-5 text-white" />
                     </div>
                     <div className="flex-1 whitespace-nowrap overflow-hidden">
-                         <div className="flex animate-marquee">
-                            <p className="font-bold text-xl text-black px-4">{globalAnnouncement}</p>
-                            <p className="font-bold text-xl text-black px-4" aria-hidden="true">{globalAnnouncement}</p>
-                         </div>
+                        <p className="font-bold text-xl text-black inline-block animate-marquee">
+                            <span className="inline-block pr-8">{globalAnnouncement}</span>
+                            <span className="inline-block pr-8">{globalAnnouncement}</span>
+                        </p>
                     </div>
                 </CardContent>
             </Card>
