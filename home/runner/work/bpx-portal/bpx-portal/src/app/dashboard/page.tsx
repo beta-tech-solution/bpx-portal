@@ -174,7 +174,7 @@ export default function DashboardPage() {
                     <div className="flex-1 whitespace-nowrap overflow-hidden">
                          <div className="flex animate-marquee">
                             <p className="font-bold text-xl text-black px-4">{globalAnnouncement}</p>
-                            <p className="font-bold text-xl text-black px-4">{globalAnnouncement}</p>
+                            <p className="font-bold text-xl text-black px-4" aria-hidden="true">{globalAnnouncement}</p>
                          </div>
                     </div>
                 </CardContent>
