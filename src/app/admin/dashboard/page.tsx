@@ -112,12 +112,12 @@ export default function AdminDashboardPage() {
 
                 // Process recent transactions and 7-day stats
                 const userCache = new Map<string, string>();
+                usersSnapshot.forEach(doc => {
+                    userCache.set(doc.id, doc.data().fullName || 'Unknown User');
+                });
+                
                 const getUserName = (userId: string): string => {
-                    if (userCache.has(userId)) return userCache.get(userId)!;
-                    const userDoc = usersSnapshot.docs.find(d => d.id === userId);
-                    const name = userDoc?.data().fullName || 'Unknown User';
-                    userCache.set(userId, name);
-                    return name;
+                    return userCache.get(userId) || 'Unknown User';
                 };
                 
                 const sevenDaysAgo = subDays(new Date(), 7);
