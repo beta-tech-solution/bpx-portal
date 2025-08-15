@@ -168,11 +168,14 @@ export default function DashboardPage() {
         {globalAnnouncement && (
             <Card className="bg-amber-400 overflow-hidden">
                 <CardContent className="p-3 flex items-center gap-4">
-                    <div className="bg-amber-500 p-2 rounded-md">
+                    <div className="bg-amber-500 p-2 rounded-md flex-shrink-0">
                         <Megaphone className="h-5 w-5 text-white" />
                     </div>
                     <div className="flex-1 whitespace-nowrap overflow-hidden">
-                        <p className="font-bold text-xl text-black inline-block animate-marquee">{globalAnnouncement}</p>
+                        <p className="font-bold text-xl text-black inline-block animate-marquee">
+                            <span className="inline-block pr-8">{globalAnnouncement}</span>
+                            <span className="inline-block pr-8">{globalAnnouncement}</span>
+                        </p>
                     </div>
                 </CardContent>
             </Card>

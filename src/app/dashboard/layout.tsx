@@ -41,6 +41,8 @@ export default function DashboardLayout({
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         const userDocRef = doc(db, "users", currentUser.uid);
+        
+        // Use a real-time listener for user data to get instant updates (e.g., balance changes)
         const unsubscribeSnapshot = onSnapshot(
           userDocRef,
           (doc) => {
@@ -66,11 +68,11 @@ export default function DashboardLayout({
               setUser(currentUser);
               setUserData(dbData);
 
-              // More efficient "last seen" update
+              // Efficiently update "lastSeen" only if it's been more than 5 minutes
               const now = Date.now();
-              const lastSeen = dbData.lastSeen?.toMillis() || 0;
-              if (now - lastSeen > 5 * 60 * 1000) { // 5 minutes
-                updateDoc(userDocRef, { lastSeen: serverTimestamp() });
+              const lastSeenMillis = dbData.lastSeen?.toMillis() || 0;
+              if (now - lastSeenMillis > 5 * 60 * 1000) { // 5 minutes
+                updateDoc(userDocRef, { lastSeen: serverTimestamp() }).catch(err => console.error("Failed to update lastSeen:", err));
               }
             } else {
               toast({
@@ -80,6 +82,7 @@ export default function DashboardLayout({
               });
               signOut(auth);
             }
+            setLoading(false);
           },
           (error) => {
             toast({
@@ -89,12 +92,14 @@ export default function DashboardLayout({
             });
             console.error("Firestore snapshot error:", error);
             signOut(auth);
+            setLoading(false);
           }
         );
-        setLoading(false);
+        
         return () => unsubscribeSnapshot();
       } else {
         router.push("/login");
+        setLoading(false);
       }
     });
 

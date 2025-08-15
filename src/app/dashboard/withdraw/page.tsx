@@ -35,6 +35,23 @@ export default function WithdrawPage() {
         return;
     }
     
+    // One-time check for pending withdrawals on page load
+    const checkPendingStatus = async () => {
+        setCheckingStatus(true);
+        try {
+            const pendingQuery = query(collection(db, 'withdrawals'), where('userId', '==', user.uid), where('status', '==', 'Pending'));
+            const snapshot = await getDocs(pendingQuery);
+            setHasPendingWithdrawal(!snapshot.empty);
+        } catch (error) {
+            console.error("Error checking pending withdrawals:", error);
+            toast({ title: "Error", description: "Could not check withdrawal status.", variant: "destructive" });
+        } finally {
+            setCheckingStatus(false);
+        }
+    };
+    checkPendingStatus();
+
+    // Listener for user data (to get balance updates)
     const userDocRef = doc(db, 'users', user.uid);
     const unsubscribeUser = onSnapshot(userDocRef, (doc) => {
         if(doc.exists()){
@@ -42,16 +59,7 @@ export default function WithdrawPage() {
         }
     });
 
-    const pendingQuery = query(collection(db, 'withdrawals'), where('userId', '==', user.uid), where('status', '==', 'Pending'));
-    getDocs(pendingQuery).then(snapshot => {
-        setHasPendingWithdrawal(!snapshot.empty);
-        setCheckingStatus(false);
-    }).catch(error => {
-        console.error("Error checking pending withdrawals:", error);
-        toast({ title: "Error", description: "Could not check withdrawal status.", variant: "destructive" });
-        setCheckingStatus(false);
-    });
-
+    // Listener for approved withdrawals to update total
     const approvedQuery = query(collection(db, 'withdrawals'), where('userId', '==', user.uid), where('status', '==', 'Approved'));
     const unsubscribeApproved = onSnapshot(approvedQuery, (snapshot) => {
         let total = 0;
@@ -102,7 +110,13 @@ export default function WithdrawPage() {
     setIsLoading(true);
 
     try {
-        await addDoc(collection(db, 'withdrawals'), {
+        const userDocRef = doc(db, 'users', user.uid);
+        // Use a write batch to ensure both operations succeed or fail together.
+        const batch = writeBatch(db);
+        
+        // 1. Create the withdrawal document
+        const newWithdrawalRef = doc(collection(db, 'withdrawals'));
+        batch.set(newWithdrawalRef, {
             userId: user.uid,
             amount: amount.toFixed(2),
             bankName,
@@ -113,10 +127,10 @@ export default function WithdrawPage() {
             createdAt: serverTimestamp()
         });
 
-        const userDocRef = doc(db, 'users', user.uid);
-        await updateDoc(userDocRef, {
-            balance: increment(-amount)
-        });
+        // 2. Decrement the user's balance
+        batch.update(userDocRef, { balance: increment(-amount) });
+
+        await batch.commit();
 
         toast({
             title: "Withdrawal Request Submitted",

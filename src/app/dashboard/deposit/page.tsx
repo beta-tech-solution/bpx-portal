@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { auth, db } from '@/lib/firebase/config';
-import { collection, addDoc, serverTimestamp, query, where, onSnapshot, doc, getDoc, getDocs } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, doc, getDoc, getDocs } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import Image from 'next/image';
 
@@ -43,35 +43,28 @@ export default function DepositPage() {
         return;
     }
 
-    setCheckingStatus(true);
-    const pendingQuery = query(collection(db, 'deposits'), where('userId', '==', user.uid), where('status', '==', 'Pending'));
-    
-    // Using getDocs for a one-time check is more efficient than onSnapshot here.
-    getDocs(pendingQuery).then(snapshot => {
-        setHasPendingDeposit(!snapshot.empty);
-        setCheckingStatus(false);
-    }).catch(error => {
-        console.error("Error checking pending deposits:", error);
-        toast({ title: "Error", description: "Could not check your deposit status.", variant: "destructive"});
-        setCheckingStatus(false);
-    });
-
-    const fetchAccounts = async () => {
-        setLoadingAccounts(true);
+    const checkInitialStatus = async () => {
+        setCheckingStatus(true);
         try {
+            const pendingQuery = query(collection(db, 'deposits'), where('userId', '==', user.uid), where('status', '==', 'Pending'));
+            const snapshot = await getDocs(pendingQuery);
+            setHasPendingDeposit(!snapshot.empty);
+
             const settingsDocRef = doc(db, "settings", "depositAccounts");
             const docSnap = await getDoc(settingsDocRef);
             if (docSnap.exists()) {
                 setAccounts(docSnap.data().accounts || []);
             }
         } catch (error) {
-            console.error("Error fetching accounts:", error);
+            console.error("Error fetching initial deposit page data:", error);
+            toast({ title: "Error", description: "Could not load deposit information.", variant: "destructive"});
         } finally {
+            setCheckingStatus(false);
             setLoadingAccounts(false);
         }
-    }
-    fetchAccounts();
+    };
 
+    checkInitialStatus();
   }, [user, toast]);
   
   useEffect(() => {

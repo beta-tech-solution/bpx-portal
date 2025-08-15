@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Pie, PieChart, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { DollarSign, Users, Landmark, Loader2, UserCheck, MessageSquare, ArrowRight, TrendingUp, ArrowDownLeft, ArrowUpRight } from "lucide-react"
 import { db } from "@/lib/firebase/config"
-import { collection, getDocs, query, where, Timestamp, onSnapshot, DocumentData, orderBy, limit, doc } from "firebase/firestore"
+import { collection, getDocs, query, where, Timestamp, onSnapshot, orderBy, doc, getCountFromServer } from "firebase/firestore"
 import { format, formatDistanceToNow, subDays } from 'date-fns'
 import { Table, TableBody, TableCell, TableRow, TableHead, TableHeader } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
@@ -69,69 +69,50 @@ export default function AdminDashboardPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const unsubscribes: (() => void)[] = [];
-
-        const setupListener = (
-            collectionName: string, 
-            stateKey: keyof OverviewData,
-            conditions: [string, any, any][] = []
-        ) => {
-            let q = query(collection(db, collectionName));
-            conditions.forEach(cond => {
-                q = query(q, where(cond[0], cond[1], cond[2]));
-            });
-            const unsubscribe = onSnapshot(q, (snapshot) => {
-                setOverviewData(prev => ({ ...prev, [stateKey]: snapshot.size }));
-            }, (error) => console.error(`Error fetching ${stateKey}:`, error));
-            unsubscribes.push(unsubscribe);
-        };
-        
-        setupListener('users', 'pendingUsers', [['status', '==', 'Pending']]);
-        setupListener('deposits', 'pendingDeposits', [['status', '==', 'Pending']]);
-        setupListener('withdrawals', 'pendingWithdrawals', [['status', '==', 'Pending']]);
-
-        const chatsQuery = query(collection(db, 'chats'), where('adminRead', '==', false), orderBy('lastMessageTimestamp', 'desc'));
-        unsubscribes.push(onSnapshot(chatsQuery, (snapshot) => {
-            const chats = snapshot.docs.map(doc => ({
-                id: doc.id,
-                userName: doc.data().userName,
-                lastMessage: doc.data().lastMessage,
-                timestamp: doc.data().lastMessageTimestamp ? formatDistanceToNow(doc.data().lastMessageTimestamp.toDate(), { addSuffix: true }) : 'N/A'
-            }));
-            setUnreadChats(chats);
-        }));
-
-        const fetchOneTimeData = async () => {
+        const fetchDashboardData = async () => {
             setLoading(true);
             try {
-                // Fetch all data in parallel
+                // Efficiently get counts for pending items
+                const pendingUsersQuery = query(collection(db, 'users'), where('status', '==', 'Pending'));
+                const pendingDepositsQuery = query(collection(db, 'deposits'), where('status', '==', 'Pending'));
+                const pendingWithdrawalsQuery = query(collection(db, 'withdrawals'), where('status', '==', 'Pending'));
+                
+                const [pendingUsersSnap, pendingDepositsSnap, pendingWithdrawalsSnap] = await Promise.all([
+                    getCountFromServer(pendingUsersQuery),
+                    getCountFromServer(pendingDepositsQuery),
+                    getCountFromServer(pendingWithdrawalsQuery)
+                ]);
+
+                // Fetch other data in parallel
                 const usersQuery = query(collection(db, "users"));
-                const depositsQuery = query(collection(db, "deposits"), where("status", "==", "Approved"));
-                const withdrawalsQuery = query(collection(db, "withdrawals"), where("status", "==", "Approved"));
+                const approvedDepositsQuery = query(collection(db, "deposits"), where("status", "==", "Approved"));
+                const approvedWithdrawalsQuery = query(collection(db, "withdrawals"), where("status", "==", "Approved"));
                 
                 const [usersSnapshot, depositsSnapshot, withdrawalsSnapshot] = await Promise.all([
                     getDocs(usersQuery),
-                    getDocs(depositsQuery),
-                    getDocs(withdrawalsQuery)
+                    getDocs(approvedDepositsQuery),
+                    getDocs(approvedWithdrawalsQuery)
                 ]);
 
-                // Set total users count
-                setOverviewData(prev => ({ ...prev, totalUsers: usersSnapshot.size }));
+                setOverviewData({
+                    totalUsers: usersSnapshot.size,
+                    pendingUsers: pendingUsersSnap.data().count,
+                    pendingDeposits: pendingDepositsSnap.data().count,
+                    pendingWithdrawals: pendingWithdrawalsSnap.data().count,
+                });
 
                 // Process profit data
                 const totalDeposits = depositsSnapshot.docs.reduce((sum, doc) => sum + parseFloat(doc.data().amount), 0);
                 const totalWithdrawals = withdrawalsSnapshot.docs.reduce((sum, doc) => sum + parseFloat(doc.data().amount), 0);
-                const netProfit = totalDeposits - totalWithdrawals;
-
-                const profitChartData: ProfitData[] = [
+                
+                setProfitData([
                     { name: 'Deposits', value: totalDeposits, fill: COLORS.deposits },
                     { name: 'Withdrawals', value: totalWithdrawals, fill: COLORS.withdrawals },
-                ];
-                setProfitData(profitChartData.filter(d => d.value > 0));
+                ].filter(d => d.value > 0));
 
                 // Process recent transactions and 7-day stats
                 const userCache = new Map<string, string>();
-                const getUserName = async (userId: string): Promise<string> => {
+                const getUserName = (userId: string): string => {
                     if (userCache.has(userId)) return userCache.get(userId)!;
                     const userDoc = usersSnapshot.docs.find(d => d.id === userId);
                     const name = userDoc?.data().fullName || 'Unknown User';
@@ -143,23 +124,23 @@ export default function AdminDashboardPage() {
                 let total7DayDeposits = 0;
                 let total7DayWithdrawals = 0;
 
-                const depositsPromises = depositsSnapshot.docs.map(async docSnapshot => {
+                const processedDeposits = depositsSnapshot.docs.map(docSnapshot => {
                     const data = docSnapshot.data();
                     if(data.createdAt.toDate() >= sevenDaysAgo) {
                        total7DayDeposits += parseFloat(data.amount);
                     }
-                    return { id: docSnapshot.id, type: 'Deposit', userName: await getUserName(data.userId), ...data } as Transaction
+                    return { id: docSnapshot.id, type: 'Deposit', userName: getUserName(data.userId), ...data } as Transaction
                 });
 
-                const withdrawalsPromises = withdrawalsSnapshot.docs.map(async docSnapshot => {
+                const processedWithdrawals = withdrawalsSnapshot.docs.map(docSnapshot => {
                     const data = docSnapshot.data();
                      if(data.createdAt.toDate() >= sevenDaysAgo) {
                        total7DayWithdrawals += parseFloat(data.amount);
                     }
-                    return { id: docSnapshot.id, type: 'Withdrawal', userName: await getUserName(data.userId), ...data } as Transaction
+                    return { id: docSnapshot.id, type: 'Withdrawal', userName: getUserName(data.userId), ...data } as Transaction
                 });
                 
-                const combined = [...await Promise.all(depositsPromises), ...await Promise.all(withdrawalsPromises)];
+                const combined = [...processedDeposits, ...processedWithdrawals];
                 combined.sort((a, b) => b.createdAt.toDate().getTime() - a.createdAt.toDate().getTime());
                 setRecentTransactions(combined.slice(0, 5));
                 
@@ -170,16 +151,28 @@ export default function AdminDashboardPage() {
                 });
 
             } catch (error) {
-                console.error("Error fetching one-time stats:", error);
+                console.error("Error fetching one-time dashboard stats:", error);
             } finally {
                 setLoading(false);
             }
         };
         
-        fetchOneTimeData();
+        fetchDashboardData();
+
+        // Keep unread messages real-time as it's a critical notification
+        const chatsQuery = query(collection(db, 'chats'), where('adminRead', '==', false), orderBy('lastMessageTimestamp', 'desc'));
+        const unsubscribeChats = onSnapshot(chatsQuery, (snapshot) => {
+            const chats = snapshot.docs.map(doc => ({
+                id: doc.id,
+                userName: doc.data().userName,
+                lastMessage: doc.data().lastMessage,
+                timestamp: doc.data().lastMessageTimestamp ? formatDistanceToNow(doc.data().lastMessageTimestamp.toDate(), { addSuffix: true }) : 'N/A'
+            }));
+            setUnreadChats(chats);
+        });
         
         return () => {
-            unsubscribes.forEach(unsub => unsub());
+            unsubscribeChats();
         };
     }, []);
 

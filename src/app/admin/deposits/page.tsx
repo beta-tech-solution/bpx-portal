@@ -215,10 +215,8 @@ function DepositContent({ data, loading }: { data: Deposit[], loading: boolean }
               throw new Error(`Cannot approve deposit ${deposit.id}: No user ID associated.`);
           }
           const userRef = doc(db, 'users', deposit.userId);
-          const userDoc = await getDoc(userRef);
-          if (!userDoc.exists()) {
-              throw new Error(`User document with ID ${deposit.userId} not found.`);
-          }
+          // No need to check for userDoc existence here, as a failed increment is handled by Firestore rules.
+          // This saves a read operation.
           batch.update(userRef, { balance: increment(parseFloat(deposit.amount)) });
       }
 
@@ -253,7 +251,7 @@ function DepositContent({ data, loading }: { data: Deposit[], loading: boolean }
                   <p className="font-semibold break-words">{deposit.userFullName}</p>
                   <p className="text-sm text-muted-foreground">{deposit.date}</p>
                   <div className="flex items-center gap-2 text-xs mt-1 text-muted-foreground">
-                  <span className="font-semibold">BPEXCH ID:</span>
+                    <User className="h-3 w-3" />
                     <span>{deposit.bpexchUsername}</span>
                   </div>
               </div>

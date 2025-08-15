@@ -213,10 +213,7 @@ function WithdrawalContent({ data, loading }: { data: Withdrawal[], loading: boo
                     throw new Error(`Cannot reject withdrawal ${withdrawal.id}: No user ID associated.`);
                 }
                 const userRef = doc(db, 'users', withdrawal.userId);
-                const userDoc = await getDoc(userRef);
-                if (!userDoc.exists()) {
-                    throw new Error(`User document with ID ${withdrawal.userId} not found.`);
-                }
+                // No need to check for user existence, saves a read. Batch will fail if user doesn't exist.
                 batch.update(userRef, { balance: increment(parseFloat(withdrawal.amount)) });
             }
 

@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -47,26 +48,26 @@ import Preloader from "@/components/preloader";
 import { Badge } from "@/components/ui/badge";
 
 const navItems = [
-    { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, countKey: null },
-    { href: "/admin/users", label: "Users", icon: Users, countKey: 'users' },
-    { href: "/admin/deposits", label: "Deposits", icon: DollarSign, countKey: 'deposits' },
-    { href: "/admin/withdrawals", label: "Withdrawals", icon: Landmark, countKey: 'withdrawals' },
-    { href: "/admin/profit-stats", label: "Profit Stats", icon: BarChart2, countKey: null },
-    { href: "/admin/announcement", label: "Announcement", icon: Megaphone, countKey: null },
+    { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/admin/users", label: "Users", icon: Users },
+    { href: "/admin/deposits", label: "Deposits", icon: DollarSign },
+    { href: "/admin/withdrawals", label: "Withdrawals", icon: Landmark },
+    { href: "/admin/profit-stats", label: "Profit Stats", icon: BarChart2 },
+    { href: "/admin/announcement", label: "Announcement", icon: Megaphone },
 ];
 
 // Mobile-specific nav items (limited)
 const mobileNavItems = [
-    { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard, countKey: null },
-    { href: "/admin/deposits", label: "Deposits", icon: DollarSign, countKey: 'deposits' },
-    { href: "/admin/users", label: "Users", icon: Users, countKey: 'users' },
-    { href: "/admin/withdrawals", label: "Withdrawals", icon: Landmark, countKey: 'withdrawals' },
+    { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/admin/deposits", label: "Deposits", icon: DollarSign },
+    { href: "/admin/users", label: "Users", icon: Users },
+    { href: "/admin/withdrawals", label: "Withdrawals", icon: Landmark },
 ];
 
 const mobileHeaderItems = [
-    { href: "/admin/bpexch-activity", label: "Login Activity", icon: Activity, countKey: null },
-    { href: "/admin/settings", label: "Settings", icon: Settings, countKey: null },
-    { href: "/admin/announcement", label: "Announcement", icon: Megaphone, countKey: null },
+    { href: "/admin/bpexch-activity", label: "Login Activity", icon: Activity },
+    { href: "/admin/settings", label: "Settings", icon: Settings },
+    { href: "/admin/announcement", label: "Announcement", icon: Megaphone },
 ]
 
 export default function AdminLayout({
@@ -83,17 +84,14 @@ export default function AdminLayout({
   const [isNavigating, setIsNavigating] = React.useState(false);
   const [pageLoading, setPageLoading] = React.useState(false);
 
-  const [pendingCounts, setPendingCounts] = React.useState({
-      deposits: 0,
-      withdrawals: 0,
-      chats: 0,
-  });
+  // Unread chat count is the only thing we want to keep real-time for notifications.
+  const [unreadChatCount, setUnreadChatCount] = React.useState(0);
 
   const fullNavItems = [ 
     ...navItems, 
-    { href: "/admin/chat", label: "Support Chat", icon: MessageSquare, countKey: 'chats' }, 
-    { href: "/admin/bpexch-activity", label: "Login Activity", icon: Activity, countKey: null }, 
-    { href: "/admin/settings", label: "Settings", icon: Settings, countKey: null }
+    { href: "/admin/chat", label: "Support Chat", icon: MessageSquare }, 
+    { href: "/admin/bpexch-activity", label: "Login Activity", icon: Activity }, 
+    { href: "/admin/settings", label: "Settings", icon: Settings }
   ];
 
   const getPageTitle = () => {
@@ -140,7 +138,7 @@ export default function AdminLayout({
     }
 
     const userDocRef = doc(db, 'users', user.uid);
-    const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
+    const unsubscribeUser = onSnapshot(userDocRef, (docSnap) => {
       if (docSnap.exists()) {
         const userData = docSnap.data();
         if (userData.role === 'Admin') {
@@ -166,32 +164,18 @@ export default function AdminLayout({
         router.push('/admin/login');
     });
 
-    return () => unsubscribe();
+    // Real-time listener ONLY for chat notifications.
+    const chatsQuery = query(collection(db, 'chats'), where('adminRead', '==', false));
+    const unsubscribeChats = onSnapshot(chatsQuery, (snapshot) => {
+        setUnreadChatCount(snapshot.size);
+    });
+
+    return () => {
+        unsubscribeUser();
+        unsubscribeChats();
+    };
   }, [user, loadingUser, router, error, toast, pathname]);
 
-  React.useEffect(() => {
-      if (pathname === '/admin/login' || !user) return;
-      
-      const collections = {
-          deposits: collection(db, 'deposits'),
-          withdrawals: collection(db, 'withdrawals'),
-          chats: collection(db, 'chats')
-      };
-
-      const unsubscribes = Object.entries(collections).map(([key, coll]) => {
-          let q;
-          if (key === 'chats') {
-              q = query(coll, where('adminRead', '==', false));
-          } else {
-              q = query(coll, where('status', '==', 'Pending'));
-          }
-          return onSnapshot(q, (snapshot) => {
-              setPendingCounts(prev => ({ ...prev, [key]: snapshot.size }));
-          });
-      });
-      
-      return () => unsubscribes.forEach(unsub => unsub());
-  }, [pathname, user]);
 
   const handleLogout = async () => {
     try {
@@ -248,9 +232,7 @@ export default function AdminLayout({
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            {fullNavItems.map((item) => {
-                const count = item.countKey ? pendingCounts[item.countKey as keyof typeof pendingCounts] : 0;
-                return (
+            {fullNavItems.map((item) => (
                  <SidebarMenuItem key={item.href}>
                  <SidebarMenuButton
                    onClick={() => handleNavigation(item.href)}
@@ -259,10 +241,10 @@ export default function AdminLayout({
                  >
                    <item.icon />
                    <span>{item.label}</span>
-                   {count > 0 && <SidebarMenuBadge>{count}</SidebarMenuBadge>}
+                   {item.href === '/admin/chat' && unreadChatCount > 0 && <SidebarMenuBadge>{unreadChatCount}</SidebarMenuBadge>}
                  </SidebarMenuButton>
                </SidebarMenuItem>
-            )})}
+            ))}
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter className="p-4">
@@ -306,26 +288,19 @@ export default function AdminLayout({
         <div className="md:hidden fixed bottom-20 right-4 z-50">
             <Button onClick={() => handleNavigation('/admin/chat')} size="icon" className="rounded-full w-14 h-14 shadow-lg relative">
                 <MessageSquare />
-                {pendingCounts.chats > 0 && <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 justify-center p-0">{pendingCounts.chats}</Badge>}
+                {unreadChatCount > 0 && <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 justify-center p-0">{unreadChatCount}</Badge>}
             </Button>
         </div>
 
         {/* Mobile Bottom Navigation */}
         <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-10">
             <div className="flex justify-center items-center h-16 gap-2">
-                {mobileNavItems.map((item) => {
-                     const count = item.countKey ? pendingCounts[item.countKey as keyof typeof pendingCounts] : 0;
-                     return (
+                {mobileNavItems.map((item) => (
                     <Link href={item.href} key={item.href} className={`relative flex flex-col items-center justify-center gap-1 w-full h-full ${isActive(item.href) ? 'text-primary' : 'text-muted-foreground'}`}>
                         <item.icon className="w-6 h-6"/>
                         <span className="text-xs text-center">{item.label}</span>
-                        {count > 0 && (
-                            <div className="absolute top-1 right-1/4 text-xs bg-destructive text-destructive-foreground rounded-full h-4 w-4 flex items-center justify-center">
-                                {count}
-                            </div>
-                        )}
                     </Link>
-                )})}
+                ))}
             </div>
         </nav>
       </SidebarInset>
