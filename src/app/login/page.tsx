@@ -232,10 +232,7 @@ export default function LoginPage() {
                     </span>
                 </div>
             </div>
-         <Button variant="outline" className="w-full" type="button" onClick={handleGoogleLogin} disabled={isGoogleLoading}>
-                 {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-4 w-4" />}
-                Sign in with Google
-            </Button>
+        
             </CardContent>
         </form>
         <CardFooter className="text-sm flex flex-col items-start gap-2">
