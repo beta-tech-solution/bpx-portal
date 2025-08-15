@@ -15,9 +15,9 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { db } from "@/lib/firebase/config"
+import { db, app as defaultApp } from "@/lib/firebase/config"
 import { collection, query, orderBy, Timestamp, doc, updateDoc, getDocs, serverTimestamp, setDoc, deleteDoc } from 'firebase/firestore'
-import { format, subMinutes, subDays, eachDayOfInterval } from 'date-fns'
+import { format, subDays, eachDayOfInterval } from 'date-fns'
 import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -25,6 +25,9 @@ import { z } from "zod"
 import { Textarea } from "@/components/ui/textarea"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth"
+import { initializeApp, deleteApp } from "firebase/app"
+import { Switch } from "@/components/ui/switch"
+
 
 const userChartConfig = {
   count: { label: "New Users", color: "hsl(var(--primary))" },
@@ -39,26 +42,27 @@ interface User {
   balance: number;
   status: 'Active' | 'Suspended' | 'Pending';
   role: 'Admin' | 'User';
-  lastSeen?: Timestamp;
   createdAt?: Timestamp;
   bpexchUsername?: string;
   bpexchPassword?: string;
   adminMessage?: string;
   emailVerified: boolean;
+  adminVerified?: boolean;
 }
 
 // This is a client-side action, not a server action.
+// It is safe because Firestore security rules should prevent unauthorized deletion.
 async function deleteUserClientSideAction(uid: string) {
     if (!uid) {
         throw new Error("User ID is required.");
     }
     // We can't delete from Auth on client side without re-authentication.
-    // So we will just delete from Firestore.
-    // Admin will have to manually delete from Firebase Console for full cleanup.
+    // This is a known limitation. Admin will have to manually delete from Firebase Console for full cleanup.
+    // The primary goal here is to remove the user from the app's database.
     try {
         const userDocRef = doc(db, "users", uid);
         await deleteDoc(userDocRef);
-        return { success: true, message: "User deleted from database." };
+        return { success: true, message: "User deleted from database. Remember to delete them from the Firebase Auth console." };
     } catch(error: any) {
         console.error("Error deleting user from Firestore:", error);
         throw new Error(error.message || "An error occurred while deleting the user from the database.");
@@ -143,25 +147,13 @@ export default function AdminUsersPage() {
   
   const handleDelete = async (userId: string) => {
     try {
-        await deleteUserClientSideAction(userId);
+        const result = await deleteUserClientSideAction(userId);
         setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
-        toast({ title: "User Deleted", description: "The user has been removed from the database." });
+        toast({ title: "User Removed", description: result.message });
     } catch (error: any) {
         console.error("Failed to delete user:", error);
         toast({ title: "Error", description: error.message || "Could not delete user.", variant: "destructive" });
     }
-  }
-
-  const isUserOnline = (lastSeen: Timestamp | undefined) => {
-      if (!lastSeen) return false;
-      const fiveMinutesAgo = subMinutes(new Date(), 5);
-      return lastSeen.toDate() > fiveMinutesAgo;
-  }
-
-  const formatLastSeen = (lastSeen: Timestamp | undefined) => {
-      if (!lastSeen) return "Never";
-      if(isUserOnline(lastSeen)) return "Online";
-      return format(lastSeen.toDate(), 'PPpp');
   }
 
   const renderContent = () => {
@@ -198,16 +190,13 @@ export default function AdminUsersPage() {
                  <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">Status:</span>
                      <div className="flex items-center gap-2">
-                         {isUserOnline(user.lastSeen) && (
-                            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" title="Online"></div>
-                         )}
                          <Badge variant={user.status === 'Active' ? 'secondary' : (user.status === 'Pending' ? 'default' : 'destructive')}>{user.status}</Badge>
                       </div>
                 </div>
                  <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">Email:</span>
-                    <Badge variant={user.emailVerified ? 'secondary' : 'destructive'}>
-                        {user.emailVerified ? 'Verified' : 'Not Verified'}
+                    <Badge variant={user.emailVerified || user.adminVerified ? 'secondary' : 'destructive'}>
+                        {user.emailVerified || user.adminVerified ? 'Verified' : 'Not Verified'}
                     </Badge>
                 </div>
                 <div className="flex items-center justify-end gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
@@ -224,7 +213,7 @@ export default function AdminUsersPage() {
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    This action cannot be undone. This will permanently delete the user's account and all associated data.
+                                    This will permanently remove the user from the application database. You will still need to delete them from the Firebase Authentication console manually.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -251,7 +240,7 @@ export default function AdminUsersPage() {
                 <TableHead>Balance</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Last Seen</TableHead>
+                <TableHead>Joined</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
             </TableHeader>
@@ -263,25 +252,22 @@ export default function AdminUsersPage() {
                     <div className="text-sm text-muted-foreground">{user.email}</div>
                     </TableCell>
                     <TableCell>
-                        <Badge variant={user.emailVerified ? 'secondary' : 'destructive'}>
-                           {user.emailVerified ? <ShieldCheck className="mr-1 h-3 w-3" /> : <ShieldAlert className="mr-1 h-3 w-3" />}
-                           {user.emailVerified ? 'Verified' : 'Not Verified'}
+                        <Badge variant={user.emailVerified || user.adminVerified ? 'secondary' : 'destructive'}>
+                           {user.emailVerified || user.adminVerified ? <ShieldCheck className="mr-1 h-3 w-3" /> : <ShieldAlert className="mr-1 h-3 w-3" />}
+                           {user.emailVerified || user.adminVerified ? 'Verified' : 'Not Verified'}
                         </Badge>
                     </TableCell>
                     <TableCell className="font-mono">PKR {user.balance?.toFixed(2) || '0.00'}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                          <Badge variant={user.status === 'Active' ? 'secondary' : (user.status === 'Pending' ? 'default' : 'destructive')}>{user.status}</Badge>
-                         {isUserOnline(user.lastSeen) && (
-                            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" title="Online"></div>
-                         )}
                       </div>
                     </TableCell>
                     <TableCell>
                         <Badge variant={user.role === 'Admin' ? 'default' : 'outline'}>{user.role}</Badge>
                     </TableCell>
                     <TableCell>
-                        {formatLastSeen(user.lastSeen)}
+                        {user.createdAt ? format(user.createdAt.toDate(), 'PP') : 'N/A'}
                     </TableCell>
                     <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
@@ -298,7 +284,7 @@ export default function AdminUsersPage() {
                                     <AlertDialogHeader>
                                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                         <AlertDialogDescription>
-                                            This action cannot be undone. This will permanently delete the user's account and remove their data from our servers.
+                                            This will permanently remove the user from the application database. You will still need to delete them from the Firebase Authentication console manually. This action cannot be undone.
                                         </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
@@ -385,6 +371,7 @@ const UserFormSchema = z.object({
     bpexchUsername: z.string().optional(),
     bpexchPassword: z.string().optional(),
     adminMessage: z.string().optional(),
+    adminVerified: z.boolean().optional(),
 });
 
 type UserFormValues = z.infer<typeof UserFormSchema>;
@@ -405,6 +392,7 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
             bpexchUsername: "",
             bpexchPassword: "",
             adminMessage: "",
+            adminVerified: false,
         },
     });
 
@@ -427,6 +415,7 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                 bpexchUsername: user?.bpexchUsername || "",
                 bpexchPassword: user?.bpexchPassword || "",
                 adminMessage: user?.adminMessage || "",
+                adminVerified: user?.adminVerified || false,
             });
         }
     }, [user, form, open]);
@@ -442,53 +431,68 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
 
         try {
             if (user) { 
+                // Editing an existing user
                 const userRef = doc(db, 'users', user.id);
                 await updateDoc(userRef, { 
                     fullName: data.fullName, 
-                    email: data.email, 
+                    // Email cannot be changed here as it's tied to auth
                     balance: data.balance, 
                     status: finalStatus, 
                     role: data.role,
                     bpexchUsername: data.bpexchUsername,
                     bpexchPassword: data.bpexchPassword,
                     adminMessage: data.adminMessage,
+                    adminVerified: data.adminVerified,
                 });
                 toast({ title: "User Updated", description: "User details have been saved successfully." });
             } else {
+                // Creating a new user
                 if (!data.password) {
                     form.setError("password", { type: "manual", message: "Password is required for new users." });
                     setIsLoading(false);
                     return;
                 }
                 
-                // --- Isolated Firebase Auth Instance ---
-                // This is the key change to prevent admin logout.
-                // We create a temporary auth instance for this one operation.
-                const tempAuth = getAuth();
-                const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, data.password);
-                const newUser = userCredential.user;
+                // --- Robust Isolated Firebase Auth Instance ---
+                // Create a temporary, uniquely named Firebase app instance.
+                const tempAppName = `temp-user-creation-${Date.now()}`;
+                const tempApp = initializeApp(defaultApp.options, tempAppName);
+                const tempAuth = getAuth(tempApp);
 
-                // Now use the primary Firestore instance to write the user's data
-                await setDoc(doc(db, "users", newUser.uid), {
-                    uid: newUser.uid,
-                    fullName: data.fullName,
-                    email: data.email,
-                    balance: data.balance,
-                    status: finalStatus,
-                    role: data.role,
-                    createdAt: serverTimestamp(),
-                    bpexchUsername: data.bpexchUsername,
-                    bpexchPassword: data.bpexchPassword,
-                    adminMessage: data.adminMessage,
-                    emailVerified: false,
-                });
-                
-                toast({ title: "User Created", description: "New user has been added successfully." });
+                try {
+                    const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, data.password);
+                    const newUser = userCredential.user;
+
+                    // Now use the primary Firestore instance to write the user's data
+                    await setDoc(doc(db, "users", newUser.uid), {
+                        uid: newUser.uid,
+                        fullName: data.fullName,
+                        email: data.email,
+                        balance: data.balance,
+                        status: finalStatus,
+                        role: data.role,
+                        createdAt: serverTimestamp(),
+                        bpexchUsername: data.bpexchUsername,
+                        bpexchPassword: data.bpexchPassword,
+                        adminMessage: data.adminMessage,
+                        emailVerified: false,
+                        adminVerified: data.adminVerified,
+                    });
+                    
+                    toast({ title: "User Created", description: "New user has been added successfully." });
+                } finally {
+                    // IMPORTANT: Clean up the temporary app instance
+                    await deleteApp(tempApp);
+                }
             }
             setOpen(false);
         } catch (error: any) {
             console.error("Error saving user:", error);
-            toast({ title: "Error", description: error.message || "Could not save user details.", variant: "destructive" });
+            if (error.code === 'auth/email-already-in-use') {
+                form.setError("email", { type: 'manual', message: 'This email address is already in use.' });
+            } else {
+                toast({ title: "Error", description: error.message || "Could not save user details.", variant: "destructive" });
+            }
         } finally {
             setIsLoading(false);
         }
@@ -533,6 +537,26 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                                         </FormItem>
                                     )}
                                 />
+                                {user && (
+                                <FormField
+                                    control={form.control}
+                                    name="adminVerified"
+                                    render={({ field }) => (
+                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                        <div className="space-y-0.5">
+                                            <FormLabel>Manual Verification</FormLabel>
+                                            <FormMessage />
+                                        </div>
+                                        <FormControl>
+                                            <Switch
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                            />
+                                        </FormControl>
+                                        </FormItem>
+                                    )}
+                                />
+                                )}
                                 <FormField
                                     control={form.control}
                                     name="balance"
@@ -692,12 +716,6 @@ const DetailRow = ({ label, value }: { label: string, value: string | undefined 
 function UserDetailsDialog({ open, setOpen, user }: { open: boolean, setOpen: (open: boolean) => void, user: User | null }) {
     if (!user) return null;
 
-    const isUserOnline = (lastSeen: Timestamp | undefined) => {
-        if (!lastSeen) return false;
-        const fiveMinutesAgo = subMinutes(new Date(), 5);
-        return lastSeen.toDate() > fiveMinutesAgo;
-    }
-
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent className="max-w-md">
@@ -714,7 +732,7 @@ function UserDetailsDialog({ open, setOpen, user }: { open: boolean, setOpen: (o
                         <div className="flex justify-between items-center py-2 border-b">
                             <div>
                                 <p className="text-sm text-muted-foreground">Email Verified</p>
-                                <p className="font-medium">{user.emailVerified ? 'Yes' : 'No'}</p>
+                                <p className="font-medium">{user.emailVerified || user.adminVerified ? 'Yes' : 'No'}</p>
                             </div>
                         </div>
                         <DetailRow label="Phone" value={user.phone} />
@@ -723,7 +741,6 @@ function UserDetailsDialog({ open, setOpen, user }: { open: boolean, setOpen: (o
                         <DetailRow label="Status" value={user.status} />
                         <DetailRow label="Role" value={user.role} />
                         <DetailRow label="Joined On" value={user.createdAt ? format(user.createdAt.toDate(), 'PPP') : 'N/A'} />
-                        <DetailRow label="Last Seen" value={user.lastSeen ? (isUserOnline(user.lastSeen) ? 'Online' : format(user.lastSeen.toDate(), 'PPpp')) : 'Never'} />
                         
                         <h3 className="font-headline text-lg pt-4">BPExch Details</h3>
                         <DetailRow label="BPExch Username" value={user.bpexchUsername} />
