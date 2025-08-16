@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from 'next/navigation';
 import { db } from "@/lib/firebase/config";
-import { collection, query, onSnapshot, orderBy, doc, addDoc, serverTimestamp, updateDoc, deleteDoc, writeBatch, getDocs } from "firebase/firestore";
+import { collection, query, onSnapshot, orderBy, doc, addDoc, serverTimestamp, updateDoc, deleteDoc, getDocs } from "firebase/firestore";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
