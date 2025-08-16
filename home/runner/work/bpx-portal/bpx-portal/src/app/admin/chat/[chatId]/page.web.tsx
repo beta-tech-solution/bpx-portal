@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from 'next/navigation';
 import { db } from "@/lib/firebase/config";
-import { collection, query, onSnapshot, orderBy, doc, addDoc, serverTimestamp, updateDoc, deleteDoc, getDocs } from "firebase/firestore";
+import { collection, query, onSnapshot, orderBy, doc, addDoc, serverTimestamp, updateDoc, deleteDoc } from "firebase/firestore";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -36,6 +36,7 @@ interface ChatViewProps {
 }
 
 function ChatView({ chatId }: ChatViewProps) {
+  console.log(`[Debug] ChatView rendering for chatId: ${chatId}`);
   const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -51,31 +52,47 @@ function ChatView({ chatId }: ChatViewProps) {
 
   useEffect(() => {
     if (!chatId) return;
+    
+    console.log(`[Debug] useEffect triggered for chatId: ${chatId}`);
     setLoading(true);
+    setMessages([]); // Clear previous messages immediately
 
     const chatDocRef = doc(db, 'chats', chatId as string);
-    updateDoc(chatDocRef, { adminRead: true });
+    updateDoc(chatDocRef, { adminRead: true }).catch(err => console.error("[Debug] Failed to mark chat as read:", err));
 
     const unsubscribeChatUser = onSnapshot(chatDocRef, (docSnap) => {
         if(docSnap.exists()){
+            console.log("[Debug] Fetched user data:", docSnap.data().userName);
             setChatUser({ name: docSnap.data().userName });
+        } else {
+            console.warn(`[Debug] Chat document ${chatId} does not exist.`);
         }
+        // Moved loading=false to message listener to ensure content is ready
+    }, (error) => {
+        console.error("[Debug] Error fetching chat user data:", error);
+        toast({ title: "Error", description: "Could not load user information for this chat.", variant: "destructive" });
+        setLoading(false);
     });
 
-    const q = query(collection(db, `chats/${chatId}/messages`), orderBy("timestamp", "asc"));
+    const messagesQuery = query(collection(db, `chats/${chatId}/messages`), orderBy("timestamp", "asc"));
     
-    const unsubscribeMessages = onSnapshot(q, (querySnapshot) => {
+    const unsubscribeMessages = onSnapshot(messagesQuery, (querySnapshot) => {
       const msgs: Message[] = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
-      
+      console.log(`[Debug] Fetched ${msgs.length} messages.`);
       setMessages(msgs);
-      setLoading(false);
+      setLoading(false); // Set loading to false once messages are fetched (or confirmed empty)
+    }, (error) => {
+        console.error("[Debug] Error fetching messages:", error);
+        toast({ title: "Error", description: "Could not load messages for this chat.", variant: "destructive" });
+        setLoading(false);
     });
 
     return () => {
+        console.log(`[Debug] Unsubscribing listeners for chatId: ${chatId}`);
         unsubscribeMessages();
         unsubscribeChatUser();
     };
-  }, [chatId]);
+  }, [chatId, toast]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -112,7 +129,7 @@ function ChatView({ chatId }: ChatViewProps) {
 
         setNewMessage("");
     } catch (error) {
-        console.error("Error sending message:", error);
+        console.error("[Debug] Error sending message:", error);
     } finally {
         setSending(false);
     }
@@ -135,7 +152,7 @@ function ChatView({ chatId }: ChatViewProps) {
         await handleSendMessage({ url: data.secure_url, name: file.name });
         toast({ title: "Attachment sent" });
     } catch(err) {
-        console.error("Error attaching file", err);
+        console.error("[Debug] Error attaching file", err);
         toast({ title: "Attachment failed", description: "Could not send the file.", variant: "destructive" });
     } finally {
         setSending(false);
@@ -277,5 +294,7 @@ function ChatView({ chatId }: ChatViewProps) {
 }
 
 export default function AdminChatPage({ params }: { params: { chatId: string }}) {
+  // The key prop is crucial here. It tells React to create a new instance of
+  // ChatView whenever the chatId changes, which resets its state and effects.
   return <ChatView key={params.chatId} chatId={params.chatId} />;
 }
