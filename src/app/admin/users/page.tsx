@@ -42,7 +42,7 @@ interface User {
   balance: number;
   status: 'Active' | 'Suspended' | 'Pending';
   role: 'Admin' | 'User';
-  lastSeen?: Timestamp;
+ /* lastSeen?: Timestamp; */ 
   createdAt?: Timestamp;
   bpexchUsername?: string;
   bpexchPassword?: string;
@@ -157,7 +157,7 @@ export default function AdminUsersPage() {
     }
   }
 
-  const isUserOnline = (lastSeen: Timestamp | undefined) => {
+  {/* const isUserOnline = (lastSeen: Timestamp | undefined) => {
       if (!lastSeen) return false;
       const fiveMinutesAgo = subMinutes(new Date(), 5);
       return lastSeen.toDate() > fiveMinutesAgo;
@@ -167,7 +167,7 @@ export default function AdminUsersPage() {
       if (!lastSeen) return "Never";
       if(isUserOnline(lastSeen)) return "Online";
       return format(lastSeen.toDate(), 'PPpp');
-  }
+  } */}
 
   const renderContent = () => {
     if (loading) {
@@ -200,15 +200,13 @@ export default function AdminUsersPage() {
                     <span className="text-muted-foreground">Role:</span>
                     <Badge variant={user.role === 'Admin' ? 'default' : 'outline'}>{user.role}</Badge>
                 </div>
-                 <div className="flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground">Status:</span>
-                     <div className="flex items-center gap-2">
-                         {isUserOnline(user.lastSeen) && (
-                            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" title="Online"></div>
-                         )}
-                         <Badge variant={user.status === 'Active' ? 'secondary' : (user.status === 'Pending' ? 'default' : 'destructive')}>{user.status}</Badge>
-                      </div>
-                </div>
+                <div className="flex justify-between items-center text-sm">
+  <span className="text-muted-foreground">Status:</span>
+  <Badge variant={user.status === 'Active' ? 'secondary' : (user.status === 'Pending' ? 'default' : 'destructive')}>
+    {user.status}
+  </Badge>
+</div>
+
                  <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">Email:</span>
                     <Badge variant={user.emailVerified || user.adminVerified ? 'secondary' : 'destructive'}>
@@ -256,7 +254,7 @@ export default function AdminUsersPage() {
                 <TableHead>Balance</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Last Seen</TableHead>
+              {/*  <TableHead>Last Seen</TableHead> */}
                 <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
             </TableHeader>
@@ -285,9 +283,9 @@ export default function AdminUsersPage() {
                     <TableCell>
                         <Badge variant={user.role === 'Admin' ? 'default' : 'outline'}>{user.role}</Badge>
                     </TableCell>
-                    <TableCell>
+                   {/* <TableCell>
                         {formatLastSeen(user.lastSeen)}
-                    </TableCell>
+                    </TableCell> */}
                     <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                            <Button variant="ghost" size="icon" onClick={() => handleEdit(user)}>
@@ -766,7 +764,7 @@ function UserDetailsDialog({ open, setOpen, user }: { open: boolean, setOpen: (o
                         <DetailRow label="Status" value={user.status} />
                         <DetailRow label="Role" value={user.role} />
                         <DetailRow label="Joined On" value={user.createdAt ? format(user.createdAt.toDate(), 'PPP') : 'N/A'} />
-                        <DetailRow label="Last Seen" value={user.lastSeen ? (isUserOnline(user.lastSeen) ? 'Online' : format(user.lastSeen.toDate(), 'PPpp')) : 'Never'} />
+                        {/*<DetailRow label="Last Seen" value={user.lastSeen ? (isUserOnline(user.lastSeen) ? 'Online' : format(user.lastSeen.toDate(), 'PPpp')) : 'Never'} /> */}
                         
                         <h3 className="font-headline text-lg pt-4">BPExch Details</h3>
                         <DetailRow label="BPExch Username" value={user.bpexchUsername} />
