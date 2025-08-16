@@ -1,11 +1,10 @@
-
 "use client";
 
 import * as React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase/config";
 import { onAuthStateChanged, User, signOut } from "firebase/auth";
-import { doc, onSnapshot, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import Preloader from "@/components/preloader";
 import ChatWidget from "@/components/chat-widget";
@@ -22,7 +21,6 @@ interface UserData {
   emailVerified: boolean;
   adminVerified?: boolean;
   bpexchUsername?: string;
-  lastSeen?: any;
 }
 
 export default function DashboardLayout({
@@ -41,14 +39,14 @@ export default function DashboardLayout({
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         const userDocRef = doc(db, "users", currentUser.uid);
-        
-        // Use a real-time listener for user data to get instant updates (e.g., balance changes)
+
+        // Real-time listener for user data
         const unsubscribeSnapshot = onSnapshot(
           userDocRef,
           (doc) => {
             if (doc.exists()) {
               const dbData = doc.data() as UserData;
-              
+
               if (dbData.role === "Admin") {
                 router.push('/admin/dashboard');
                 return;
@@ -56,24 +54,17 @@ export default function DashboardLayout({
 
               const isVerified = currentUser.emailVerified || dbData.adminVerified === true;
               if (!isVerified) {
-                  toast({
-                      title: "Email Not Verified",
-                      description: "Please verify your email address to log in.",
-                      variant: "destructive",
-                  });
-                  signOut(auth);
-                  return;
+                toast({
+                  title: "Email Not Verified",
+                  description: "Please verify your email address to log in.",
+                  variant: "destructive",
+                });
+                signOut(auth);
+                return;
               }
 
               setUser(currentUser);
               setUserData(dbData);
-
-              // Efficiently update "lastSeen" only if it's been more than 5 minutes
-              const now = Date.now();
-              const lastSeenMillis = dbData.lastSeen?.toMillis() || 0;
-              if (now - lastSeenMillis > 5 * 60 * 1000) { // 5 minutes
-                updateDoc(userDocRef, { lastSeen: serverTimestamp() }).catch(err => console.error("Failed to update lastSeen:", err));
-              }
             } else {
               toast({
                 title: "Error",
@@ -95,7 +86,7 @@ export default function DashboardLayout({
             setLoading(false);
           }
         );
-        
+
         return () => unsubscribeSnapshot();
       } else {
         router.push("/login");
@@ -111,7 +102,7 @@ export default function DashboardLayout({
   if (loading) {
     return <Preloader loadingText="Loading Dashboard..." />;
   }
-  
+
   if (!user || !userData) {
     return <Preloader loadingText="Redirecting..." />;
   }
@@ -120,10 +111,10 @@ export default function DashboardLayout({
     <div className="flex flex-col min-h-screen bg-muted/30">
       <DashboardHeader user={user} userData={userData} />
       <main className="flex-1 p-4 md:p-6 pb-28 md:pb-28">
-          <div className="space-y-6">
-            {children}
-            <AppDownloadCard />
-          </div>
+        <div className="space-y-6">
+          {children}
+          <AppDownloadCard />
+        </div>
       </main>
       {user && <ChatWidget />}
       <BottomNav />
