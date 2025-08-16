@@ -273,12 +273,20 @@ export default function AdminUsersPage() {
                     </TableCell>
                     <TableCell className="font-mono">PKR {user.balance?.toFixed(2) || '0.00'}</TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                         <Badge variant={user.status === 'Active' ? 'secondary' : (user.status === 'Pending' ? 'default' : 'destructive')}>{user.status}</Badge>
-                         {isUserOnline(user.lastSeen) && (
-                            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" title="Online"></div>
-                         )}
-                      </div>
+                    <div className="flex items-center gap-2">
+  <Badge
+    variant={
+      user.status === "Active"
+        ? "secondary"
+        : user.status === "Pending"
+        ? "default"
+        : "destructive"
+    }
+  >
+    {user.status}
+  </Badge>
+</div>
+
                     </TableCell>
                     <TableCell>
                         <Badge variant={user.role === 'Admin' ? 'default' : 'outline'}>{user.role}</Badge>
