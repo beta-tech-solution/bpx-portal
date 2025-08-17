@@ -188,7 +188,7 @@ export default function AdminUsersPage() {
         <div className="space-y-4">
 {users
   .filter(user => {
-    if (!searchTerm) return true;
+    if (!searchTerm) return true; // show all if no search
     const term = searchTerm.toLowerCase();
     return (
       user.fullName?.toLowerCase().includes(term) ||
@@ -269,78 +269,99 @@ export default function AdminUsersPage() {
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {users.map((user) => (
-                <TableRow key={user.id} onClick={() => handleViewDetails(user)} className="cursor-pointer">
-                    <TableCell>
-                    <div className="font-medium">{user.fullName}</div>
-                    <div className="text-sm text-muted-foreground">{user.email}</div>
-                    </TableCell>
-                    <TableCell>
-                        <Badge variant={user.emailVerified || user.adminVerified ? 'secondary' : 'destructive'}>
-                           {user.emailVerified || user.adminVerified ? <ShieldCheck className="mr-1 h-3 w-3" /> : <ShieldAlert className="mr-1 h-3 w-3" />}
-                           {user.emailVerified || user.adminVerified ? 'Verified' : 'Not Verified'}
-                        </Badge>
-                    </TableCell>
-                    <TableCell className="font-mono">PKR {user.balance?.toFixed(2) || '0.00'}</TableCell>
-                    <TableCell>
-                    <div className="flex items-center gap-2">
-  <Badge
-    variant={
-      user.status === "Active"
-        ? "secondary"
-        : user.status === "Pending"
-        ? "default"
-        : "destructive"
-    }
-  >
-    {user.status}
-  </Badge>
-</div>
+  {users
+    .filter(user => {
+      if (!searchTerm) return true; // show all if no input
+      const term = searchTerm.toLowerCase();
+      return (
+        user.fullName?.toLowerCase().includes(term) ||
+        user.email?.toLowerCase().includes(term) ||
+        user.phone?.toLowerCase().includes(term)
+      );
+    })
+    .map((user) => (
+      <TableRow
+        key={user.id}
+        onClick={() => handleViewDetails(user)}
+        className="cursor-pointer"
+      >
+        <TableCell>
+          <div className="font-medium">{user.fullName}</div>
+          <div className="text-sm text-muted-foreground">{user.email}</div>
+        </TableCell>
 
-                    </TableCell>
-                    <TableCell>
-                        <Badge variant={user.role === 'Admin' ? 'default' : 'outline'}>{user.role}</Badge>
-                    </TableCell>
-                   {/* <TableCell>
-                        {formatLastSeen(user.lastSeen)}
-                    </TableCell> */}
-                    <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                           <Button variant="ghost" size="icon" onClick={() => handleEdit(user)}>
-                                <Edit className="h-4 w-4" />
-                           </Button>
-                           <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            This will permanently remove the user from the application database. You will still need to delete them from the Firebase Authentication console manually. This action cannot be undone.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                handleDelete(user.id);
-                                            }}
-                                            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-                                        >
-                                            Delete
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </div>
-                    </TableCell>
-                </TableRow>
-                ))}
-            </TableBody>
+        <TableCell>
+          <Badge variant={user.emailVerified || user.adminVerified ? 'secondary' : 'destructive'}>
+            {user.emailVerified || user.adminVerified ? (
+              <ShieldCheck className="mr-1 h-3 w-3" />
+            ) : (
+              <ShieldAlert className="mr-1 h-3 w-3" />
+            )}
+            {user.emailVerified || user.adminVerified ? 'Verified' : 'Not Verified'}
+          </Badge>
+        </TableCell>
+
+        <TableCell className="font-mono">PKR {user.balance?.toFixed(2) || '0.00'}</TableCell>
+
+        <TableCell>
+          <div className="flex items-center gap-2">
+            <Badge
+              variant={
+                user.status === "Active"
+                  ? "secondary"
+                  : user.status === "Pending"
+                  ? "default"
+                  : "destructive"
+              }
+            >
+              {user.status}
+            </Badge>
+          </div>
+        </TableCell>
+
+        <TableCell>
+          <Badge variant={user.role === 'Admin' ? 'default' : 'outline'}>{user.role}</Badge>
+        </TableCell>
+
+        <TableCell className="text-right">
+          <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+            <Button variant="ghost" size="icon" onClick={() => handleEdit(user)}>
+              <Edit className="h-4 w-4" />
+            </Button>
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently remove the user from the application database. You will still need to delete them from the Firebase Authentication console manually. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleDelete(user.id);
+                    }}
+                    className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </TableCell>
+      </TableRow>
+    ))}
+</TableBody>
+
             </Table>
         </div>
     );
