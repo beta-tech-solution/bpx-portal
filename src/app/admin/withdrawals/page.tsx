@@ -85,14 +85,11 @@ export default function AdminWithdrawalsPage() {
                         }
                     }
                     return {
-                      id: docSnapshot.id,
-                      userFullName,
-                      date: data.createdAt
-                        ? format(new Date(data.createdAt), 'PPpp')
-                        : 'No Date',
-                      ...data
+                        id: docSnapshot.id,
+                        userFullName,
+                        date: data.createdAt ? format(data.createdAt.toDate(), 'PPpp') : 'No Date',
+                        ...data
                     } as Withdrawal;
-                    
                 })
             );
             
