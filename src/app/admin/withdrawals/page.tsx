@@ -87,7 +87,7 @@ export default function AdminWithdrawalsPage() {
                     return {
                         id: docSnapshot.id,
                         userFullName,
-                        date: data.createdAt ? format(data.createdAt.toDate(), 'PP') : 'No Date',
+                        date: data.createdAt ? format(data.createdAt.toDate(), 'PPpp') : 'No Date',
                         ...data
                     } as Withdrawal;
                 })
@@ -285,7 +285,7 @@ function WithdrawalContent({ data, loading }: { data: Withdrawal[], loading: boo
                 <CardContent className="p-4 flex flex-col gap-3">
                   <div>
                       <p className="font-semibold break-words">{item.userFullName}</p>
-                      <p className="text-sm text-muted-foreground">{item.date}</p>
+                      <p className="text-xs text-muted-foreground">{item.date}</p>
                   </div>
                   <p className="font-mono text-xl font-bold">PKR {item.amount}</p>
                    <div className="text-xs text-muted-foreground border-l-2 border-primary pl-2">
@@ -339,7 +339,7 @@ function WithdrawalContent({ data, loading }: { data: Withdrawal[], loading: boo
               <TableRow key={item.id}>
                 <TableCell>
                     <div className="font-medium">{item.userFullName}</div>
-                    <div className="text-sm text-muted-foreground">{item.date}</div>
+                    <div className="text-xs text-muted-foreground">{item.date}</div>
                 </TableCell>
                 <TableCell>
                     <div className="font-semibold">{item.bankName}</div>

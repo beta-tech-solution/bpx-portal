@@ -90,7 +90,7 @@ export default function AdminDepositsPage() {
                         id: docSnapshot.id,
                         userFullName,
                         bpexchUsername,
-                        date: data.createdAt ? format(data.createdAt.toDate(), 'PP') : 'No Date',
+                        date: data.createdAt ? format(data.createdAt.toDate(), 'PPpp') : 'No Date',
                         ...data
                     } as Deposit;
                 })
@@ -249,7 +249,7 @@ function DepositContent({ data, loading }: { data: Deposit[], loading: boolean }
             <CardContent className="p-4 flex flex-col gap-3">
               <div>
                   <p className="font-semibold break-words">{deposit.userFullName}</p>
-                  <p className="text-sm text-muted-foreground">{deposit.date}</p>
+                  <p className="text-xs text-muted-foreground">{deposit.date}</p>
                   <div className="flex items-center gap-2 text-xs mt-1 text-muted-foreground">
                     <User className="h-3 w-3" />
                     <span>{deposit.bpexchUsername}</span>
@@ -289,7 +289,7 @@ function DepositContent({ data, loading }: { data: Deposit[], loading: boolean }
             <TableHead>User</TableHead>
             <TableHead>BPExch ID</TableHead>
             <TableHead>Amount</TableHead>
-            <TableHead>Date</TableHead>
+            <TableHead>Date & Time</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -300,7 +300,7 @@ function DepositContent({ data, loading }: { data: Deposit[], loading: boolean }
               <TableCell className="font-medium">{deposit.userFullName}</TableCell>
               <TableCell className="font-mono text-xs">{deposit.bpexchUsername}</TableCell>
               <TableCell className="font-mono">PKR {deposit.amount}</TableCell>
-              <TableCell>{deposit.date}</TableCell>
+              <TableCell className="text-xs">{deposit.date}</TableCell>
               <TableCell>
                 <Badge variant={statusVariant[deposit.status]}>{deposit.status}</Badge>
               </TableCell>
