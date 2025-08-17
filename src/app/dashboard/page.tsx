@@ -203,7 +203,7 @@ export default function DashboardPage() {
                                     </div>
                                     <div>
                                         <p className="font-semibold">{tx.type}</p>
-                                        <p className="text-xs text-muted-foreground">{tx.createdAt ? format(tx.createdAt.toDate(), 'PP') : 'N/A'}</p>
+                                        <p className="text-xs text-muted-foreground">{tx.createdAt ? format(tx.createdAt.toDate(), 'PPpp') : 'N/A'}</p>
                                         {tx.type === 'Withdrawal' && (
                                             <p className="text-xs text-muted-foreground">{tx.bankName} - {tx.accountNumber}</p>
                                         )}
