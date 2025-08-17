@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, XCircle, ArrowUpRight, Loader2, Upload, Eye, Download } from "lucide-react";
+import { CheckCircle, XCircle, ArrowUpRight, Loader2, Upload, Eye, Download, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from "recharts";
@@ -28,6 +28,7 @@ interface Withdrawal {
   id: string;
   userId: string;
   userFullName: string;
+  bpexchUsername?: string;
   amount: string;
   status: WithdrawalStatus;
   bankName: string;
@@ -68,15 +69,21 @@ export default function AdminWithdrawalsPage() {
                 querySnapshot.docs.map(async (docSnapshot) => {
                     const data = docSnapshot.data();
                     let userFullName = 'Unknown User';
+                    let bpexchUsername = 'N/A';
+
                     if (data.userId) {
                         if(userCache.has(data.userId)) {
-                            userFullName = userCache.get(data.userId);
+                            const userData = userCache.get(data.userId);
+                            userFullName = userData.fullName;
+                            bpexchUsername = userData.bpexchUsername;
                         } else {
                             try {
                                 const userDoc = await getDoc(doc(db, 'users', data.userId));
                                 if (userDoc.exists()) {
-                                    userFullName = userDoc.data().fullName;
-                                    userCache.set(data.userId, userFullName);
+                                    const userData = userDoc.data();
+                                    userFullName = userData.fullName || 'Unknown User';
+                                    bpexchUsername = userData.bpexchUsername || 'N/A';
+                                    userCache.set(data.userId, { fullName: userFullName, bpexchUsername });
                                 }
                             } catch(e) {
                                 console.error("Error fetching user for withdrawal:", e);
@@ -86,6 +93,7 @@ export default function AdminWithdrawalsPage() {
                     return {
                         id: docSnapshot.id,
                         userFullName,
+                        bpexchUsername,
                         ...data
                     } as Withdrawal;
                 })
@@ -194,6 +202,24 @@ export default function AdminWithdrawalsPage() {
   )
 }
 
+function DetailRowWithCopy({ label, value }: { label: string, value: string }) {
+    const { toast } = useToast();
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(value);
+        toast({ title: "Copied to clipboard!", description: value });
+    }
+
+    return (
+        <div className="flex justify-between items-center text-xs text-muted-foreground py-1">
+            <span><span className="font-semibold">{label}:</span> {value}</span>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCopy}>
+                <Copy className="h-3 w-3" />
+            </Button>
+        </div>
+    )
+}
+
 function WithdrawalContent({ data, loading }: { data: Withdrawal[], loading: boolean }) {
     const { toast } = useToast()
     const isDesktop = useMediaQuery("(min-width: 768px)");
@@ -211,7 +237,6 @@ function WithdrawalContent({ data, loading }: { data: Withdrawal[], loading: boo
                     throw new Error(`Cannot reject withdrawal ${withdrawal.id}: No user ID associated.`);
                 }
                 const userRef = doc(db, 'users', withdrawal.userId);
-                // No need to check for user existence, saves a read. Batch will fail if user doesn't exist.
                 batch.update(userRef, { balance: increment(parseFloat(withdrawal.amount)) });
             }
 
@@ -283,13 +308,14 @@ function WithdrawalContent({ data, loading }: { data: Withdrawal[], loading: boo
                 <CardContent className="p-4 flex flex-col gap-3">
                   <div>
                       <p className="font-semibold break-words">{item.userFullName}</p>
-                      <p className="text-xs text-muted-foreground">{item.createdAt ? format(item.createdAt.toDate(), 'PPpp') : 'No Date'}</p>
+                      <p className="text-xs font-mono text-muted-foreground">{item.bpexchUsername}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{item.createdAt ? format(item.createdAt.toDate(), 'PPpp') : 'No Date'}</p>
                   </div>
                   <p className="font-mono text-xl font-bold">PKR {item.amount}</p>
-                   <div className="text-xs text-muted-foreground border-l-2 border-primary pl-2">
-                        <p>{item.bankName}</p>
-                        <p>{item.accountNumber}</p>
-                        <p>{item.accountHolder}</p>
+                   <div className="border-l-2 border-primary pl-2">
+                        <DetailRowWithCopy label="Bank" value={item.bankName} />
+                        <DetailRowWithCopy label="Account #" value={item.accountNumber} />
+                        <DetailRowWithCopy label="Holder" value={item.accountHolder} />
                     </div>
                   <div className="flex items-center justify-between gap-2 mt-2">
                     <Badge variant={statusVariant[item.status]}>{item.status}</Badge>
@@ -326,6 +352,7 @@ function WithdrawalContent({ data, loading }: { data: Withdrawal[], loading: boo
           <TableHeader>
             <TableRow>
               <TableHead>User</TableHead>
+              <TableHead>BPExch ID</TableHead>
               <TableHead>Details</TableHead>
               <TableHead>Amount</TableHead>
               <TableHead>Date & Time</TableHead>
@@ -337,9 +364,11 @@ function WithdrawalContent({ data, loading }: { data: Withdrawal[], loading: boo
             {data.map((item) => (
               <TableRow key={item.id}>
                 <TableCell className="font-medium">{item.userFullName}</TableCell>
+                <TableCell className="font-mono text-xs">{item.bpexchUsername}</TableCell>
                 <TableCell>
-                    <div className="font-semibold">{item.bankName}</div>
-                    <div className="text-xs text-muted-foreground">{item.accountNumber} ({item.accountHolder})</div>
+                    <DetailRowWithCopy label="Bank" value={item.bankName} />
+                    <DetailRowWithCopy label="Account #" value={item.accountNumber} />
+                    <DetailRowWithCopy label="Holder" value={item.accountHolder} />
                 </TableCell>
                 <TableCell className="font-mono">PKR {item.amount}</TableCell>
                 <TableCell className="text-xs">{item.createdAt ? format(item.createdAt.toDate(), 'PPpp') : 'No Date'}</TableCell>
@@ -374,10 +403,9 @@ function WithdrawalContent({ data, loading }: { data: Withdrawal[], loading: boo
 
 function ProofDialog({ proofUrl }: { proofUrl: string }) {
   const handleDownload = () => {
-    // This creates a temporary link to trigger the download
     const link = document.createElement('a');
     link.href = proofUrl;
-    link.target = "_blank" // Open in new tab to let browser handle download
+    link.target = "_blank"
     link.download = `proof-${Date.now()}`; 
     document.body.appendChild(link);
     link.click();
