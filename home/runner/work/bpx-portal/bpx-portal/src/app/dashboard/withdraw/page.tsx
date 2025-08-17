@@ -12,6 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { auth, db } from '@/lib/firebase/config';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { collection, addDoc, serverTimestamp, query, where, onSnapshot, doc, updateDoc, increment } from 'firebase/firestore';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 interface UserData {
     status: 'Active' | 'Pending' | 'Suspended';
@@ -28,6 +29,7 @@ export default function WithdrawPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [hasPendingWithdrawal, setHasPendingWithdrawal] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
+  const [paymentMethod, setPaymentMethod] = useState<'bank' | 'easypaisa' | 'jazzcash'>('bank');
 
   useEffect(() => {
     if (!user) {
@@ -88,7 +90,8 @@ export default function WithdrawPage() {
 
     const form = e.currentTarget;
     const amount = parseFloat((form.elements.namedItem('amount') as HTMLInputElement).value);
-    const bankName = (form.elements.namedItem('bankName') as HTMLInputElement).value;
+    const bankNameInput = form.elements.namedItem('bankName') as HTMLInputElement;
+    const bankName = paymentMethod === 'bank' ? bankNameInput.value : (paymentMethod === 'easypaisa' ? 'Easypaisa' : 'Jazzcash');
     const accountNumber = (form.elements.namedItem('accountNumber') as HTMLInputElement).value;
     const accountHolder = (form.elements.namedItem('accountHolder') as HTMLInputElement).value;
 
@@ -126,6 +129,7 @@ export default function WithdrawPage() {
             description: `Your request to withdraw PKR ${amount.toFixed(2)} has been received.`,
         });
         form.reset();
+        setPaymentMethod('bank'); // Reset to default
     } catch (error) {
         console.error("Withdrawal error:", error);
         toast({ title: "Request Failed", description: "There was an issue submitting your request. Please check your connection and try again.", variant: "destructive" });
@@ -174,20 +178,47 @@ export default function WithdrawPage() {
               <Label htmlFor="amount" className="font-semibold text-base">Amount to Withdraw (Minimum 100)</Label>
               <Input id="amount" name="amount" type="number" placeholder="Enter Amount" required min="100" step="0.01" className="mt-2 text-lg font-bold h-12 p-3" />
             </div>
+            
+            <div>
+                <h3 className="font-semibold text-base mb-2">Payment Method</h3>
+                <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as any)} className="grid grid-cols-3 gap-4">
+                    <div>
+                        <RadioGroupItem value="bank" id="bank" className="sr-only" />
+                        <Label htmlFor="bank" className={`flex flex-col items-center justify-center rounded-md border-2 p-4 font-bold cursor-pointer ${paymentMethod === 'bank' ? 'border-primary' : ''}`}>
+                            Bank
+                        </Label>
+                    </div>
+                     <div>
+                        <RadioGroupItem value="easypaisa" id="easypaisa" className="sr-only" />
+                        <Label htmlFor="easypaisa" className={`flex flex-col items-center justify-center rounded-md border-2 p-4 font-bold cursor-pointer ${paymentMethod === 'easypaisa' ? 'border-primary' : ''}`}>
+                            Easypaisa
+                        </Label>
+                    </div>
+                     <div>
+                        <RadioGroupItem value="jazzcash" id="jazzcash" className="sr-only" />
+                        <Label htmlFor="jazzcash" className={`flex flex-col items-center justify-center rounded-md border-2 p-4 font-bold cursor-pointer ${paymentMethod === 'jazzcash' ? 'border-primary' : ''}`}>
+                            Jazzcash
+                        </Label>
+                    </div>
+                </RadioGroup>
+            </div>
+
             <div>
               <h3 className="font-semibold text-base mb-2">Account Details</h3>
               <div className="space-y-4">
-                 <div className="space-y-2">
-                    <Label htmlFor="bankName">Bank Name</Label>
-                    <Input id="bankName" name="bankName" placeholder="e.g., National Bank" required />
+                {paymentMethod === 'bank' && (
+                    <div className="space-y-2">
+                        <Label htmlFor="bankName">Bank Name</Label>
+                        <Input id="bankName" name="bankName" placeholder="e.g., National Bank" required={paymentMethod === 'bank'} />
+                    </div>
+                )}
+                <div className="space-y-2">
+                    <Label htmlFor="accountHolder">Account Holder Name</Label>
+                    <Input id="accountHolder" name="accountHolder" placeholder="Name as it appears on your account" required />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="accountNumber">Account Number</Label>
                     <Input id="accountNumber" name="accountNumber" placeholder="Your bank account number" required />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="accountHolder">Account Holder Name</Label>
-                    <Input id="accountHolder" name="accountHolder" placeholder="Name as it appears on your account" required />
                 </div>
               </div>
             </div>
