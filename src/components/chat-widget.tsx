@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect, useRef } from "react"
@@ -17,8 +16,8 @@ import { collection, doc, query, onSnapshot, orderBy, addDoc, setDoc, serverTime
 import { format } from 'date-fns'
 import Image from "next/image"
 
-const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+const CLOUDINARY_CLOUD_NAME = "datq7sbdp";
+const CLOUDINARY_UPLOAD_PRESET = "bpxmaster";
 
 interface Message {
   id: string;
@@ -127,7 +126,7 @@ export default function ChatWidget() {
     try {
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET!);
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
         const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
             method: 'POST', body: formData,
         });
