@@ -80,6 +80,7 @@ export default function AdminUsersPage() {
   const [userChartData, setUserChartData] = React.useState<{ date: string; count: number }[]>([]);
   const isMobile = useMediaQuery("(max-width: 768px)");
   const { toast } = useToast();
+  const [searchTerm, setSearchTerm] = React.useState("");
 
   React.useEffect(() => {
     const fetchUsers = async () => {
@@ -185,7 +186,16 @@ export default function AdminUsersPage() {
     if (isMobile) {
       return (
         <div className="space-y-4">
-          {users.map((user) => (
+{users
+  .filter(user => {
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      user.fullName?.toLowerCase().includes(term) ||
+      user.phone?.toLowerCase().includes(term)
+    );
+  })
+  .map((user) => (
             <Card key={user.id} onClick={() => handleViewDetails(user)}>
               <CardContent className="p-4 flex flex-col gap-3">
                  <div>
@@ -341,16 +351,27 @@ export default function AdminUsersPage() {
     <>
     <div className="animate-fade-in grid gap-8 max-w-7xl mx-auto">
       <Card className={isMobile ? "max-w-[400px] mx-auto" : ""}>
-        <CardHeader className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <div>
-              <CardTitle className="font-headline">User Management</CardTitle>
-              <CardDescription>View, edit, or delete user accounts.</CardDescription>
-          </div>
-          <Button onClick={handleAdd}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Add User
-          </Button>
-        </CardHeader>
+      <CardHeader className="flex flex-col md:flex-row items-center justify-between gap-4">
+  <div className="flex flex-col items-center md:items-start">
+    <CardTitle className="font-headline">User Management</CardTitle>
+    <CardDescription>View, edit, or delete user accounts.</CardDescription>
+  </div>
+
+  <div className="flex-1 flex justify-center">
+    <Input
+      placeholder="Search by name or phone..."
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+      className="max-w-sm"
+    />
+  </div>
+
+  <Button onClick={handleAdd}>
+    <PlusCircle className="mr-2 h-4 w-4" />
+    Add User
+  </Button>
+</CardHeader>
+
         <CardContent>
           {renderContent()}
         </CardContent>
