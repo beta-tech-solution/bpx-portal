@@ -240,7 +240,7 @@ export default function AdminChatPage() {
           </div>
         </ScrollArea>
       </CardContent>
-      <CardFooter className="p-2 border-t">
+      <CardFooter className="p-2 border-t pr-14 pb-14 sm:pr-2 sm:pb-2">
         <div className="flex items-center gap-2 w-full">
           <input type="file" ref={fileInputRef} onChange={handleAttachment} className="hidden" />
           <Button variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} disabled={sending}>
