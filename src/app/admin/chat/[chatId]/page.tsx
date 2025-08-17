@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from 'next/navigation';
 import { db } from "@/lib/firebase/config";
-import { collection, query, onSnapshot, orderBy, doc, addDoc, serverTimestamp, updateDoc, deleteDoc, getDocs } from "firebase/firestore";
+import { collection, query, onSnapshot, orderBy, doc, addDoc, serverTimestamp, updateDoc, deleteDoc, writeBatch } from "firebase/firestore";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -90,25 +90,30 @@ export default function AdminChatPage() {
     setSending(true);
     
     try {
+        const batch = writeBatch(db);
         const chatDocRef = doc(db, 'chats', chatId as string);
-        const messagesColRef = collection(chatDocRef, 'messages');
+        const newMessageRef = doc(collection(chatDocRef, 'messages'));
 
-        await addDoc(messagesColRef, {
+        // 1. Add the new message to the subcollection
+        batch.set(newMessageRef, {
             senderId: 'admin',
             text: newMessage.trim(),
             timestamp: serverTimestamp(),
             ...(attachment && { attachmentUrl: attachment.url, attachmentName: attachment.name }),
         });
 
-        await updateDoc(chatDocRef, {
+        // 2. Update the parent chat document
+        batch.update(chatDocRef, {
             lastMessage: attachment ? `Attachment: ${attachment.name}` : newMessage.trim(),
             lastMessageTimestamp: serverTimestamp(),
             userRead: false,
         });
 
+        await batch.commit();
         setNewMessage("");
     } catch (error) {
         console.error("Error sending message:", error);
+        toast({ title: "Error", description: "Could not send message.", variant: "destructive" });
     } finally {
         setSending(false);
     }

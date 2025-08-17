@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from 'next/navigation';
 import { db } from "@/lib/firebase/config";
-import { collection, query, onSnapshot, orderBy, doc, addDoc, serverTimestamp, updateDoc, deleteDoc, getDocs } from "firebase/firestore";
+import { collection, query, onSnapshot, orderBy, doc, addDoc, serverTimestamp, updateDoc, deleteDoc, writeBatch } from "firebase/firestore";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -51,31 +51,42 @@ function ChatView({ chatId }: ChatViewProps) {
 
   useEffect(() => {
     if (!chatId) return;
+    
     setLoading(true);
+    setMessages([]);
 
     const chatDocRef = doc(db, 'chats', chatId as string);
-    updateDoc(chatDocRef, { adminRead: true });
+    updateDoc(chatDocRef, { adminRead: true }).catch(err => console.error("Failed to mark chat as read:", err));
 
     const unsubscribeChatUser = onSnapshot(chatDocRef, (docSnap) => {
         if(docSnap.exists()){
             setChatUser({ name: docSnap.data().userName });
+        } else {
+            console.warn(`Chat document ${chatId} does not exist.`);
         }
+    }, (error) => {
+        console.error("Error fetching chat user data:", error);
+        toast({ title: "Error", description: "Could not load user information for this chat.", variant: "destructive" });
+        setLoading(false);
     });
 
-    const q = query(collection(db, `chats/${chatId}/messages`), orderBy("timestamp", "asc"));
+    const messagesQuery = query(collection(db, `chats/${chatId}/messages`), orderBy("timestamp", "asc"));
     
-    const unsubscribeMessages = onSnapshot(q, (querySnapshot) => {
+    const unsubscribeMessages = onSnapshot(messagesQuery, (querySnapshot) => {
       const msgs: Message[] = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
-      
       setMessages(msgs);
       setLoading(false);
+    }, (error) => {
+        console.error("Error fetching messages:", error);
+        toast({ title: "Error", description: "Could not load messages for this chat.", variant: "destructive" });
+        setLoading(false);
     });
 
     return () => {
         unsubscribeMessages();
         unsubscribeChatUser();
     };
-  }, [chatId]);
+  }, [chatId, toast]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -94,25 +105,31 @@ function ChatView({ chatId }: ChatViewProps) {
     setSending(true);
     
     try {
+        const batch = writeBatch(db);
         const chatDocRef = doc(db, 'chats', chatId as string);
-        const messagesColRef = collection(chatDocRef, 'messages');
+        const newMessageRef = doc(collection(chatDocRef, 'messages'));
 
-        await addDoc(messagesColRef, {
+        // 1. Add the new message to the subcollection
+        batch.set(newMessageRef, {
             senderId: 'admin',
             text: newMessage.trim(),
             timestamp: serverTimestamp(),
             ...(attachment && { attachmentUrl: attachment.url, attachmentName: attachment.name }),
         });
 
-        await updateDoc(chatDocRef, {
+        // 2. Update the parent chat document
+        batch.update(chatDocRef, {
             lastMessage: attachment ? `Attachment: ${attachment.name}` : newMessage.trim(),
             lastMessageTimestamp: serverTimestamp(),
             userRead: false,
         });
 
+        await batch.commit();
         setNewMessage("");
+
     } catch (error) {
         console.error("Error sending message:", error);
+        toast({ title: "Error", description: "Could not send the message.", variant: "destructive" });
     } finally {
         setSending(false);
     }
