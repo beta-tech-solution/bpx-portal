@@ -154,6 +154,7 @@ export default function AdminUsersPage() {
       })
       .filter(user =>
         user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (user.phone && user.phone.includes(searchTerm))
       );
   }, [users, searchTerm, sortBy]);
@@ -359,7 +360,7 @@ export default function AdminUsersPage() {
                 <div className="relative w-full md:flex-1">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
-                        placeholder="Search by name or phone..."
+                        placeholder="Search by name, email, or phone..."
                         className="pl-8"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -815,5 +816,3 @@ function UserDetailsDialog({ open, setOpen, user }: { open: boolean, setOpen: (o
         </Dialog>
     )
 }
-
-    
