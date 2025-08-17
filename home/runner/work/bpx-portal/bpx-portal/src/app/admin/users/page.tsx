@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Edit, Trash2, PlusCircle, Users, Loader2, Copy, ShieldCheck, ShieldAlert } from "lucide-react"
+import { Edit, Trash2, PlusCircle, Users, Loader2, Copy, ShieldCheck, ShieldAlert, Search } from "lucide-react"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -77,6 +77,8 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = React.useState(true);
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
   const [userChartData, setUserChartData] = React.useState<{ date: string; count: number }[]>([]);
+  const [searchTerm, setSearchTerm] = React.useState("");
+  const [sortBy, setSortBy] = React.useState("createdAt_desc");
   const isMobile = useMediaQuery("(max-width: 768px)");
   const { toast } = useToast();
 
@@ -130,6 +132,32 @@ export default function AdminUsersPage() {
     fetchUsers();
   }, [toast]);
 
+  const displayedUsers = React.useMemo(() => {
+    return users
+      .sort((a, b) => {
+        switch (sortBy) {
+          case "createdAt_desc":
+            return (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0);
+          case "createdAt_asc":
+            return (a.createdAt?.toMillis() ?? 0) - (b.createdAt?.toMillis() ?? 0);
+          case "name_asc":
+            return a.fullName.localeCompare(b.fullName);
+          case "name_desc":
+            return b.fullName.localeCompare(a.fullName);
+          case "balance_desc":
+            return b.balance - a.balance;
+          case "balance_asc":
+            return a.balance - b.balance;
+          default:
+            return 0;
+        }
+      })
+      .filter(user =>
+        user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (user.phone && user.phone.includes(searchTerm))
+      );
+  }, [users, searchTerm, sortBy]);
+
   const handleEdit = (user: User) => {
     setSelectedUser(user);
     setIsFormOpen(true);
@@ -165,14 +193,14 @@ export default function AdminUsersPage() {
       );
     }
 
-    if (users.length === 0) {
+    if (displayedUsers.length === 0) {
       return <div className="text-center text-muted-foreground p-8">No users found.</div>;
     }
 
     if (isMobile) {
       return (
         <div className="space-y-4">
-          {users.map((user) => (
+          {displayedUsers.map((user) => (
             <Card key={user.id} onClick={() => handleViewDetails(user)}>
               <CardContent className="p-4 flex flex-col gap-3">
                  <div>
@@ -245,7 +273,7 @@ export default function AdminUsersPage() {
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {users.map((user) => (
+                {displayedUsers.map((user) => (
                 <TableRow key={user.id} onClick={() => handleViewDetails(user)} className="cursor-pointer">
                     <TableCell>
                     <div className="font-medium">{user.fullName}</div>
@@ -316,15 +344,41 @@ export default function AdminUsersPage() {
     <>
     <div className="animate-fade-in grid gap-8 max-w-7xl mx-auto">
       <Card className={isMobile ? "max-w-[400px] mx-auto" : ""}>
-        <CardHeader className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <div>
-              <CardTitle className="font-headline">User Management</CardTitle>
-              <CardDescription>View, edit, or delete user accounts.</CardDescription>
-          </div>
-          <Button onClick={handleAdd}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Add User
-          </Button>
+        <CardHeader>
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex-1">
+                    <CardTitle className="font-headline">User Management</CardTitle>
+                    <CardDescription>View, edit, or delete user accounts.</CardDescription>
+                </div>
+                 <Button onClick={handleAdd}>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Add User
+                </Button>
+            </div>
+            <div className="flex flex-col md:flex-row items-center gap-4 mt-4">
+                <div className="relative w-full md:flex-1">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Search by name or phone..."
+                        className="pl-8"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="w-full md:w-[200px]">
+                        <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="createdAt_desc">Newest First</SelectItem>
+                        <SelectItem value="createdAt_asc">Oldest First</SelectItem>
+                        <SelectItem value="name_asc">Name (A-Z)</SelectItem>
+                        <SelectItem value="name_desc">Name (Z-A)</SelectItem>
+                        <SelectItem value="balance_desc">Balance (High-Low)</SelectItem>
+                        <SelectItem value="balance_asc">Balance (Low-High)</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
         </CardHeader>
         <CardContent>
           {renderContent()}
@@ -761,3 +815,4 @@ function UserDetailsDialog({ open, setOpen, user }: { open: boolean, setOpen: (o
         </Dialog>
     )
 }
+
