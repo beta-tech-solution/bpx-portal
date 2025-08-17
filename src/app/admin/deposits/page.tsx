@@ -15,7 +15,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { db } from '@/lib/firebase/config';
-import { collection, query, getDocs, doc, getDoc, updateDoc, increment, writeBatch, orderBy } from 'firebase/firestore';
+import { collection, query, getDocs, doc, getDoc, updateDoc, increment, writeBatch, orderBy, Timestamp } from 'firebase/firestore';
 import { format, subDays } from 'date-fns';
 import { useMediaQuery } from '@/hooks/use-media-query';
 
@@ -27,10 +27,9 @@ interface Deposit {
   userFullName: string;
   bpexchUsername?: string;
   amount: string;
-  date: string;
   status: DepositStatus;
   proofUrl: string;
-  createdAt: any;
+  createdAt: Timestamp;
 }
 
 const statusVariant = {
@@ -90,7 +89,6 @@ export default function AdminDepositsPage() {
                         id: docSnapshot.id,
                         userFullName,
                         bpexchUsername,
-                        date: data.createdAt ? format(data.createdAt.toDate(), 'PPpp') : 'No Date',
                         ...data
                     } as Deposit;
                 })
@@ -249,7 +247,7 @@ function DepositContent({ data, loading }: { data: Deposit[], loading: boolean }
             <CardContent className="p-4 flex flex-col gap-3">
               <div>
                   <p className="font-semibold break-words">{deposit.userFullName}</p>
-                  <p className="text-xs text-muted-foreground">{deposit.date}</p>
+                  <p className="text-xs text-muted-foreground">{deposit.createdAt ? format(deposit.createdAt.toDate(), 'PPpp') : 'No Date'}</p>
                   <div className="flex items-center gap-2 text-xs mt-1 text-muted-foreground">
                     <User className="h-3 w-3" />
                     <span>{deposit.bpexchUsername}</span>
@@ -300,7 +298,7 @@ function DepositContent({ data, loading }: { data: Deposit[], loading: boolean }
               <TableCell className="font-medium">{deposit.userFullName}</TableCell>
               <TableCell className="font-mono text-xs">{deposit.bpexchUsername}</TableCell>
               <TableCell className="font-mono">PKR {deposit.amount}</TableCell>
-              <TableCell className="text-xs">{deposit.date}</TableCell>
+              <TableCell className="text-xs">{deposit.createdAt ? format(deposit.createdAt.toDate(), 'PPpp') : 'No Date'}</TableCell>
               <TableCell>
                 <Badge variant={statusVariant[deposit.status]}>{deposit.status}</Badge>
               </TableCell>

@@ -15,7 +15,7 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from "rec
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { db } from '@/lib/firebase/config';
-import { collection, query, getDocs, doc, getDoc, updateDoc, increment, writeBatch, orderBy } from 'firebase/firestore';
+import { collection, query, getDocs, doc, getDoc, updateDoc, increment, writeBatch, orderBy, Timestamp } from 'firebase/firestore';
 import { format, subDays } from 'date-fns';
 import { useMediaQuery } from '@/hooks/use-media-query';
 
@@ -29,12 +29,11 @@ interface Withdrawal {
   userId: string;
   userFullName: string;
   amount: string;
-  date: string;
   status: WithdrawalStatus;
   bankName: string;
   accountNumber: string;
   accountHolder: string;
-  createdAt: any;
+  createdAt: Timestamp;
   adminProofUrl?: string;
 }
 
@@ -87,7 +86,6 @@ export default function AdminWithdrawalsPage() {
                     return {
                         id: docSnapshot.id,
                         userFullName,
-                        date: data.createdAt ? format(data.createdAt.toDate(), 'PPpp') : 'No Date',
                         ...data
                     } as Withdrawal;
                 })
@@ -285,7 +283,7 @@ function WithdrawalContent({ data, loading }: { data: Withdrawal[], loading: boo
                 <CardContent className="p-4 flex flex-col gap-3">
                   <div>
                       <p className="font-semibold break-words">{item.userFullName}</p>
-                      <p className="text-xs text-muted-foreground">{item.date}</p>
+                      <p className="text-xs text-muted-foreground">{item.createdAt ? format(item.createdAt.toDate(), 'PPpp') : 'No Date'}</p>
                   </div>
                   <p className="font-mono text-xl font-bold">PKR {item.amount}</p>
                    <div className="text-xs text-muted-foreground border-l-2 border-primary pl-2">
@@ -330,6 +328,7 @@ function WithdrawalContent({ data, loading }: { data: Withdrawal[], loading: boo
               <TableHead>User</TableHead>
               <TableHead>Details</TableHead>
               <TableHead>Amount</TableHead>
+              <TableHead>Date & Time</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -337,15 +336,13 @@ function WithdrawalContent({ data, loading }: { data: Withdrawal[], loading: boo
           <TableBody>
             {data.map((item) => (
               <TableRow key={item.id}>
-                <TableCell>
-                    <div className="font-medium">{item.userFullName}</div>
-                    <div className="text-xs text-muted-foreground">{item.date}</div>
-                </TableCell>
+                <TableCell className="font-medium">{item.userFullName}</TableCell>
                 <TableCell>
                     <div className="font-semibold">{item.bankName}</div>
                     <div className="text-xs text-muted-foreground">{item.accountNumber} ({item.accountHolder})</div>
                 </TableCell>
                 <TableCell className="font-mono">PKR {item.amount}</TableCell>
+                <TableCell className="text-xs">{item.createdAt ? format(item.createdAt.toDate(), 'PPpp') : 'No Date'}</TableCell>
                 <TableCell>
                   <Badge variant={statusVariant[item.status]}>{item.status}</Badge>
                 </TableCell>
