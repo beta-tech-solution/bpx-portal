@@ -192,7 +192,9 @@ export default function AdminUsersPage() {
     const term = searchTerm.toLowerCase();
     return (
       user.fullName?.toLowerCase().includes(term) ||
-      user.phone?.toLowerCase().includes(term)
+      user.phone?.toLowerCase().includes(term) ||
+      user.bpexchUsername?.toLowerCase().includes(term) // ✅ added BPExch field
+
     );
   })
   .map((user) => (
