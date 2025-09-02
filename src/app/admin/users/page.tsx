@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { MoreHorizontal, Edit, Trash2, PlusCircle, Users, Loader2, Copy, ShieldCheck, ShieldAlert } from "lucide-react"
+import { MoreHorizontal, Edit, Trash2, PlusCircle, Users, Loader2, Copy, ShieldCheck, ShieldAlert, Search } from "lucide-react"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -15,8 +15,8 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { db, app as defaultApp } from "@/lib/firebase/config"
-import { collection, query, orderBy, Timestamp, doc, updateDoc, getDocs, serverTimestamp, setDoc, deleteDoc } from 'firebase/firestore'
+import { db, auth } from "@/lib/firebase/config"
+import { collection, query, orderBy, Timestamp, doc, updateDoc, getDocs, serverTimestamp, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore'
 import { format, subMinutes, subDays, eachDayOfInterval } from 'date-fns'
 import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -24,8 +24,6 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Textarea } from "@/components/ui/textarea"
 import { useMediaQuery } from "@/hooks/use-media-query"
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth"
-import { initializeApp, deleteApp } from "firebase/app"
 import { Switch } from "@/components/ui/switch"
 
 
@@ -78,59 +76,80 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = React.useState(true);
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
   const [userChartData, setUserChartData] = React.useState<{ date: string; count: number }[]>([]);
+  const [searchTerm, setSearchTerm] = React.useState("");
+  const [sortBy, setSortBy] = React.useState("createdAt_desc");
   const isMobile = useMediaQuery("(max-width: 768px)");
   const { toast } = useToast();
-  const [searchTerm, setSearchTerm] = React.useState("");
 
   React.useEffect(() => {
-    const fetchUsers = async () => {
-        setLoading(true);
-        try {
-            const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
-            const querySnapshot = await getDocs(q);
+    setLoading(true);
+    const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const usersData: User[] = [];
+        const thirtyDaysAgo = subDays(new Date(), 29);
+        const dailyCounts: { [key: string]: number } = {};
 
-            const usersData: User[] = [];
-            const thirtyDaysAgo = subDays(new Date(), 29);
-            const dailyCounts: { [key: string]: number } = {};
+        const days = eachDayOfInterval({ start: thirtyDaysAgo, end: new Date() });
+        days.forEach(day => {
+            dailyCounts[format(day, 'yyyy-MM-dd')] = 0;
+        });
 
-            const days = eachDayOfInterval({ start: thirtyDaysAgo, end: new Date() });
-            days.forEach(day => {
-                dailyCounts[format(day, 'yyyy-MM-dd')] = 0;
-            });
+        querySnapshot.forEach((doc) => {
+            const userData = { id: doc.id, ...doc.data() } as User;
+            userData.status = userData.status === 'Suspended' ? 'Suspended' : (userData.bpexchUsername && userData.bpexchPassword ? 'Active' : 'Pending');
+            usersData.push(userData);
 
-            querySnapshot.forEach((doc) => {
-                const userData = { id: doc.id, ...doc.data() } as User;
-
-                if (userData.status !== 'Suspended') {
-                    userData.status = (userData.bpexchUsername && userData.bpexchPassword) ? 'Active' : 'Pending';
+            if (userData.createdAt) {
+                const creationDate = format(userData.createdAt.toDate(), 'yyyy-MM-dd');
+                if (dailyCounts[creationDate] !== undefined) {
+                    dailyCounts[creationDate]++;
                 }
+            }
+        });
+        
+        const chartData = Object.entries(dailyCounts).map(([date, count]) => ({
+            date: format(new Date(date), 'MMM d'),
+            count
+        }));
+        
+        setUserChartData(chartData);
+        setUsers(usersData);
+        setLoading(false);
+    }, (error) => {
+        console.error("Error fetching users:", error);
+        toast({ title: "Error", description: "Could not fetch user data.", variant: "destructive" });
+        setLoading(false);
+    });
 
-                usersData.push(userData);
-
-                if (userData.createdAt) {
-                    const creationDate = format(userData.createdAt.toDate(), 'yyyy-MM-dd');
-                    if (dailyCounts[creationDate] !== undefined) {
-                        dailyCounts[creationDate]++;
-                    }
-                }
-            });
-            
-            const chartData = Object.entries(dailyCounts).map(([date, count]) => ({
-                date: format(new Date(date), 'MMM d'),
-                count
-            }));
-            
-            setUserChartData(chartData);
-            setUsers(usersData);
-        } catch (error) {
-            console.error("Error fetching users:", error);
-            toast({ title: "Error", description: "Could not fetch user data.", variant: "destructive" });
-        } finally {
-            setLoading(false);
-        }
-    };
-    fetchUsers();
+    return () => unsubscribe();
   }, [toast]);
+
+  const displayedUsers = React.useMemo(() => {
+    return users
+      .sort((a, b) => {
+        switch (sortBy) {
+          case "createdAt_desc":
+            return (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0);
+          case "createdAt_asc":
+            return (a.createdAt?.toMillis() ?? 0) - (b.createdAt?.toMillis() ?? 0);
+          case "name_asc":
+            return a.fullName.localeCompare(b.fullName);
+          case "name_desc":
+            return b.fullName.localeCompare(a.fullName);
+          case "balance_desc":
+            return b.balance - a.balance;
+          case "balance_asc":
+            return a.balance - b.balance;
+          default:
+            return 0;
+        }
+      })
+      .filter(user =>
+        user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (user.phone && user.phone.includes(searchTerm))
+      );
+  }, [users, searchTerm, sortBy]);
 
   const handleEdit = (user: User) => {
     setSelectedUser(user);
@@ -150,25 +169,12 @@ export default function AdminUsersPage() {
   const handleDelete = async (userId: string) => {
     try {
         const result = await deleteUserClientSideAction(userId);
-        setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
         toast({ title: "User Removed", description: result.message });
     } catch (error: any) {
         console.error("Failed to delete user:", error);
         toast({ title: "Error", description: error.message || "Could not delete user.", variant: "destructive" });
     }
   }
-
-  {/* const isUserOnline = (lastSeen: Timestamp | undefined) => {
-      if (!lastSeen) return false;
-      const fiveMinutesAgo = subMinutes(new Date(), 5);
-      return lastSeen.toDate() > fiveMinutesAgo;
-  }
-
-  const formatLastSeen = (lastSeen: Timestamp | undefined) => {
-      if (!lastSeen) return "Never";
-      if(isUserOnline(lastSeen)) return "Online";
-      return format(lastSeen.toDate(), 'PPpp');
-  } */}
 
   const renderContent = () => {
     if (loading) {
@@ -179,25 +185,14 @@ export default function AdminUsersPage() {
       );
     }
 
-    if (users.length === 0) {
+    if (displayedUsers.length === 0) {
       return <div className="text-center text-muted-foreground p-8">No users found.</div>;
     }
 
     if (isMobile) {
       return (
         <div className="space-y-4">
-{users
-  .filter(user => {
-    if (!searchTerm) return true; // show all if no search
-    const term = searchTerm.toLowerCase();
-    return (
-      user.fullName?.toLowerCase().includes(term) ||
-      user.phone?.toLowerCase().includes(term) ||
-      user.bpexchUsername?.toLowerCase().includes(term) // ✅ added BPExch field
-
-    );
-  })
-  .map((user) => (
+          {displayedUsers.map((user) => (
             <Card key={user.id} onClick={() => handleViewDetails(user)}>
               <CardContent className="p-4 flex flex-col gap-3">
                  <div>
@@ -212,13 +207,12 @@ export default function AdminUsersPage() {
                     <span className="text-muted-foreground">Role:</span>
                     <Badge variant={user.role === 'Admin' ? 'default' : 'outline'}>{user.role}</Badge>
                 </div>
-                <div className="flex justify-between items-center text-sm">
-  <span className="text-muted-foreground">Status:</span>
-  <Badge variant={user.status === 'Active' ? 'secondary' : (user.status === 'Pending' ? 'default' : 'destructive')}>
-    {user.status}
-  </Badge>
-</div>
-
+                 <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Status:</span>
+                     <div className="flex items-center gap-2">
+                         <Badge variant={user.status === 'Active' ? 'secondary' : (user.status === 'Pending' ? 'default' : 'destructive')}>{user.status}</Badge>
+                      </div>
+                </div>
                  <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">Email:</span>
                     <Badge variant={user.emailVerified || user.adminVerified ? 'secondary' : 'destructive'}>
@@ -266,104 +260,72 @@ export default function AdminUsersPage() {
                 <TableHead>Balance</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Role</TableHead>
-              {/*  <TableHead>Last Seen</TableHead> */}
+                <TableHead>Joined</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
-  {users
-    .filter(user => {
-      if (!searchTerm) return true; // show all if no input
-      const term = searchTerm.toLowerCase();
-      return (
-        user.fullName?.toLowerCase().includes(term) ||
-        user.email?.toLowerCase().includes(term) ||
-        user.phone?.toLowerCase().includes(term)
-      );
-    })
-    .map((user) => (
-      <TableRow
-        key={user.id}
-        onClick={() => handleViewDetails(user)}
-        className="cursor-pointer"
-      >
-        <TableCell>
-          <div className="font-medium">{user.fullName}</div>
-          <div className="text-sm text-muted-foreground">{user.email}</div>
-        </TableCell>
-
-        <TableCell>
-          <Badge variant={user.emailVerified || user.adminVerified ? 'secondary' : 'destructive'}>
-            {user.emailVerified || user.adminVerified ? (
-              <ShieldCheck className="mr-1 h-3 w-3" />
-            ) : (
-              <ShieldAlert className="mr-1 h-3 w-3" />
-            )}
-            {user.emailVerified || user.adminVerified ? 'Verified' : 'Not Verified'}
-          </Badge>
-        </TableCell>
-
-        <TableCell className="font-mono">PKR {user.balance?.toFixed(2) || '0.00'}</TableCell>
-
-        <TableCell>
-          <div className="flex items-center gap-2">
-            <Badge
-              variant={
-                user.status === "Active"
-                  ? "secondary"
-                  : user.status === "Pending"
-                  ? "default"
-                  : "destructive"
-              }
-            >
-              {user.status}
-            </Badge>
-          </div>
-        </TableCell>
-
-        <TableCell>
-          <Badge variant={user.role === 'Admin' ? 'default' : 'outline'}>{user.role}</Badge>
-        </TableCell>
-
-        <TableCell className="text-right">
-          <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-            <Button variant="ghost" size="icon" onClick={() => handleEdit(user)}>
-              <Edit className="h-4 w-4" />
-            </Button>
-
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently remove the user from the application database. You will still need to delete them from the Firebase Authentication console manually. This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleDelete(user.id);
-                    }}
-                    className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </TableCell>
-      </TableRow>
-    ))}
-</TableBody>
-
+                {displayedUsers.map((user) => (
+                <TableRow key={user.id} onClick={() => handleViewDetails(user)} className="cursor-pointer">
+                    <TableCell>
+                    <div className="font-medium">{user.fullName}</div>
+                    <div className="text-sm text-muted-foreground">{user.email}</div>
+                    </TableCell>
+                    <TableCell>
+                        <Badge variant={user.emailVerified || user.adminVerified ? 'secondary' : 'destructive'}>
+                           {user.emailVerified || user.adminVerified ? <ShieldCheck className="mr-1 h-3 w-3" /> : <ShieldAlert className="mr-1 h-3 w-3" />}
+                           {user.emailVerified || user.adminVerified ? 'Verified' : 'Not Verified'}
+                        </Badge>
+                    </TableCell>
+                    <TableCell className="font-mono">PKR {user.balance?.toFixed(2) || '0.00'}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                         <Badge variant={user.status === 'Active' ? 'secondary' : (user.status === 'Pending' ? 'default' : 'destructive')}>{user.status}</Badge>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                        <Badge variant={user.role === 'Admin' ? 'default' : 'outline'}>{user.role}</Badge>
+                    </TableCell>
+                    <TableCell>
+                        {user.createdAt ? format(user.createdAt.toDate(), 'PP') : 'N/A'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                           <Button variant="ghost" size="icon" onClick={() => handleEdit(user)}>
+                                <Edit className="h-4 w-4" />
+                           </Button>
+                           <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This will permanently remove the user from the application database. You will still need to delete them from the Firebase Authentication console manually. This action cannot be undone.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                handleDelete(user.id);
+                                            }}
+                                            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                                        >
+                                            Delete
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                    </TableCell>
+                </TableRow>
+                ))}
+            </TableBody>
             </Table>
         </div>
     );
@@ -374,27 +336,42 @@ export default function AdminUsersPage() {
     <>
     <div className="animate-fade-in grid gap-8 max-w-7xl mx-auto">
       <Card className={isMobile ? "max-w-[400px] mx-auto" : ""}>
-      <CardHeader className="flex flex-col md:flex-row items-center justify-between gap-4">
-  <div className="flex flex-col items-center md:items-start">
-    <CardTitle className="font-headline">User Management</CardTitle>
-    <CardDescription>View, edit, or delete user accounts.</CardDescription>
-  </div>
-
-  <div className="flex-1 flex justify-center">
-    <Input
-      placeholder="Search by name or phone..."
-      value={searchTerm}
-      onChange={(e) => setSearchTerm(e.target.value)}
-      className="max-w-sm"
-    />
-  </div>
-
-  <Button onClick={handleAdd}>
-    <PlusCircle className="mr-2 h-4 w-4" />
-    Add User
-  </Button>
-</CardHeader>
-
+        <CardHeader>
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex-1">
+                    <CardTitle className="font-headline">User Management</CardTitle>
+                    <CardDescription>View, edit, or delete user accounts.</CardDescription>
+                </div>
+                 <Button onClick={handleAdd}>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Add User
+                </Button>
+            </div>
+            <div className="flex flex-col md:flex-row items-center gap-4 mt-4">
+                <div className="relative w-full md:flex-1">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Search by name, email, or phone..."
+                        className="pl-8"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="w-full md:w-[200px]">
+                        <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="createdAt_desc">Newest First</SelectItem>
+                        <SelectItem value="createdAt_asc">Oldest First</SelectItem>
+                        <SelectItem value="name_asc">Name (A-Z)</SelectItem>
+                        <SelectItem value="name_desc">Name (Z-A)</SelectItem>
+                        <SelectItem value="balance_desc">Balance (High-Low)</SelectItem>
+                        <SelectItem value="balance_asc">Balance (Low-High)</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+        </CardHeader>
         <CardContent>
           {renderContent()}
         </CardContent>
@@ -522,42 +499,36 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                     return;
                 }
                 
-                // --- Robust Isolated Firebase Auth Instance ---
-                // Create a temporary, uniquely named Firebase app instance.
-                const tempAppName = `temp-user-creation-${Date.now()}`;
-                const tempApp = initializeApp(defaultApp.options, tempAppName);
-                const tempAuth = getAuth(tempApp);
-
-                try {
-                    const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, data.password);
-                    const newUser = userCredential.user;
-
-                    // Now use the primary Firestore instance to write the user's data
-                    await setDoc(doc(db, "users", newUser.uid), {
-                        uid: newUser.uid,
-                        fullName: data.fullName,
-                        email: data.email,
-                        balance: data.balance,
-                        status: finalStatus,
-                        role: data.role,
-                        createdAt: serverTimestamp(),
-                        bpexchUsername: data.bpexchUsername,
-                        bpexchPassword: data.bpexchPassword,
-                        adminMessage: data.adminMessage,
-                        emailVerified: false,
-                        adminVerified: data.adminVerified,
-                    });
-                    
-                    toast({ title: "User Created", description: "New user has been added successfully." });
-                } finally {
-                    // IMPORTANT: Clean up the temporary app instance
-                    await deleteApp(tempApp);
+                const adminUser = auth.currentUser;
+                if (!adminUser) {
+                    throw new Error("Admin not authenticated.");
                 }
+
+                const token = await adminUser.getIdToken();
+
+                const response = await fetch('https://us-central1-bpx-portal.cloudfunctions.net/createUser', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        ...data,
+                        status: finalStatus // Pass the calculated status
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || "Failed to create user.");
+                }
+
+                toast({ title: "User Created", description: "New user has been added successfully." });
             }
             setOpen(false);
         } catch (error: any) {
             console.error("Error saving user:", error);
-            if (error.code === 'auth/email-already-in-use') {
+            if (error.message.includes('email-already-in-use') || error.message.includes('email address is already in use')) {
                 form.setError("email", { type: 'manual', message: 'This email address is already in use.' });
             } else {
                 toast({ title: "Error", description: error.message || "Could not save user details.", variant: "destructive" });
