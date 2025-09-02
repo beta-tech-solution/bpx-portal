@@ -1,16 +1,7 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * import {onCall} from "firebase-functions/v2/https";
- * import {onDocumentWritten} from "firebase-functions/v2/firestore";
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
-
 import {initializeApp} from "firebase-admin/app";
 import {getAuth} from "firebase-admin/auth";
 import {getFirestore, Timestamp} from "firebase-admin/firestore";
-import {https_v2, https} from "firebase-functions";
+import {https} from "firebase-functions";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const cors = require("cors")({origin: true});
@@ -20,13 +11,20 @@ initializeApp();
 const db = getFirestore();
 const auth = getAuth();
 
-
 /**
  * Checks if a user has an 'Admin' role.
- * This function uses the `cors` middleware to handle cross-origin requests.
  */
 exports.checkAdminStatus = https.onRequest(async (request, response) => {
   cors(request, response, async () => {
+    // ✅ Allow preflight OPTIONS request
+    if (request.method === "OPTIONS") {
+      response.set("Access-Control-Allow-Origin", "https://bpxmaster.com");
+      response.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+      response.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      response.status(204).send("");
+      return;
+    }
+
     if (request.method !== "POST") {
       response.status(405).send("Method Not Allowed");
       return;
@@ -65,79 +63,102 @@ exports.checkAdminStatus = https.onRequest(async (request, response) => {
   });
 });
 
-
 /**
  * Creates a new user from the admin panel.
- * This function is callable and ensures only admins can create users.
  */
 exports.createUser = https.onRequest(async (request, response) => {
   cors(request, response, async () => {
+    // ✅ Allow preflight OPTIONS request
+    if (request.method === "OPTIONS") {
+      response.set("Access-Control-Allow-Origin", "https://bpxmaster.com");
+      response.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+      response.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      response.status(204).send("");
+      return;
+    }
+
     if (request.method !== "POST") {
-        response.status(405).send("Method Not Allowed");
-        return;
+      response.status(405).send("Method Not Allowed");
+      return;
     }
 
     // 1. Authenticate the admin making the request
-    if (!request.headers.authorization || !request.headers.authorization.startsWith("Bearer ")) {
-        response.status(403).send("Unauthorized: Admin token required.");
-        return;
+    if (
+      !request.headers.authorization ||
+      !request.headers.authorization.startsWith("Bearer ")
+    ) {
+      response.status(403).send("Unauthorized: Admin token required.");
+      return;
     }
 
     const adminIdToken = request.headers.authorization.split("Bearer ")[1];
     try {
-        const decodedToken = await auth.verifyIdToken(adminIdToken);
-        const adminDoc = await db.collection("users").doc(decodedToken.uid).get();
-        if (!adminDoc.exists() || adminDoc.data()?.role !== "Admin") {
-            response.status(403).send("Forbidden: Not an admin.");
-            return;
-        }
-    } catch (error) {
-        console.error("Admin verification failed:", error);
-        response.status(403).send("Forbidden: Invalid admin token.");
+      const decodedToken = await auth.verifyIdToken(adminIdToken);
+      const adminDoc = await db.collection("users").doc(decodedToken.uid).get();
+      if (!adminDoc.exists() || adminDoc.data()?.role !== "Admin") {
+        response.status(403).send("Forbidden: Not an admin.");
         return;
+      }
+    } catch (error) {
+      console.error("Admin verification failed:", error);
+      response.status(403).send("Forbidden: Invalid admin token.");
+      return;
     }
 
     // 2. Create the new user
-    const {email, password, fullName, balance, status, role, bpexchUsername, bpexchPassword, adminMessage, adminVerified} = request.body;
+    const {
+      email,
+      password,
+      fullName,
+      balance,
+      status,
+      role,
+      bpexchUsername,
+      bpexchPassword,
+      adminMessage,
+      adminVerified,
+    } = request.body;
 
     if (!email || !password || !fullName) {
-        response.status(400).send("Missing required fields: email, password, fullName.");
-        return;
+      response
+        .status(400)
+        .send("Missing required fields: email, password, fullName.");
+      return;
     }
 
     try {
-        const userRecord = await auth.createUser({
-            email,
-            password,
-            displayName: fullName,
-            emailVerified: adminVerified || false, // Admins can pre-verify users
-        });
+      const userRecord = await auth.createUser({
+        email,
+        password,
+        displayName: fullName,
+        emailVerified: adminVerified || false,
+      });
 
-        const newUser = {
-            uid: userRecord.uid,
-            fullName,
-            email,
-            balance: balance || 0,
-            status: status || 'Pending',
-            role: role || 'User',
-            createdAt: Timestamp.now(),
-            bpexchUsername: bpexchUsername || "",
-            bpexchPassword: bpexchPassword || "",
-            adminMessage: adminMessage || "",
-            emailVerified: adminVerified || false,
-            adminVerified: adminVerified || false,
-        };
+      const newUser = {
+        uid: userRecord.uid,
+        fullName,
+        email,
+        balance: balance || 0,
+        status: status || "Pending",
+        role: role || "User",
+        createdAt: Timestamp.now(),
+        bpexchUsername: bpexchUsername || "",
+        bpexchPassword: bpexchPassword || "",
+        adminMessage: adminMessage || "",
+        emailVerified: adminVerified || false,
+        adminVerified: adminVerified || false,
+      };
 
-        await db.collection("users").doc(userRecord.uid).set(newUser);
+      await db.collection("users").doc(userRecord.uid).set(newUser);
 
-        response.status(201).send({success: true, uid: userRecord.uid});
+      response.status(201).send({success: true, uid: userRecord.uid});
     } catch (error: any) {
-        console.error("Error creating new user:", error);
-        let message = "An internal error occurred while creating the user.";
-        if (error.code === 'auth/email-already-exists') {
-            message = "This email address is already in use.";
-        }
-        response.status(500).send({success: false, error: message});
+      console.error("Error creating new user:", error);
+      let message = "An internal error occurred while creating the user.";
+      if (error.code === "auth/email-already-exists") {
+        message = "This email address is already in use.";
+      }
+      response.status(500).send({success: false, error: message});
     }
   });
 });
