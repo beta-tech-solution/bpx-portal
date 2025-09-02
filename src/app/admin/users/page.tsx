@@ -492,7 +492,7 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                 });
                 toast({ title: "User Updated", description: "User details have been saved successfully." });
             } else {
-                // Creating a new user
+                // Creating a new user via API route
                 if (!data.password) {
                     form.setError("password", { type: "manual", message: "Password is required for new users." });
                     setIsLoading(false);
@@ -506,7 +506,7 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
 
                 const token = await adminUser.getIdToken();
 
-                const response = await fetch('https://us-central1-bpx-portal.cloudfunctions.net/createUser', {
+                const response = await fetch('/api/create-user', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -808,3 +808,5 @@ function UserDetailsDialog({ open, setOpen, user }: { open: boolean, setOpen: (o
         </Dialog>
     )
 }
+
+    
