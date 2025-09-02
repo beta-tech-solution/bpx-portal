@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Edit, Trash2, PlusCircle, Users, Loader2, Copy, ShieldCheck, ShieldAlert, Search } from "lucide-react"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
@@ -15,8 +15,8 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { db, app as defaultApp } from "@/lib/firebase/config"
-import { collection, query, orderBy, Timestamp, doc, updateDoc, getDocs, serverTimestamp, setDoc, deleteDoc } from 'firebase/firestore'
+import { db, auth } from "@/lib/firebase/config"
+import { collection, query, orderBy, Timestamp, doc, updateDoc, getDocs, onSnapshot, deleteDoc } from 'firebase/firestore'
 import { format, subDays, eachDayOfInterval } from 'date-fns'
 import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -24,8 +24,6 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Textarea } from "@/components/ui/textarea"
 import { useMediaQuery } from "@/hooks/use-media-query"
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth"
-import { initializeApp, deleteApp } from "firebase/app"
 import { Switch } from "@/components/ui/switch"
 
 
@@ -50,19 +48,14 @@ interface User {
   adminVerified?: boolean;
 }
 
-// This is a client-side action, not a server action.
-// It is safe because Firestore security rules should prevent unauthorized deletion.
 async function deleteUserClientSideAction(uid: string) {
     if (!uid) {
         throw new Error("User ID is required.");
     }
-    // We can't delete from Auth on client side without re-authentication.
-    // This is a known limitation. Admin will have to manually delete from Firebase Console for full cleanup.
-    // The primary goal here is to remove the user from the app's database.
     try {
         const userDocRef = doc(db, "users", uid);
         await deleteDoc(userDocRef);
-        return { success: true, message: "User deleted from database. Remember to delete them from the Firebase Auth console." };
+        return { success: true, message: "User deleted from database. Remember to delete from Firebase Auth console." };
     } catch(error: any) {
         console.error("Error deleting user from Firestore:", error);
         throw new Error(error.message || "An error occurred while deleting the user from the database.");
@@ -83,57 +76,55 @@ export default function AdminUsersPage() {
   const { toast } = useToast();
 
   React.useEffect(() => {
-    const fetchUsers = async () => {
-        setLoading(true);
-        try {
-            const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
-            const querySnapshot = await getDocs(q);
+    setLoading(true);
+    const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const usersData: User[] = [];
+        const thirtyDaysAgo = subDays(new Date(), 29);
+        const dailyCounts: { [key: string]: number } = {};
 
-            const usersData: User[] = [];
-            const thirtyDaysAgo = subDays(new Date(), 29);
-            const dailyCounts: { [key: string]: number } = {};
+        const days = eachDayOfInterval({ start: thirtyDaysAgo, end: new Date() });
+        days.forEach(day => {
+            dailyCounts[format(day, 'yyyy-MM-dd')] = 0;
+        });
 
-            const days = eachDayOfInterval({ start: thirtyDaysAgo, end: new Date() });
-            days.forEach(day => {
-                dailyCounts[format(day, 'yyyy-MM-dd')] = 0;
-            });
+        querySnapshot.forEach((doc) => {
+            const userData = { id: doc.id, ...doc.data() } as User;
+            userData.status = userData.status === 'Suspended' ? 'Suspended' : (userData.bpexchUsername && userData.bpexchPassword ? 'Active' : 'Pending');
+            usersData.push(userData);
 
-            querySnapshot.forEach((doc) => {
-                const userData = { id: doc.id, ...doc.data() } as User;
-
-                if (userData.status !== 'Suspended') {
-                    userData.status = (userData.bpexchUsername && userData.bpexchPassword) ? 'Active' : 'Pending';
+            if (userData.createdAt) {
+                const creationDate = format(userData.createdAt.toDate(), 'yyyy-MM-dd');
+                if (dailyCounts[creationDate] !== undefined) {
+                    dailyCounts[creationDate]++;
                 }
+            }
+        });
+        
+        const chartData = Object.entries(dailyCounts).map(([date, count]) => ({
+            date: format(new Date(date), 'MMM d'),
+            count
+        }));
+        
+        setUserChartData(chartData);
+        setUsers(usersData);
+        setLoading(false);
+    }, (error) => {
+        console.error("Error fetching users:", error);
+        toast({ title: "Error", description: "Could not fetch user data.", variant: "destructive" });
+        setLoading(false);
+    });
 
-                usersData.push(userData);
-
-                if (userData.createdAt) {
-                    const creationDate = format(userData.createdAt.toDate(), 'yyyy-MM-dd');
-                    if (dailyCounts[creationDate] !== undefined) {
-                        dailyCounts[creationDate]++;
-                    }
-                }
-            });
-            
-            const chartData = Object.entries(dailyCounts).map(([date, count]) => ({
-                date: format(new Date(date), 'MMM d'),
-                count
-            }));
-            
-            setUserChartData(chartData);
-            setUsers(usersData);
-        } catch (error) {
-            console.error("Error fetching users:", error);
-            toast({ title: "Error", description: "Could not fetch user data.", variant: "destructive" });
-        } finally {
-            setLoading(false);
-        }
-    };
-    fetchUsers();
+    return () => unsubscribe();
   }, [toast]);
 
   const displayedUsers = React.useMemo(() => {
     return users
+      .filter(user =>
+        user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (user.phone && user.phone.includes(searchTerm))
+      )
       .sort((a, b) => {
         switch (sortBy) {
           case "createdAt_desc":
@@ -151,12 +142,7 @@ export default function AdminUsersPage() {
           default:
             return 0;
         }
-      })
-      .filter(user =>
-        user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (user.phone && user.phone.includes(searchTerm))
-      );
+      });
   }, [users, searchTerm, sortBy]);
 
   const handleEdit = (user: User) => {
@@ -177,7 +163,6 @@ export default function AdminUsersPage() {
   const handleDelete = async (userId: string) => {
     try {
         const result = await deleteUserClientSideAction(userId);
-        setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
         toast({ title: "User Removed", description: result.message });
     } catch (error: any) {
         console.error("Failed to delete user:", error);
@@ -490,7 +475,6 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                 const userRef = doc(db, 'users', user.id);
                 await updateDoc(userRef, { 
                     fullName: data.fullName, 
-                    // Email cannot be changed here as it's tied to auth
                     balance: data.balance, 
                     status: finalStatus, 
                     role: data.role,
@@ -501,49 +485,43 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                 });
                 toast({ title: "User Updated", description: "User details have been saved successfully." });
             } else {
-                // Creating a new user
+                // Creating a new user via API route
                 if (!data.password) {
                     form.setError("password", { type: "manual", message: "Password is required for new users." });
                     setIsLoading(false);
                     return;
                 }
                 
-                // --- Robust Isolated Firebase Auth Instance ---
-                // Create a temporary, uniquely named Firebase app instance.
-                const tempAppName = `temp-user-creation-${Date.now()}`;
-                const tempApp = initializeApp(defaultApp.options, tempAppName);
-                const tempAuth = getAuth(tempApp);
-
-                try {
-                    const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, data.password);
-                    const newUser = userCredential.user;
-
-                    // Now use the primary Firestore instance to write the user's data
-                    await setDoc(doc(db, "users", newUser.uid), {
-                        uid: newUser.uid,
-                        fullName: data.fullName,
-                        email: data.email,
-                        balance: data.balance,
-                        status: finalStatus,
-                        role: data.role,
-                        createdAt: serverTimestamp(),
-                        bpexchUsername: data.bpexchUsername,
-                        bpexchPassword: data.bpexchPassword,
-                        adminMessage: data.adminMessage,
-                        emailVerified: false,
-                        adminVerified: data.adminVerified,
-                    });
-                    
-                    toast({ title: "User Created", description: "New user has been added successfully." });
-                } finally {
-                    // IMPORTANT: Clean up the temporary app instance
-                    await deleteApp(tempApp);
+                const adminUser = auth.currentUser;
+                if (!adminUser) {
+                    throw new Error("Admin not authenticated.");
                 }
+
+                const token = await adminUser.getIdToken();
+
+                const response = await fetch('/api/create-user', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        ...data,
+                        status: finalStatus // Pass the calculated status
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || "Failed to create user.");
+                }
+
+                toast({ title: "User Created", description: "New user has been added successfully." });
             }
             setOpen(false);
         } catch (error: any) {
             console.error("Error saving user:", error);
-            if (error.code === 'auth/email-already-in-use') {
+            if (error.message.includes('email-already-in-use')) {
                 form.setError("email", { type: 'manual', message: 'This email address is already in use.' });
             } else {
                 toast({ title: "Error", description: error.message || "Could not save user details.", variant: "destructive" });
@@ -808,9 +786,7 @@ function UserDetailsDialog({ open, setOpen, user }: { open: boolean, setOpen: (o
                     </div>
                 </ScrollArea>
                  <DialogFooter>
-                    <DialogClose asChild>
-                        <Button variant="outline">Close</Button>
-                    </DialogClose>
+                    <Button variant="outline" onClick={() => setOpen(false)}>Close</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
