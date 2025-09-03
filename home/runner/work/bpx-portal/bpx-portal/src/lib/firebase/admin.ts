@@ -7,7 +7,9 @@ try {
     if (!process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
         throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set.');
     }
-    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+    // Vercel escapes newlines, so we need to un-escape them for JSON.parse to work.
+    const serviceAccountString = process.env.FIREBASE_SERVICE_ACCOUNT_KEY.replace(/\\n/g, '\n');
+    serviceAccount = JSON.parse(serviceAccountString);
 } catch (e) {
     console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY. Ensure it is set correctly in your environment variables.", e);
     throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY is not a valid JSON.');

@@ -15,6 +15,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Unauthorized: Admin token missing.' }, { status: 401 });
     }
 
+    // Verify the admin's token
     const decodedToken = await auth.verifyIdToken(adminIdToken);
     const adminDoc = await db.collection("users").doc(decodedToken.uid).get();
     
