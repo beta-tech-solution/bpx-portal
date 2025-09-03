@@ -127,74 +127,53 @@ export default function AdminLayout({
     }
 
     if (loadingUser) return;
-
     if (error) {
         console.error("Auth error:", error);
         router.push('/admin/login');
         return;
     }
-
     if (!user) {
       router.push('/admin/login');
       return;
     }
 
-    const checkAdminAndFetchData = async () => {
-        try {
-            const token = await user.getIdToken();
-            const response = await fetch('/api/check-admin', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (!response.ok) throw new Error('Failed to verify admin status');
-            
-            const { isAdmin } = await response.json();
-
-            if (isAdmin) {
-                const userDocRef = doc(db, 'users', user.uid);
-                const unsubscribeUser = onSnapshot(userDocRef, (docSnap) => {
-                    if (docSnap.exists()) {
-                        const userData = docSnap.data();
-                        setAdminProfile({
-                            name: userData.fullName || 'Admin User',
-                            email: userData.email || '',
-                            photoURL: userData.photoURL || ''
-                        });
-                    }
-                });
-
-                const chatsQuery = query(collection(db, 'chats'), where('adminRead', '==', false));
-                const unsubscribeChats = onSnapshot(chatsQuery, (snapshot) => {
-                    setUnreadChatCount(snapshot.size);
-                });
-                
-                setIsAuthorizing(false);
-                return () => {
-                    unsubscribeUser();
-                    unsubscribeChats();
-                };
-            } else {
-                toast({ title: "Access Denied", description: "You are not an admin.", variant: "destructive" });
-                signOut(auth);
-                router.push('/login');
-            }
-        } catch (err) {
-            console.error("Authorization check failed", err);
-            toast({ title: "Authorization Failed", description: "Could not verify your credentials.", variant: "destructive" });
-            signOut(auth);
-            router.push('/login');
+    const userDocRef = doc(db, 'users', user.uid);
+    const unsubscribeUser = onSnapshot(userDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const userData = docSnap.data();
+        if (userData.role === 'Admin') {
+          setAdminProfile({
+            name: userData.fullName || 'Admin User',
+            email: userData.email || '',
+            photoURL: userData.photoURL || ''
+          });
+          setIsAuthorizing(false);
+        } else {
+          toast({ title: "Access Denied", description: "You are not authorized to access this panel.", variant: "destructive" });
+          router.push('/dashboard');
         }
-    };
+      } else {
+         toast({ title: "Access Denied", description: "User profile not found.", variant: "destructive" });
+         signOut(auth);
+         router.push('/admin/login');
+      }
+    }, (err) => {
+        console.error("Firestore snapshot error:", err);
+        toast({ title: "Error", description: "Could not verify admin status.", variant: "destructive" });
+        signOut(auth);
+        router.push('/admin/login');
+    });
 
-    const unsubscribePromise = checkAdminAndFetchData();
-    
+    // Real-time listener ONLY for chat notifications.
+    const chatsQuery = query(collection(db, 'chats'), where('adminRead', '==', false));
+    const unsubscribeChats = onSnapshot(chatsQuery, (snapshot) => {
+        setUnreadChatCount(snapshot.size);
+    });
+
     return () => {
-      unsubscribePromise.then(unsub => {
-        if (unsub) unsub();
-      });
+        unsubscribeUser();
+        unsubscribeChats();
     };
-
   }, [user, loadingUser, router, error, toast, pathname]);
 
 

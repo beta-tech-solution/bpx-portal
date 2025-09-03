@@ -16,7 +16,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Shield, Eye, EyeOff, Loader2, Mail } from "lucide-react"
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth"
-import { auth } from "@/lib/firebase/config"
+import { auth, db } from "@/lib/firebase/config"
+import { doc, getDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { useAuthState } from "react-firebase-hooks/auth"
 import ParticlesBackground from "@/components/particles-background"
@@ -32,35 +33,16 @@ export default function AdminLoginPage() {
     const [isResetting, setIsResetting] = useState(false)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
 
-    const checkAdminStatus = async () => {
-        if (!auth.currentUser) return false;
-        try {
-            const token = await auth.currentUser.getIdToken();
-            const response = await fetch('/api/check-admin', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            if (!response.ok) return false;
-            const data = await response.json();
-            return data.isAdmin;
-        } catch (error) {
-            console.error("Error checking admin status:", error);
-            return false;
-        }
-    };
-    
     useEffect(() => {
         if (!loading && user) {
-            checkAdminStatus().then(isAdmin => {
-                if (isAdmin) {
-                    router.push('/admin/dashboard');
+            const userDocRef = doc(db, 'users', user.uid)
+            getDoc(userDocRef).then(userDoc => {
+                if (userDoc.exists() && userDoc.data().role === 'Admin') {
+                    router.push('/admin/dashboard')
                 }
-            });
+            })
         }
-    }, [user, loading, router]);
-
+    }, [user, loading, router])
 
     const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
@@ -70,10 +52,13 @@ export default function AdminLoginPage() {
         const password = (e.currentTarget.elements.namedItem('password') as HTMLInputElement).value
 
         try {
-            await signInWithEmailAndPassword(auth, email, password)
-            const isAdmin = await checkAdminStatus();
+            const userCredential = await signInWithEmailAndPassword(auth, email, password)
+            const user = userCredential.user;
 
-            if (isAdmin) {
+            const userDocRef = doc(db, 'users', user.uid);
+            const userDoc = await getDoc(userDocRef);
+
+            if (userDoc.exists() && userDoc.data().role === 'Admin') {
                 toast({ title: "Login Successful", description: "Welcome, Admin!" })
                 router.push('/admin/dashboard')
             } else {
