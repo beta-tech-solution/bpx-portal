@@ -16,7 +16,8 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { db, auth } from "@/lib/firebase/config"
-import { collection, query, orderBy, Timestamp, doc, updateDoc, getDocs, onSnapshot, deleteDoc } from 'firebase/firestore'
+import { collection, query, orderBy, Timestamp, doc, updateDoc, getDocs, onSnapshot, deleteDoc, setDoc, serverTimestamp } from 'firebase/firestore'
+import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth"
 import { format, subDays, eachDayOfInterval } from 'date-fns'
 import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -469,6 +470,13 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
             finalStatus = (data.bpexchUsername && data.bpexchPassword) ? 'Active' : 'Pending';
         }
 
+        const currentAdmin = auth.currentUser;
+        if (!currentAdmin) {
+            toast({ title: "Authentication Error", description: "Admin user is not signed in.", variant: "destructive" });
+            setIsLoading(false);
+            return;
+        }
+
         try {
             if (user) { 
                 // Editing an existing user
@@ -485,43 +493,41 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                 });
                 toast({ title: "User Updated", description: "User details have been saved successfully." });
             } else {
-                // Creating a new user via API route
+                // Creating a new user
                 if (!data.password) {
                     form.setError("password", { type: "manual", message: "Password is required for new users." });
                     setIsLoading(false);
                     return;
                 }
                 
-                const adminUser = auth.currentUser;
-                if (!adminUser) {
-                    throw new Error("Admin not authenticated.");
-                }
-
-                const token = await adminUser.getIdToken();
-
-                const response = await fetch('/api/create-user', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        ...data,
-                        status: finalStatus // Pass the calculated status
-                    })
+                // This is a temporary auth instance to create the new user
+                const { user: newUser } = await createUserWithEmailAndPassword(auth, data.email, data.password);
+                
+                // Send verification email to the new user
+                await sendEmailVerification(newUser);
+                
+                // Set the user document in Firestore
+                await setDoc(doc(db, "users", newUser.uid), {
+                    uid: newUser.uid,
+                    fullName: data.fullName,
+                    email: data.email,
+                    balance: data.balance,
+                    status: finalStatus,
+                    role: data.role,
+                    bpexchUsername: data.bpexchUsername || "",
+                    bpexchPassword: data.bpexchPassword || "",
+                    adminMessage: data.adminMessage || "",
+                    emailVerified: false,
+                    adminVerified: data.adminVerified || false,
+                    createdAt: serverTimestamp(),
                 });
 
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || "Failed to create user.");
-                }
-
-                toast({ title: "User Created", description: "New user has been added successfully." });
+                toast({ title: "User Created", description: "New user has been added. A verification email has been sent." });
             }
             setOpen(false);
         } catch (error: any) {
             console.error("Error saving user:", error);
-            if (error.message.includes('email-already-in-use')) {
+            if (error.code === 'auth/email-already-in-use') {
                 form.setError("email", { type: 'manual', message: 'This email address is already in use.' });
             } else {
                 toast({ title: "Error", description: error.message || "Could not save user details.", variant: "destructive" });
@@ -792,3 +798,5 @@ function UserDetailsDialog({ open, setOpen, user }: { open: boolean, setOpen: (o
         </Dialog>
     )
 }
+
+    
