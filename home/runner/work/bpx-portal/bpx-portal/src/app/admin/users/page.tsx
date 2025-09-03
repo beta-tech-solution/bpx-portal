@@ -507,8 +507,8 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                 const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, data.password);
                 const newUser = userCredential.user;
                 
-                // Send verification email to the new user
-                await sendEmailVerification(newUser);
+                // Commented out as per user request
+                // await sendEmailVerification(newUser);
                 
                 // Set the user document in Firestore
                 await setDoc(doc(db, "users", newUser.uid), {
@@ -521,12 +521,12 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                     bpexchUsername: data.bpexchUsername || "",
                     bpexchPassword: data.bpexchPassword || "",
                     adminMessage: data.adminMessage || "",
-                    emailVerified: false,
+                    emailVerified: true, // Mark as true since verification is skipped
                     adminVerified: data.adminVerified || false,
                     createdAt: serverTimestamp(),
                 });
 
-                toast({ title: "User Created", description: "New user has been added. A verification email has been sent." });
+                toast({ title: "User Created", description: "New user has been added and can log in immediately." });
             }
             setOpen(false);
         } catch (error: any) {
@@ -802,5 +802,3 @@ function UserDetailsDialog({ open, setOpen, user }: { open: boolean, setOpen: (o
         </Dialog>
     )
 }
-
-    
