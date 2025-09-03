@@ -53,7 +53,7 @@ export default function SignupPage() {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password)
             const user = userCredential.user
 
-            // await sendEmailVerification(user);
+            // await sendEmailVerification(user); // Verification email is disabled.
 
             await setDoc(doc(db, "users", user.uid), {
                 uid: user.uid,

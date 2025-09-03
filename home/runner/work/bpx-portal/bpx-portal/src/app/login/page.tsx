@@ -62,6 +62,7 @@ export default function LoginPage() {
             }
             
             /*
+            // This entire block is commented out to disable email verification checks.
             const isVerified = user.emailVerified || userData.adminVerified === true;
 
             if (!isVerified) {

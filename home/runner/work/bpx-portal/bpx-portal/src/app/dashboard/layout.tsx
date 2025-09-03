@@ -5,7 +5,7 @@ import * as React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase/config";
 import { onAuthStateChanged, User, signOut } from "firebase/auth";
-import { doc, onSnapshot, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import Preloader from "@/components/preloader";
 import ChatWidget from "@/components/chat-widget";
@@ -54,6 +54,7 @@ export default function DashboardLayout({
               }
 
               /*
+              // This entire block is commented out to disable email verification checks.
               const isVerified = currentUser.emailVerified || dbData.adminVerified === true;
               if (!isVerified) {
                   toast({
