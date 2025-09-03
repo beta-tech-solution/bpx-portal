@@ -59,19 +59,7 @@ export default function LoginPage() {
         return
       }
 
-      const isVerified = user.emailVerified || userData.adminVerified === true
-
-      if (!isVerified) {
-        await auth.signOut()
-        toast({
-          title: "Email Not Verified",
-          description: "Please verify your email to log in, or contact support if the issue persists.",
-          variant: "destructive",
-        })
-        setIsLoading(false)
-        return
-      }
-
+      // ✅ Removed email verification checks
       toast({ title: "Login Successful", description: "Welcome back!" })
       router.push("/dashboard")
     } catch (error: any) {
