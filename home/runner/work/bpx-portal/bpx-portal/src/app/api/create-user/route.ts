@@ -1,6 +1,6 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
-import { auth as adminAuth, db } from '@/lib/firebase/admin';
+import { auth, db } from '@/lib/firebase/admin';
 import { doc, setDoc, Timestamp, getDoc } from 'firebase/firestore';
 
 export async function POST(request: NextRequest) {
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Unauthorized: Admin token missing.' }, { status: 401 });
     }
 
-    const decodedToken = await adminAuth.verifyIdToken(adminIdToken);
+    const decodedToken = await auth.verifyIdToken(adminIdToken);
     const adminDoc = await getDoc(doc(db, "users", decodedToken.uid));
     
     if (!adminDoc.exists() || adminDoc.data()?.role !== 'Admin') {
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields: email, password, fullName.' }, { status: 400 });
     }
 
-    const userRecord = await adminAuth.createUser({
+    const userRecord = await auth.createUser({
       email,
       password,
       displayName: fullName,

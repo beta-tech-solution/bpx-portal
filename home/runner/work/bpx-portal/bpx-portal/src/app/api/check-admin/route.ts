@@ -1,6 +1,6 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
-import { auth as adminAuth, db } from '@/lib/firebase/admin';
+import { auth, db } from '@/lib/firebase/admin';
 import { doc, getDoc } from 'firebase/firestore';
 
 export async function POST(request: NextRequest) {
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized: No token provided.' }, { status: 401 });
     }
 
-    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    const decodedToken = await auth.verifyIdToken(idToken);
     const uid = decodedToken.uid;
 
     const userDocRef = doc(db, 'users', uid);
