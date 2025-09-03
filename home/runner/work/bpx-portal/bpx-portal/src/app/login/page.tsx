@@ -61,6 +61,7 @@ export default function LoginPage() {
                 return;
             }
             
+            /*
             const isVerified = user.emailVerified || userData.adminVerified === true;
 
             if (!isVerified) {
@@ -73,6 +74,7 @@ export default function LoginPage() {
                 setIsLoading(false);
                 return;
             }
+            */
 
             toast({ title: "Login Successful", description: "Welcome back!" })
             router.push('/dashboard')

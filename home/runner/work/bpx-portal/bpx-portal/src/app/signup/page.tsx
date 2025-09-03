@@ -53,7 +53,7 @@ export default function SignupPage() {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password)
             const user = userCredential.user
 
-            await sendEmailVerification(user);
+            // await sendEmailVerification(user);
 
             await setDoc(doc(db, "users", user.uid), {
                 uid: user.uid,
@@ -65,11 +65,11 @@ export default function SignupPage() {
                 balance: 0,
                 status: 'Active',
                 role: 'User',
-                emailVerified: user.emailVerified,
+                emailVerified: true, // Mark as true since we are skipping verification
                 adminVerified: false,
             });
 
-            toast({ title: "Account Created", description: "A verification email has been sent to your inbox or spam folder. Please verify your email to log in." })
+            toast({ title: "Account Created", description: "Your account has been created successfully. You can now log in." })
             router.push('/login')
 
         } catch (error: any) {

@@ -53,6 +53,7 @@ export default function DashboardLayout({
                 return;
               }
 
+              /*
               const isVerified = currentUser.emailVerified || dbData.adminVerified === true;
               if (!isVerified) {
                   toast({
@@ -63,6 +64,7 @@ export default function DashboardLayout({
                   signOut(auth);
                   return;
               }
+              */
 
               setUser(currentUser);
               setUserData(dbData);
