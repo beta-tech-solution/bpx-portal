@@ -5,12 +5,16 @@ import { doc, setDoc, Timestamp, getDoc } from 'firebase/firestore';
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. Authenticate the admin making the request
     const authorization = request.headers.get('Authorization');
     if (!authorization?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized: Admin token required.' }, { status: 401 });
     }
     const adminIdToken = authorization.split('Bearer ')[1];
+    
+    if (!adminIdToken) {
+        return NextResponse.json({ error: 'Unauthorized: Admin token missing.' }, { status: 401 });
+    }
+
     const decodedToken = await adminAuth.verifyIdToken(adminIdToken);
     const adminDoc = await getDoc(doc(db, "users", decodedToken.uid));
     
@@ -18,7 +22,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden: Not an admin.' }, { status: 403 });
     }
 
-    // 2. Create the new user
     const {
       email,
       password,
@@ -54,7 +57,7 @@ export async function POST(request: NextRequest) {
       bpexchUsername: bpexchUsername || "",
       bpexchPassword: bpexchPassword || "",
       adminMessage: adminMessage || "",
-      emailVerified: false, // User must verify their own email
+      emailVerified: false, 
       adminVerified: adminVerified || false,
     };
 
