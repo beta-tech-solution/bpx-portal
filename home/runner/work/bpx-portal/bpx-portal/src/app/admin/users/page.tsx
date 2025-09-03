@@ -17,7 +17,7 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { db, auth } from "@/lib/firebase/config"
 import { collection, query, orderBy, Timestamp, doc, updateDoc, getDocs, onSnapshot, deleteDoc, setDoc, serverTimestamp } from 'firebase/firestore'
-import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth"
+import { getAuth, createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth"
 import { format, subDays, eachDayOfInterval } from 'date-fns'
 import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -501,7 +501,11 @@ function UserFormDialog({ open, setOpen, user }: { open: boolean, setOpen: (open
                 }
                 
                 // This is a temporary auth instance to create the new user
-                const { user: newUser } = await createUserWithEmailAndPassword(auth, data.email, data.password);
+                // It avoids signing out the current admin user
+                const tempAuth = getAuth(auth.app);
+                
+                const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, data.password);
+                const newUser = userCredential.user;
                 
                 // Send verification email to the new user
                 await sendEmailVerification(newUser);
