@@ -1,7 +1,6 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 import { auth, db } from '@/lib/firebase/admin';
-import { doc, getDoc } from 'firebase/firestore';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,10 +16,10 @@ export async function POST(request: NextRequest) {
     const decodedToken = await auth.verifyIdToken(idToken);
     const uid = decodedToken.uid;
 
-    const userDocRef = doc(db, 'users', uid);
-    const userDoc = await getDoc(userDocRef);
+    const userDocRef = db.collection('users').doc(uid);
+    const userDoc = await userDocRef.get();
 
-    if (!userDoc.exists()) {
+    if (!userDoc.exists) {
       return NextResponse.json({ isAdmin: false, error: 'User not found.' }, { status: 404 });
     }
 

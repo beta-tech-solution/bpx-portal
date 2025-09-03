@@ -1,7 +1,7 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 import { auth, db } from '@/lib/firebase/admin';
-import { doc, setDoc, Timestamp, getDoc } from 'firebase/firestore';
+import { Timestamp } from 'firebase-admin/firestore';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,9 +16,9 @@ export async function POST(request: NextRequest) {
     }
 
     const decodedToken = await auth.verifyIdToken(adminIdToken);
-    const adminDoc = await getDoc(doc(db, "users", decodedToken.uid));
+    const adminDoc = await db.collection("users").doc(decodedToken.uid).get();
     
-    if (!adminDoc.exists() || adminDoc.data()?.role !== 'Admin') {
+    if (!adminDoc.exists || adminDoc.data()?.role !== 'Admin') {
       return NextResponse.json({ error: 'Forbidden: Not an admin.' }, { status: 403 });
     }
 
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       adminVerified: adminVerified || false,
     };
 
-    await setDoc(doc(db, "users", userRecord.uid), newUser);
+    await db.collection("users").doc(userRecord.uid).set(newUser);
 
     return NextResponse.json({ success: true, uid: userRecord.uid }, { status: 201 });
 
