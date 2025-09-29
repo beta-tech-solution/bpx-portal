@@ -101,15 +101,16 @@ export default function WithdrawPage() {
     const accountNumber = (form.elements.namedItem('accountNumber') as HTMLInputElement).value;
     const accountHolder = (form.elements.namedItem('accountHolder') as HTMLInputElement).value;
 
-    if (isNaN(amount) || amount < 100) {
-        toast({ title: "Invalid Amount", description: "Please enter a valid withdrawal amount of at least PKR 100.", variant: "destructive" });
+    if (isNaN(amount) || amount < 500) {
+        toast({ title: "Invalid Amount", description: "Please enter a valid withdrawal amount of at least PKR 500.", variant: "destructive" });
         return;
     }
 
-    if(amount > userData.balance) {
-        toast({ title: "Insufficient Balance", description: "You do not have enough funds to complete this withdrawal.", variant: "destructive" });
-        return;
-    }
+   // if(amount > userData.balance) {
+//     toast({ title: "Insufficient Balance", description: "You do not have enough funds to complete this withdrawal.", variant: "destructive" });
+//     return;
+// }
+
 
     setIsLoading(true);
 
@@ -185,8 +186,8 @@ export default function WithdrawPage() {
                 <p className="text-3xl font-bold text-primary">PKR {totalWithdrawals.toFixed(2)}</p>
             </div>
             <div>
-              <Label htmlFor="amount" className="font-semibold text-base">Amount to Withdraw (Minimum 100)</Label>
-              <Input id="amount" name="amount" type="number" placeholder="Enter Amount" required min="100" step="0.01" className="mt-2 text-lg font-bold h-12 p-3" />
+              <Label htmlFor="amount" className="font-semibold text-base">Amount to Withdraw (Minimum 500)</Label>
+              <Input id="amount" name="amount" type="number" placeholder="Enter Amount" required min="500" step="0.01" className="mt-2 text-lg font-bold h-12 p-3" />
             </div>
             
             <div>
