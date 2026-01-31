@@ -174,7 +174,7 @@ export default function BpexchLoginPage() {
                 timestamp: serverTimestamp(),
             });
 
-            window.open('https://bpexch.net/Users/Login', '_blank');
+            window.open('https://www.bpexch.live/Users/Login', '_blank');
 
         } catch (error) {
             console.error("Error logging activity:", error);

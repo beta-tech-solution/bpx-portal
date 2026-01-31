@@ -182,9 +182,9 @@ export default function DashboardPage() {
         )}
 
         <Card className="bg-slate-800 text-white">
-             <Link href="https://bpexch.net/Users/Login" target="_blank" className="flex items-center justify-center p-3">
+             <Link href="https://www.bpexch.live/Users/Login" target="_blank" className="flex items-center justify-center p-3">
                 <ExternalLink className="h-4 w-4 mr-2" />
-                <span className="font-semibold text-sm">BPEXCH.COM</span>
+                <span className="font-semibold text-sm">BPEXCH.Live</span>
             </Link>
         </Card>
         
